@@ -3,12 +3,12 @@
 
 const API = 'https://api.tcgdex.net/v2';
 const LANGS = [
-  { id: 'fr', label: 'Français' },
-  { id: 'zh-cn', label: '简体中文' },
-  { id: 'ja', label: '日本語' },
+  { id: 'fr', name: 'Français', native: 'Français', flag: '🇫🇷' },
+  { id: 'zh-cn', name: 'Chinois simplifié', short: 'Chinois', native: '简体中文', flag: '🇨🇳' },
+  { id: 'ja', name: 'Japonais', short: 'Japonais', native: '日本語', flag: '🇯🇵' },
 ];
 const LANG_IDS = LANGS.map((l) => l.id);
-const langLabel = (id) => LANGS.find((x) => x.id === id)?.label || id;
+const langLabel = (id) => (LANGS.find((x) => x.id === id)?.name || id).toLowerCase();
 const langAttr = (id) => (id === 'zh-cn' ? 'zh-CN' : id);
 const K = {
   owned: 'cartes.v1',       // ancien format (listes d'identifiants) — conservé tel quel, jamais supprimé
@@ -118,7 +118,7 @@ function saveOwned() {
 }
 const countKeys = (m) => (m ? Object.keys(m).length : 0);
 const ownedCount = (l, sid) => countKeys(owned[l][sid]);
-const ownedTotal = (l) => Object.values(owned[l]).reduce((n, m) => n + countKeys(m), 0);
+const ownedTotal = (l) => Object.entries(owned[l]).reduce((n, [sid, m]) => n + (isDigital(l, sid) ? 0 : countKeys(m)), 0);
 const doublesCount = (m) => Object.values(m || {}).filter((q) => q >= 2).length;
 
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch { /* ignoré */ }
@@ -181,6 +181,26 @@ async function api(path) {
   throw err;
 }
 
+/* ---------- Extensions du jeu en ligne (Pokémon Pocket) : masquées ---------- */
+const digital = {}; // langue → Set des identifiants d'extensions numériques
+const DIGITAL_SERIES = 'tcgp';
+const DIGITAL_FALLBACK_FR = ['P-A', 'A1', 'A1a', 'A2', 'A2a', 'A2b', 'A3', 'A3a', 'A3b', 'A4', 'A4a', 'B1', 'B1a', 'B2', 'B2a'];
+async function digitalIds(L) {
+  if (digital[L]) return digital[L];
+  let ids;
+  try { ids = new Set(((await api(`/${L}/series/${DIGITAL_SERIES}`)).sets || []).map((x) => x.id)); } catch (e) {
+    // 404 : cette langue n'a pas de série numérique. Autre erreur : liste connue en français, sinon rien de masqué.
+    ids = new Set(/HTTP 404/.test(e.message || '') || L !== 'fr' ? [] : DIGITAL_FALLBACK_FR);
+  }
+  return (digital[L] = ids);
+}
+async function loadSets(L) {
+  const [all, dig] = await Promise.all([api(`/${L}/sets`), digitalIds(L)]);
+  const sets = all.filter((s) => !dig.has(s.id));
+  return { sets, hidden: all.length - sets.length };
+}
+const isDigital = (l, sid) => !!(digital[l] && digital[l].has(sid));
+
 /* ---------- Images à la demande ---------- */
 const io = 'IntersectionObserver' in window
   ? new IntersectionObserver((entries) => {
@@ -225,7 +245,8 @@ window.addEventListener('hashchange', route);
 /* ---------- Éléments communs ---------- */
 function langSwitch(current, onPick) {
   return h('div', { class: 'seg', role: 'group', 'aria-label': 'Langue' },
-    LANGS.map((l) => h('button', { type: 'button', 'aria-pressed': String(l.id === current), lang: langAttr(l.id), onclick: () => onPick(l.id) }, l.label)));
+    LANGS.map((l) => h('button', { type: 'button', 'aria-pressed': String(l.id === current), lang: langAttr(l.id), 'aria-label': l.name, onclick: () => onPick(l.id) },
+      h('span', { class: 'ln' }, `${l.flag} ${l.short || l.name}`), l.id === 'fr' ? null : h('span', { class: 'ls' }, l.native))));
 }
 function errorBox(msg, retry) {
   return h('div', { class: 'note bad' }, h('b', {}, 'Chargement impossible. '), msg, h('br'), h('button', { type: 'button', onclick: retry }, 'Réessayer'));
@@ -252,8 +273,8 @@ async function showList(my) {
   const main = h('main', {}, spinner());
   $app.replaceChildren(top, main);
 
-  let sets;
-  try { sets = await api(`/${L}/sets`); await snapReady; } catch (e) {
+  let sets, hidden = 0;
+  try { ({ sets, hidden } = await loadSets(L)); await snapReady; } catch (e) {
     if (my !== tok) return;
     main.replaceChildren(errorBox('Vérifiez votre connexion. ' + (e.message || ''), () => showList(tok))); return;
   }
@@ -280,6 +301,7 @@ async function showList(my) {
       logo,
       h('div', { class: 'info' },
         h('div', { class: 'name' }, s.name || s.id),
+        h('div', { class: 'sid' }, s.id),
         h('div', { class: 'count' }, h('b', {}, plural(have, 'carte possédée', 'cartes possédées')), ` sur ${total.toLocaleString('fr-FR')}`, dbl ? ` · ${plural(dbl, 'double', 'doubles')}` : ''),
         h('div', { class: 'bar', 'aria-hidden': 'true' }, h('i', { style: `width:${total ? Math.min(100, Math.round(have / total * 100)) : 0}%` })),
         st && h('span', { class: 'badge ' + st.lvl }, st.txt)),
@@ -298,6 +320,7 @@ async function showList(my) {
     incomplete || stat.noimg
       ? `Données TCGdex incomplètes pour cette langue : ${incomplete ? plural(incomplete, 'extension', 'extensions') + ' sans toutes les cartes' : ''}${incomplete && stat.noimg ? ', ' : ''}${stat.noimg ? plural(stat.noimg, 'extension', 'extensions') + ' sans toutes les images' : ''}. Elles sont signalées en dessous.`
       : 'Aucun défaut de données connu.',
+    hidden ? ` ${plural(hidden, 'extension', 'extensions')} du jeu en ligne (Pokémon Pocket) ${hidden > 1 ? 'sont masquées' : 'est masquée'}.` : '',
     h('button', { type: 'button', onclick: () => { store.set(K.order, reversed ? 'desc' : 'asc'); showList(tok); } }, '↕ Inverser l’ordre')));
   if (isIOS && !isStandalone && !store.get(K.tip)) {
     notes.push(h('div', { class: 'note warn' },
@@ -461,7 +484,7 @@ function openBackup(msg) {
   openSheet(
     h('h2', {}, 'Sauvegarde et restauration'),
     typeof msg === 'string' ? h('div', { class: 'note bad' }, msg) : null,
-    h('ul', {}, LANGS.map((l) => h('li', {}, `${l.label} : ${plural(ownedTotal(l.id), 'carte possédée', 'cartes possédées')}`))),
+    h('ul', {}, LANGS.map((l) => h('li', {}, `${l.name} : ${plural(ownedTotal(l.id), 'carte possédée', 'cartes possédées')}`))),
     h('p', {}, last ? `Dernière sauvegarde : ${fmtDate(last)}.` : 'Aucune sauvegarde faite depuis cet appareil.'),
     h('p', {}, 'Vos cases cochées et vos quantités sont stockées uniquement sur cet appareil. Exportez régulièrement un fichier pour ne rien perdre (changement d’appareil, iOS qui nettoie les données d’un site peu utilisé, etc.). Pour échanger avec un ami, utilisez plutôt « 👥 Amis ».'),
     h('button', { class: 'btn', type: 'button', onclick: doExport }, '⬆︎ Exporter ma collection'),
@@ -507,7 +530,7 @@ function readImport(file) {
     if (!sum) return openBackup('La sauvegarde ne contient aucune carte.');
     openSheet(
       h('h2', {}, 'Importer cette sauvegarde ?'),
-      h('ul', {}, LANGS.map((l) => h('li', {}, `${l.label} : ${plural(ownedIn(incoming, l.id), 'carte', 'cartes')} (actuellement ${ownedTotal(l.id)})`))),
+      h('ul', {}, LANGS.map((l) => h('li', {}, `${l.name} : ${plural(ownedIn(incoming, l.id), 'carte', 'cartes')} (actuellement ${ownedTotal(l.id)})`))),
       data.exportedAt ? h('p', {}, `Sauvegarde du ${fmtDate(data.exportedAt)}.`) : null,
       h('button', { class: 'btn', type: 'button', onclick: () => applyImport(incoming, 'merge') }, 'Fusionner (garde la plus grande quantité)'),
       h('button', { class: 'btn danger', type: 'button', onclick: () => applyImport(incoming, 'replace') }, 'Remplacer ma collection actuelle'),
@@ -515,7 +538,7 @@ function readImport(file) {
   };
   rd.readAsText(file);
 }
-const ownedIn = (o, l) => Object.values(o[l]).reduce((s, m) => s + countKeys(m), 0);
+const ownedIn = (o, l) => Object.entries(o[l]).reduce((s, [sid, m]) => s + (isDigital(l, sid) ? 0 : countKeys(m)), 0);
 
 function applyImport(incoming, mode) {
   if (mode === 'replace') owned = incoming;
@@ -610,13 +633,15 @@ function openShare() {
   const copyBtn = h('button', { class: 'btn sec', type: 'button', disabled: true }, '📋 Copier en texte');
   const area = h('textarea', { class: 'field', readonly: true, rows: '4', hidden: true, 'aria-label': 'Texte de partage à copier' });
   let ready = null;
-  const prep = collectCCMeta().then((r) => { ready = r; fileBtn.disabled = copyBtn.disabled = false; });
+  const prep = Promise.all([collectCCMeta(), ...LANG_IDS.map(digitalIds)]).then(([r]) => { ready = r; fileBtn.disabled = copyBtn.disabled = false; });
 
   const build = () => {
     const p = pseudo.value.trim();
     if (!p) { err.hidden = false; err.textContent = 'Indiquez d’abord votre pseudo : votre ami le verra.'; pseudo.focus(); return null; }
     err.hidden = true; store.set(K.pseudo, p);
-    const obj = { app: 'mes-cartes-pokemon', type: 'partage', version: SHARE_VERSION, pseudo: p, date: new Date().toISOString(), owned, meta: ready.meta };
+    const mine = emptyOwned();
+    for (const l of LANG_IDS) for (const [sid, m] of Object.entries(owned[l])) if (!isDigital(l, sid)) mine[l][sid] = m;
+    const obj = { app: 'mes-cartes-pokemon', type: 'partage', version: SHARE_VERSION, pseudo: p, date: new Date().toISOString(), owned: mine, meta: ready.meta };
     return { p, json: JSON.stringify(obj) };
   };
   const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) || 'ami';
@@ -706,7 +731,7 @@ function confirmImport(data, preselectId) {
   openSheet(
     h('h2', {}, data.pseudo ? `Collection de « ${data.pseudo} »` : 'Collection importée'),
     h('p', {}, data.date ? `Partagée le ${fmtDate(data.date)}.` : 'Date de partage inconnue.'),
-    h('ul', {}, LANGS.map((l) => h('li', {}, `${l.label} : ${plural(ownedIn(data.owned, l.id), 'carte', 'cartes')}`))),
+    h('ul', {}, LANGS.map((l) => h('li', {}, `${l.name} : ${plural(ownedIn(data.owned, l.id), 'carte', 'cartes')}`))),
     privacyNote(),
     list.length ? h('label', { class: 'lbl' }, 'Que faire de ce fichier ?', sel) : null,
     h('label', { class: 'lbl' }, 'Nom de cet ami', nameIn),
@@ -730,7 +755,7 @@ function showFriends() {
   const list = Object.values(friends).sort((a, b) => a.name.localeCompare(b.name, 'fr'));
   const cards = list.map((f) => h('li', { class: 'friend' },
     h('div', { class: 'fname' }, f.name, f.pseudo && norm(f.pseudo) !== norm(f.name) ? h('span', { class: 'sub2' }, ` (pseudo : ${f.pseudo})`) : null),
-    h('div', { class: 'count' }, LANGS.map((l) => `${l.label} : ${ownedIn(f.owned, l.id)}`).join(' · ')),
+    h('div', { class: 'count' }, LANGS.map((l) => `${l.name} : ${ownedIn(f.owned, l.id)}`).join(' · ')),
     h('div', { class: 'count' }, f.date ? `Version du ${fmtDate(f.date)}` : 'Date inconnue', f.imported ? ` · importée le ${fmtDate(f.imported)}` : ''),
     h('div', { class: 'acts' },
       h('button', { class: 'btn', type: 'button', onclick: () => { location.hash = `#comparer/${encodeURIComponent(f.id)}/${lang}`; } }, '⚖️ Comparer'),
@@ -767,7 +792,7 @@ async function showCompare(fid, L, my) {
   scrollTo(0, 0);
 
   let sets;
-  try { sets = await api(`/${L}/sets`); } catch (e) {
+  try { ({ sets } = await loadSets(L)); } catch (e) {
     if (my !== tok) return;
     main.replaceChildren(errorBox('Vérifiez votre connexion. ' + (e.message || ''), () => showCompare(fid, L, tok))); return;
   }
@@ -779,6 +804,7 @@ async function showCompare(fid, L, my) {
   const ids = new Set([...Object.keys(owned[L]), ...Object.keys(f.owned[L]), ...order]);
   const per = new Map();
   for (const sid of ids) {
+    if (isDigital(L, sid)) continue;
     const mi = owned[L][sid] || nullObj(), th = f.owned[L][sid] || nullObj();
     const A = Object.keys(mi).filter((id) => !(id in th));
     const B = Object.keys(th).filter((id) => !(id in mi));
