@@ -212,3 +212,8 @@ textarea.field { resize: vertical; font-family: ui-monospace, Menlo, monospace; 
 .sec-body[hidden] { display: none; }
 
 .set .sid { font-size: 12px; color: var(--muted); }
+
+.part { margin-bottom: 18px; }
+.part[hidden] { display: none; }
+.part-h, .sub { font-size: 16px; margin: 16px 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--line); }
+.sub { font-size: 15px; margin-top: 8px; }
