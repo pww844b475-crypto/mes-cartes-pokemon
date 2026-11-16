@@ -1,8 +1,8 @@
 'use strict';
 // Service worker : l'application s'ouvre hors ligne ; les données TCGdex déjà consultées aussi.
-const SHELL = 'shell-v3';
+const SHELL = 'shell-v4';
 const API = 'api-v1';
-const FILES = ['./', 'index.html', 'style.css', 'app.js', 'coverage.json', 'manifest.webmanifest',
+const FILES = ['./', 'index.html', 'style.css', 'app.js', 'coverage.json', 'data/sets-meta.json', 'manifest.webmanifest',
   'icons/logo-transparent.png', 'icons/icon-192.png', 'icons/icon-512.png',
   'icons/apple-touch-icon.png', 'icons/apple-touch-icon-167.png', 'icons/apple-touch-icon-152.png', 'icons/apple-touch-icon-120.png',
   'icons/favicon-32.png', 'icons/favicon-16.png', 'icons/favicon.ico'];
