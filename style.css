@@ -217,3 +217,70 @@ textarea.field { resize: vertical; font-family: ui-monospace, Menlo, monospace; 
 .part[hidden] { display: none; }
 .part-h, .sub { font-size: 16px; margin: 16px 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--line); }
 .sub { font-size: 15px; margin-top: 8px; }
+
+/* ---------- Écran d'ouverture ---------- */
+#splash {
+  position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; overflow: hidden;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  background:
+    radial-gradient(120% 70% at 50% 28%, rgba(86, 128, 214, .38), rgba(86, 128, 214, 0) 62%),
+    radial-gradient(90% 60% at 50% 110%, rgba(230, 170, 60, .16), rgba(230, 170, 60, 0) 70%),
+    linear-gradient(165deg, #0b1424 0%, #14284a 42%, #1d3557 72%, #26407a 118%);
+  color: #fff; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  touch-action: manipulation; outline: none; opacity: 1;
+}
+html.no-splash #splash, #splash.gone { display: none; }
+.splash-center { position: relative; display: flex; flex-direction: column; align-items: center; gap: clamp(18px, 4vh, 36px); }
+.splash-glow {
+  position: absolute; left: 50%; top: 46%; width: min(120vw, 900px); aspect-ratio: 1; transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, rgba(255, 214, 120, .30), rgba(255, 214, 120, .10) 45%, rgba(255, 214, 120, 0) 72%);
+  animation: splash-glow 4.6s ease-in-out infinite; pointer-events: none;
+}
+.splash-float { animation: splash-float 4.2s ease-in-out infinite; will-change: transform; }
+.splash-logo {
+  position: relative; width: min(74vw, 520px); width: min(74vw, 52vh, 520px); aspect-ratio: 1;
+  transition: transform .38s cubic-bezier(.34, 1.56, .64, 1);
+  filter: drop-shadow(0 18px 34px rgba(0, 0, 0, .45));
+}
+.splash-logo img { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; clip-path: circle(50%); } /* le fichier rogne l'anneau de ~2 px sur ses 4 côtés : on l'arrondit à l'affichage */
+/* éclat de lumière discret : un reflet qui traverse le logo, limité à sa forme grâce à sa transparence */
+.splash-glint {
+  position: absolute; inset: 0; pointer-events: none; mix-blend-mode: soft-light; clip-path: circle(50%);
+  -webkit-mask: url(icons/logo-transparent.png) center / contain no-repeat; mask: url(icons/logo-transparent.png) center / contain no-repeat;
+  background: linear-gradient(112deg, rgba(255, 255, 255, 0) 38%, rgba(255, 255, 255, .95) 50%, rgba(255, 255, 255, 0) 62%) 160% 0 / 300% 100% no-repeat;
+  animation: splash-glint 5.2s ease-in-out infinite;
+}
+.splash-hint {
+  margin: 0; font-size: clamp(19px, 2.6vw, 24px); font-weight: 700; letter-spacing: .03em; text-align: center;
+  color: #fff; text-shadow: 0 2px 14px rgba(0, 0, 0, .6), 0 0 2px rgba(0, 0, 0, .5);
+  animation: splash-pulse 2.2s ease-in-out infinite;
+}
+/* pression : le logo s'enfonce sous le doigt */
+#splash.pressed .splash-logo { transform: scale(.92); transition-duration: .12s; transition-timing-function: ease-out; }
+/* sortie : le logo grossit puis s'efface, le fond se dissout */
+#splash.leaving { pointer-events: none; opacity: 0; transition: opacity .5s ease .28s; }
+#splash.leaving .splash-logo { transform: scale(2.7); opacity: 0; transition: transform .8s cubic-bezier(.55, 0, .25, 1), opacity .5s ease .3s; }
+#splash.leaving .splash-hint, #splash.leaving .splash-glow { opacity: 0; transition: opacity .25s ease; animation: none; }
+#splash.leaving .splash-float { animation-play-state: paused; }
+
+@keyframes splash-float { 0%, 100% { transform: translateY(8px); } 50% { transform: translateY(-10px); } }
+@keyframes splash-glow { 0%, 100% { opacity: .55; transform: translate(-50%, -50%) scale(.94); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); } }
+@keyframes splash-glint { 0%, 55% { background-position: 160% 0; } 85%, 100% { background-position: -60% 0; } }
+@keyframes splash-pulse { 0%, 100% { opacity: .62; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+@media (prefers-reduced-motion: reduce) {
+  .splash-float, .splash-glow, .splash-glint, .splash-hint { animation: none !important; }
+  .splash-glow { opacity: .8; }
+  #splash.leaving .splash-logo { transform: none; transition: opacity .3s ease; }
+  #splash.leaving { transition: opacity .3s ease; }
+}
+
+/* ---------- Réglages ---------- */
+.switch { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 52px; padding: 8px 0; cursor: pointer; }
+.switch + .switch { border-top: 1px solid var(--line); }
+.switch .st { font-weight: 650; }
+.switch .sd { display: block; font-size: 13.5px; color: var(--muted); font-weight: 400; margin-top: 2px; }
+.switch input { appearance: none; -webkit-appearance: none; flex: none; width: 52px; height: 32px; border-radius: 16px; margin: 0; position: relative; background: var(--line); transition: background .2s; }
+.switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); transition: transform .2s; }
+.switch input:checked { background: var(--ok); }
+.switch input:checked::after { transform: translateX(20px); }
+.switch input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }

@@ -2,24 +2,50 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Mes cartes Pokémon</title>
+<title>Pijakollection</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Gérer ma collection de cartes Pokémon (FR, ZH-CN, JA) avec TCGdex.">
+<meta name="description" content="Pijakollection : gérer ma collection de cartes Pokémon avec TCGdex.">
 <meta name="theme-color" content="#1d3557" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f1b2d" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Mes cartes">
+<meta name="apple-mobile-web-app-title" content="Pijakollection">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icons/apple-touch-icon-120.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="icon" href="icons/favicon.ico" sizes="any">
+<link rel="preload" as="image" href="icons/logo-transparent.png">
 <link rel="stylesheet" href="style.css">
+<script>
+  // Réglage « écran d'ouverture » lu avant l'affichage pour éviter un éclair de l'écran quand il est désactivé.
+  try { if (localStorage.getItem('cartes.splash') === 'off') document.documentElement.classList.add('no-splash'); } catch (e) {}
+</script>
 </head>
 <body>
+<div id="splash" role="button" tabindex="0" aria-label="Entrer dans l’application Pijakollection">
+  <div class="splash-glow" aria-hidden="true"></div>
+  <div class="splash-center">
+    <div class="splash-float">
+      <div class="splash-logo">
+        <img src="icons/logo-transparent.png" alt="Pijakollection" width="1024" height="1024" decoding="async" draggable="false">
+        <span class="splash-glint" aria-hidden="true"></span>
+      </div>
+    </div>
+    <p class="splash-hint">Touchez pour entrer</p>
+  </div>
+</div>
 <div id="app" aria-live="polite"></div>
 <div id="toast" role="status" aria-live="polite"></div>
-<noscript><p style="padding:16px">Cette application a besoin de JavaScript.</p></noscript>
+<noscript><style>#splash{display:none}</style><p style="padding:16px">Cette application a besoin de JavaScript.</p></noscript>
+<script>
+  // Garde-fou : si l'application n'a pas démarré au bout de 8 s, l'écran d'ouverture ne doit jamais bloquer l'accès.
+  setTimeout(function () { if (!window.__appReady) { var s = document.getElementById('splash'); if (s) s.style.display = 'none'; } }, 8000);
+</script>
 <script src="app.js"></script>
 </body>
 </html>
