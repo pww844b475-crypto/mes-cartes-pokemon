@@ -17,9 +17,10 @@ const K = {
   lang: 'cartes.lang', cov: 'cartes.cov', exp: 'cartes.lastExport', tip: 'cartes.tipHidden', order: 'cartes.order',
   friends: 'cartes.friends.v1', pseudo: 'cartes.pseudo',
   splash: 'cartes.splash', // 'off' = écran d'ouverture désactivé
+  meta: 'cartes.setmeta', blocks: 'cartes.blocks',
 };
-const BACKUP_VERSION = 2;   // sauvegarde personnelle
-const SHARE_VERSION = 1;    // fichier de partage entre amis
+const BACKUP_VERSION = 3;   // sauvegarde personnelle (3 : quantités par version de carte)
+const SHARE_VERSION = 2;    // fichier de partage entre amis (2 : quantités par version de carte)
 const MAXQ = 99;
 const MAX_TEXT = 5 * 1024 * 1024;
 const CC_IDS = new Set(['cel25cc', '30th-c']); // Collection Classique (TCGdex fr) : pas d'images, on partage nom + numéro
@@ -61,6 +62,44 @@ function toast(msg) {
 function emptyOwned() { return { fr: nullObj(), 'zh-cn': nullObj(), ja: nullObj() }; }
 
 // Accepte l'ancien format (tableaux d'identifiants → quantité 1) et le nouveau (objets id → quantité).
+// Une carte possédée vaut soit un nombre (quantité d'une carte à version unique, ou ancienne coche),
+// soit un objet { cléDeVersion: quantité }. La clé '_' = « version non précisée » (ancienne coche sur une carte à plusieurs versions).
+const isMulti = (v) => v !== null && typeof v === 'object';
+const qtyTotal = (v) => (isMulti(v) ? Object.values(v).reduce((a, b) => a + b, 0) : (v | 0));
+const qtyMax = (v) => (isMulti(v) ? Object.values(v).reduce((a, b) => Math.max(a, b), 0) : (v | 0));
+function cleanQty(q) {
+  if (q !== null && typeof q === 'object' && !Array.isArray(q)) {
+    const o = nullObj();
+    for (const [k, v] of Object.entries(q).slice(0, 40)) {
+      if (k.length > 120) continue;
+      const n = Math.min(MAXQ, Math.floor(Number(v)));
+      if (n >= 1) o[k] = n;
+    }
+    const ks = Object.keys(o);
+    if (!ks.length) return 0;
+    if (ks.length === 1 && ks[0] === '_') return o._;
+    return o;
+  }
+  const n = Math.min(MAXQ, Math.floor(Number(q)));
+  return n >= 1 ? n : 0;
+}
+function mergeQty(a, b) { // fusion de deux possessions d'une même carte : la plus grande quantité, version par version
+  if (a === undefined) return b;
+  if (b === undefined) return a;
+  if (!isMulti(a) && !isMulti(b)) return Math.max(a, b);
+  const A = isMulti(a) ? { ...a } : { _: a }, B = isMulti(b) ? b : { _: b };
+  for (const [k, q] of Object.entries(B)) A[k] = Math.max(A[k] || 0, q);
+  return A;
+}
+function setQty(mine, id, key, q) { // key : clé de version, ou null pour une carte à version unique
+  q = Math.max(0, Math.min(MAXQ, q | 0));
+  if (key === null) { if (q) mine[id] = q; else delete mine[id]; return; }
+  const v = mine[id];
+  const o = isMulti(v) ? v : (v ? { _: v | 0 } : nullObj());
+  if (q) o[key] = q; else delete o[key];
+  if (!Object.keys(o).length) delete mine[id]; else mine[id] = o;
+}
+
 function sanitizeOwned(o) {
   const r = emptyOwned();
   let budget = 200000;
@@ -74,8 +113,8 @@ function sanitizeOwned(o) {
       for (const [id, q] of entries) {
         if (budget-- <= 0) break;
         if (typeof id !== 'string' || !id || id.length > 80) continue;
-        const n = Math.min(MAXQ, Math.floor(Number(q)));
-        if (n >= 1) m[id] = n;
+        const n = cleanQty(q);
+        if (n) m[id] = n;
       }
       if (Object.keys(m).length) r[l][sid] = m;
     }
@@ -121,7 +160,7 @@ function saveOwned() {
 const countKeys = (m) => (m ? Object.keys(m).length : 0);
 const ownedCount = (l, sid) => countKeys(owned[l][sid]);
 const ownedTotal = (l) => Object.entries(owned[l]).reduce((n, [sid, m]) => n + (isDigital(l, sid) ? 0 : countKeys(m)), 0);
-const doublesCount = (m) => Object.values(m || {}).filter((q) => q >= 2).length;
+const doublesCount = (m) => Object.values(m || {}).filter((v) => qtyMax(v) >= 2).length;
 
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch { /* ignoré */ }
 
@@ -287,7 +326,54 @@ function groupStatus(L, g) {
   return dataStatus(L, { cardCount: { total: groupTotal(g) } }, [n, img]);
 }
 
-/* ---------- Vue : liste des extensions ---------- */
+/* ---------- Blocs (séries TCGdex), du plus récent au plus ancien ---------- */
+// data/sets-meta.json : série + date de sortie de chaque extension (instantané). Une extension absente (nouvelle sortie)
+// est résolue en direct (1 requête, mémorisée). Sans information, elle va dans « Promos ».
+let setsMeta = { series: {}, sets: {} };
+const metaReady = fetch('data/sets-meta.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.sets) setsMeta = j; }).catch(() => {});
+let liveMeta = {};
+try { liveMeta = JSON.parse(store.get(K.meta) || '{}') || {}; } catch { liveMeta = {}; }
+const PROMO_SERIES = new Set(['pop', 'mc', 'tk', 'misc']); // pas de vrai bloc : tout va dans « Promos »
+const setMeta = (id) => setsMeta.sets[id] || liveMeta[id] || null; // [série, date, abréviation]
+const serieName = (id) => setsMeta.series[id] || liveMeta['serie:' + id] || id;
+const isPromoSet = (s) => /promo|black star/i.test(s.name || '');
+async function resolveMeta(L, sets) {
+  const unknown = sets.filter((s) => !setMeta(s.id));
+  if (!unknown.length) return;
+  await Promise.all(unknown.map(async (s) => {
+    try {
+      const d = await api(`/${L}/sets/${encodeURIComponent(s.id)}`);
+      if (d.serie?.id) { liveMeta[s.id] = [d.serie.id, d.releaseDate || '', d.abbreviation?.official || '']; if (d.serie.name) liveMeta['serie:' + d.serie.id] = d.serie.name; }
+    } catch { /* hors ligne : l'extension ira dans « Promos » */ }
+  }));
+  store.set(K.meta, JSON.stringify(liveMeta));
+}
+function buildBlocks(groups) {
+  const by = new Map(), bucket = new Map();
+  const push = (map, key, e) => { if (!map.has(key)) map.set(key, []); map.get(key).push(e); };
+  for (const g of groups) {
+    const m = setMeta(g.id), serie = m ? m[0] : '';
+    const e = { g, date: m ? m[1] || '' : '', promo: isPromoSet(g.set) };
+    if (!serie || PROMO_SERIES.has(serie)) push(bucket, serie || '?', e); else push(by, serie, e);
+  }
+  const byDate = (a, b) => b.date.localeCompare(a.date) || b.g.id.localeCompare(a.g.id, 'fr', { numeric: true });   // récent → ancien (à date égale : identifiant le plus grand d'abord)
+  const inBlock = (a, b) => (a.promo - b.promo) || byDate(a, b);                                              // promos du bloc à la fin
+  const blocks = [...by.entries()].map(([id, items]) => {
+    items.sort(inBlock);
+    const newest = (items.find((i) => !i.promo) || items[0]).date;
+    return { id, name: serieName(id), items: items.map((i) => i.g), newest };
+  }).sort((a, b) => b.newest.localeCompare(a.newest));
+  if (bucket.size) {
+    const subs = [...bucket.entries()].map(([id, items]) => {
+      items.sort(byDate);
+      return { id, name: id === '?' ? 'Autres' : serieName(id), items: items.map((i) => i.g), newest: items[0].date };
+    }).sort((a, b) => b.newest.localeCompare(a.newest));
+    blocks.push({ id: 'promos', name: 'Promos', subs, items: subs.flatMap((x) => x.items), newest: '' });
+  }
+  return blocks;
+}
+
+/* ---------- Vue : liste des extensions, par blocs ---------- */
 async function showList(my) {
   const L = lang;
   const q = h('input', { class: 'search', type: 'search', placeholder: 'Rechercher une extension…', 'aria-label': 'Rechercher une extension', enterkeyhint: 'search', autocomplete: 'off' });
@@ -301,7 +387,7 @@ async function showList(my) {
   $app.replaceChildren(top, main);
 
   let sets, hidden = 0;
-  try { ({ sets, hidden } = await loadSets(L)); await snapReady; } catch (e) {
+  try { ({ sets, hidden } = await loadSets(L)); await Promise.all([snapReady, metaReady]); await resolveMeta(L, sets); } catch (e) {
     if (my !== tok) return;
     main.replaceChildren(errorBox('Vérifiez votre connexion. ' + (e.message || ''), () => showList(tok))); return;
   }
@@ -309,8 +395,7 @@ async function showList(my) {
 
   const groups = [...buildGroups(sets).values()];
   const linked = sets.length - groups.length;
-  const reversed = store.get(K.order) === 'asc';
-  const ordered = reversed ? groups.slice() : groups.slice().reverse();
+  const blocks = buildBlocks(groups);
 
   const stat = { empty: 0, partial: 0, noimg: 0 };
   for (const g of groups) {
@@ -318,52 +403,88 @@ async function showList(my) {
     if (st) { if (st.lvl === 'bad') stat.empty++; else if (st.lvl === 'warn') stat.partial++; else stat.noimg++; }
   }
   const incomplete = stat.empty + stat.partial;
+  const pctOf = (have, total) => (total ? Math.min(100, Math.round(have / total * 100)) : 0);
 
-  const items = ordered.map((g) => {
+  const rowFor = (g) => {
     const s = g.set, total = groupTotal(g), st = groupStatus(L, g);
     const have = g.members.reduce((n, m) => n + ownedCount(L, m.id), 0);
     const dbl = g.members.reduce((n, m) => n + doublesCount(owned[L][m.id]), 0);
     const logoUrl = s.logo ? s.logo + '.webp' : s.symbol ? s.symbol + '.webp' : null;
     const logo = h('div', { class: 'logo' });
-    const ph = () => logo.replaceChildren(h('span', { class: 'ph' }, s.abbreviation?.official || s.id));
+    const ph = () => logo.replaceChildren(h('span', { class: 'ph' }, s.abbreviation?.official || setMeta(s.id)?.[2] || s.id));
     if (logoUrl) logo.append(lazyImg(logoUrl, '', ph)); else ph();
     const btn = h('button', { type: 'button', class: 'set' + (st && st.lvl === 'bad' ? ' dim' : ''), onclick: () => { listScroll = scrollY; go(L, s.id); } },
       logo,
       h('div', { class: 'info' },
-        h('div', { class: 'name' }, s.name || s.id),
-        h('div', { class: 'sid' }, s.id),
+        h('div', { class: 'toprow' },
+          h('div', { class: 'name' }, s.name || s.id),
+          h('div', { class: 'cnt', title: `${have} cartes possédées sur ${total}` }, h('b', {}, String(have)), `/${total.toLocaleString('fr-FR')} | ${pctOf(have, total)}%`)),
+        h('div', { class: 'sid' }, s.id, dbl ? ` · ${plural(dbl, 'double', 'doubles')}` : ''),
         g.members.length > 1 && h('div', { class: 'sid' }, 'Inclut : ' + g.members.slice(1).map((m) => m.name || m.id).join(', ')),
-        h('div', { class: 'count' }, h('b', {}, plural(have, 'carte possédée', 'cartes possédées')), ` sur ${total.toLocaleString('fr-FR')}`, dbl ? ` · ${plural(dbl, 'double', 'doubles')}` : ''),
-        h('div', { class: 'bar', 'aria-hidden': 'true' }, h('i', { style: `width:${total ? Math.min(100, Math.round(have / total * 100)) : 0}%` })),
+        h('div', { class: 'bar', 'aria-hidden': 'true' }, h('i', { style: `width:${pctOf(have, total)}%` })),
         st && h('span', { class: 'badge ' + st.lvl }, st.txt)),
       h('span', { class: 'chev', 'aria-hidden': 'true' }, '›'));
     const li = h('li', {}, btn);
     li._name = norm(g.members.map((m) => `${m.name} ${m.id}`).join(' '));
     return li;
+  };
+
+  // état ouvert / fermé des blocs (mémorisé) : par défaut seul le bloc le plus récent est ouvert
+  let openState = null;
+  try { openState = JSON.parse(store.get(K.blocks) || 'null'); } catch { openState = null; }
+  if (!openState || typeof openState !== 'object') openState = { [blocks[0]?.id]: true };
+  const saveOpen = () => store.set(K.blocks, JSON.stringify(openState));
+
+  const secs = blocks.map((b) => {
+    const have = b.items.reduce((n, g) => n + g.members.reduce((k, m) => k + ownedCount(L, m.id), 0), 0);
+    const total = b.items.reduce((n, g) => n + groupTotal(g), 0);
+    const rows = [];
+    const mk = (items) => h('ul', { class: 'sets' }, items.map((g) => { const li = rowFor(g); rows.push(li); return li; }));
+    const subEls = b.subs ? b.subs.map((x) => ({ head: h('h3', { class: 'subhead' }, x.name), list: mk(x.items), n: x.items.length })) : null;
+    const body = h('div', { class: 'block-body' }, subEls ? subEls.flatMap((x) => [x.head, x.list]) : mk(b.items));
+    const head = h('button', { type: 'button', class: 'block-head', 'aria-expanded': 'false' },
+      h('span', { class: 'bn' }, b.name),
+      h('span', { class: 'bc' }, h('b', {}, String(have)), `/${total.toLocaleString('fr-FR')} | ${pctOf(have, total)}%`),
+      h('span', { class: 'chev', 'aria-hidden': 'true' }));
+    const el = h('section', { class: 'block', 'data-block': b.id }, head, body);
+    const sec = { b, el, head, body, rows, subEls };
+    sec.set = (open) => { head.setAttribute('aria-expanded', String(open)); body.hidden = !open; };
+    head.addEventListener('click', () => { const open = body.hidden; openState[b.id] = open; saveOpen(); sec.set(open); });
+    sec.set(!!openState[b.id]);
+    return sec;
   });
-  const ul = h('ul', { class: 'sets' }, items);
   const none = h('p', { class: 'empty', hidden: true }, 'Aucune extension ne correspond.');
 
   const notes = [];
   notes.push(h('div', { class: 'note' },
-    h('b', {}, `${plural(groups.length, 'extension', 'extensions')} en ${langLabel(L)}`),
+    h('b', {}, `${plural(groups.length, 'extension', 'extensions')} en ${blocks.length} blocs`),
     ` · ${plural(ownedTotal(L), 'carte possédée', 'cartes possédées')}. `,
     incomplete || stat.noimg
       ? `Données TCGdex incomplètes : ${incomplete ? plural(incomplete, 'extension', 'extensions') + ' sans toutes les cartes' : ''}${incomplete && stat.noimg ? ', ' : ''}${stat.noimg ? plural(stat.noimg, 'extension', 'extensions') + ' sans toutes les images' : ''}. Elles sont signalées en dessous.`
       : 'Aucun défaut de données connu.',
     linked ? ` ${plural(linked, 'extension liée est regroupée', 'extensions liées sont regroupées')} avec son extension (collections classiques, galeries de dresseurs).` : '',
     hidden ? ` ${plural(hidden, 'extension', 'extensions')} du jeu en ligne (Pokémon Pocket) ${hidden > 1 ? 'sont masquées' : 'est masquée'}.` : '',
-    h('button', { type: 'button', onclick: () => { store.set(K.order, reversed ? 'desc' : 'asc'); showList(tok); } }, '↕ Inverser l’ordre')));
+    h('span', { class: 'rowbtns' },
+      h('button', { type: 'button', onclick: () => { secs.forEach((x) => { openState[x.b.id] = true; x.set(true); }); saveOpen(); } }, 'Tout déplier'),
+      h('button', { type: 'button', onclick: () => { secs.forEach((x) => { openState[x.b.id] = false; x.set(false); }); saveOpen(); } }, 'Tout replier'))));
   if (isIOS && !isStandalone && !store.get(K.tip)) {
     notes.push(h('div', { class: 'note warn' },
       h('b', {}, 'Astuce iPhone / iPad : '), 'touchez Partager ⬆︎ puis « Sur l’écran d’accueil ». Cochez vos cartes depuis l’icône installée : ses données sont séparées de celles de Safari (utilisez Sauvegarde pour les transférer).',
       h('button', { type: 'button', onclick: (e) => { store.set(K.tip, '1'); e.target.closest('.note').remove(); } }, 'Compris')));
   }
-  main.replaceChildren(...notes, ul, none);
+  main.replaceChildren(...notes, ...secs.map((x) => x.el), none);
 
   q.addEventListener('input', () => {
     const n = norm(q.value.trim()); let shown = 0;
-    for (const li of items) { const ok = !n || li._name.includes(n); li.hidden = !ok; if (ok) shown++; }
+    for (const x of secs) {
+      let m = 0;
+      for (const li of x.rows) { const ok = !n || li._name.includes(n); li.hidden = !ok; if (ok) m++; }
+      if (x.subEls) for (const sub of x.subEls) { const any = [...sub.list.children].some((li) => !li.hidden); sub.head.hidden = sub.list.hidden = !any; }
+      x.el.hidden = !!n && !m;
+      x.body.hidden = n ? !m : !openState[x.b.id];                 // pendant une recherche : les blocs concernés s'ouvrent
+      x.head.setAttribute('aria-expanded', String(!x.body.hidden));
+      shown += m;
+    }
     none.hidden = shown > 0;
   });
   if (listScroll) requestAnimationFrame(() => scrollTo(0, listScroll));
@@ -399,11 +520,13 @@ async function showSet(L, setId, my) {
     return;
   }
 
+  const infos = await Promise.all(members.map((m) => loadCardInfo(L, m.id)));   // rareté + versions (instantané, petit fichier)
+  if (my !== tok) return;
   const parts = members.map((m, i) => {
     const data = results[i].status === 'fulfilled' ? results[i].value : null;
     const cards = Array.isArray(data?.cards) ? data.cards : [];
     if (data) rememberCoverage(L, m.id, cards.length, cards.filter((c) => c.image).length);
-    return { id: m.id, name: data?.name || m.name || m.id, data, cards, total: data?.cardCount?.total ?? m.cardCount?.total ?? cards.length, mine: owned[L][m.id] || nullObj() };
+    return { id: m.id, name: data?.name || m.name || m.id, data, cards, info: infos[i], total: data?.cardCount?.total ?? m.cardCount?.total ?? cards.length, mine: owned[L][m.id] || nullObj() };
   });
   const allCards = parts.reduce((n, p) => n + p.cards.length, 0);
   const allTotal = parts.reduce((n, p) => n + p.total, 0);
@@ -438,8 +561,12 @@ async function showSet(L, setId, my) {
     saveOwned(); refresh(); apply();
   };
   const tiles = [];
+  const zoom = (t) => {
+    const vis = tiles.filter((x) => !x.el.hidden && !x.el.closest('[hidden]'));
+    openLightbox(vis, Math.max(0, vis.indexOf(t)), L);
+  };
   const sections = parts.map((part) => {
-    const pt = part.cards.map((c) => { const t = makeTile(c, part.mine, persist(part)); t.mine = part.mine; return t; });
+    const pt = part.cards.map((c) => makeTile(c, part.mine, persist(part), { info: part.info, setName: part.name, zoom }));
     tiles.push(...pt);
     const el = h('section', { class: 'part' },
       parts.length > 1 && h('h2', { class: 'part-h' }, `${part.name} · ${plural(part.cards.length || part.total, 'carte', 'cartes')}`),
@@ -459,8 +586,8 @@ async function showSet(L, setId, my) {
     for (const sec of sections) {
       let secShown = 0;
       for (const t of sec.tiles) {
-        const qty = t.mine[t.card.id] || 0;
-        const byFilter = filter === 'all' || (filter === 'own' && qty > 0) || (filter === 'miss' && qty === 0) || (filter === 'dbl' && qty >= 2);
+        const v = t.mine[t.card.id], qty = qtyTotal(v);
+        const byFilter = filter === 'all' || (filter === 'own' && qty > 0) || (filter === 'miss' && qty === 0) || (filter === 'dbl' && qtyMax(v) >= 2);
         const ok = byFilter && (!n || t.text.includes(n));
         t.el.hidden = !ok; if (ok) secShown++;
       }
@@ -474,57 +601,221 @@ async function showSet(L, setId, my) {
   main.replaceChildren(...notes, progress, ...sections.map((x) => x.el), none);
 }
 
+/* ---------- Rareté et versions de chaque carte (français) ---------- */
+// data/cards/<extension>.json : { rar:[raretés], var:[[type, taille, foil, sous-type, [tampons]]…], c:{ idCarte:[indexRareté,[indexVersions]] } }
+// Instantané de TCGdex ; une carte absente (nouvelle) est demandée en direct à l'agrandissement.
+const infoCache = new Map();
+function descOf(a) {
+  const d = { type: a[0] };
+  if (a[1] && a[1] !== 'Standard') d.size = a[1];
+  if (a[2]) d.foil = a[2];
+  if (a[3]) d.subtype = a[3];
+  if (a[4] && a[4].length) d.stamp = a[4];
+  return d;
+}
+const vKey = (d) => [d.type, d.size ? 's:' + d.size : '', d.foil ? 'f:' + d.foil : '', d.subtype ? 't:' + d.subtype : '', d.stamp ? 'm:' + d.stamp.join('+') : ''].filter(Boolean).join('/').toLowerCase();
+const vLabel = (d) => [d.type, d.foil, d.subtype, ...(d.stamp || []), d.size].filter(Boolean).join(' · ');
+function withKeys(vars) { return vars.map((d) => ({ ...d, key: vKey(d), label: vLabel(d) })); }
+function loadCardInfo(L, setId) {
+  if (L !== 'fr') return Promise.resolve(new Map());
+  const k = L + '/' + setId;
+  if (!infoCache.has(k)) {
+    infoCache.set(k, fetch(`data/cards/${encodeURIComponent(setId)}.json`).then((r) => (r.ok ? r.json() : null)).then((j) => {
+      const m = new Map();
+      if (j && j.c) for (const [id, [ri, vi]] of Object.entries(j.c)) m.set(id, { rar: ri >= 0 ? j.rar[ri] : null, vars: withKeys(vi.map((i) => descOf(j.var[i]))) });
+      return m;
+    }).catch(() => new Map()));
+  }
+  return infoCache.get(k);
+}
+async function fetchCardInfo(L, cardId) { // repli en direct (carte absente de l'instantané)
+  const d = await api(`/${L}/cards/${encodeURIComponent(cardId)}`);
+  let vars = (d.variants_detailed || []).map((x) => ({ type: x.type || 'Normal', ...(x.size && x.size !== 'Standard' ? { size: x.size } : {}), ...(x.foil ? { foil: x.foil } : {}), ...(x.subtype ? { subtype: x.subtype } : {}), ...(x.stamp && x.stamp.length ? { stamp: x.stamp } : {}) }));
+  if (!vars.length && d.variants) {
+    const f = d.variants;
+    if (f.normal) vars.push({ type: 'Normal' }); if (f.reverse) vars.push({ type: 'Reverse' }); if (f.holo) vars.push({ type: 'Holo' });
+    if (f.firstEdition) vars.push({ type: 'Normal', stamp: ['1re Édition'] }); if (f.wPromo) vars.push({ type: 'Normal', stamp: ['Promo W'] });
+  }
+  return { rar: d.rarity || null, vars: withKeys(vars) };
+}
+const hasVersions = (info) => !!(info && info.vars && info.vars.length >= 2);
+
+/* ---------- Cartes ---------- */
 function placeholderContent(name) {
   return h('div', {}, h('span', { class: 't' }, name), h('span', { class: 's' }, 'Image indisponible'));
 }
+function mediaButton(card, name, onclick, badge) {
+  const media = h('button', { type: 'button', class: 'media', 'aria-label': `Agrandir ${name}`, onclick });
+  const placeholder = () => { media.classList.add('noimg'); media.replaceChildren(placeholderContent(name), ...(badge ? [badge] : [])); };
+  if (card.image) { media.append(lazyImg(card.image + '/low.webp', name, placeholder)); if (badge) media.append(badge); } else placeholder();
+  return { media, placeholder };
+}
 
-function makeTile(card, mine, onChange) {
-  const id = card.id;
-  const name = card.name || '#' + card.localId;
-  const cb = h('input', { type: 'checkbox', class: 'cb', 'aria-label': `Je possède ${name} (n° ${card.localId})` });
-  const media = h('div', { class: 'media' });
-  const placeholder = () => { media.classList.add('noimg'); media.replaceChildren(placeholderContent(name)); };
-  if (card.image) media.append(lazyImg(card.image + '/low.webp', name, placeholder)); else placeholder();
+const MAXCHIPS = 4;
+function makeTile(card, mine, onChange, ctx) {
+  const id = card.id, name = card.name || '#' + card.localId;
+  let info = ctx.info.get(id) || null;
+  const { media } = mediaButton(card, name, () => ctx.zoom(t));
 
   const dbl = h('span', { class: 'dbl', hidden: true });
-  const qv = h('span', { class: 'qv', 'aria-live': 'polite' }, '1');
-  const minus = h('button', { type: 'button', class: 'qb', 'aria-label': `Un exemplaire de moins de ${name}` }, '−');
-  const plus = h('button', { type: 'button', class: 'qb', 'aria-label': `Un exemplaire de plus de ${name}` }, '+');
-  const qty = h('div', { class: 'qty' }, minus, qv, plus);
-  const el = h('label', { class: 'card' }, media, dbl, h('span', { class: 'num' }, '#' + card.localId), h('span', { class: 'nm' }, name), qty, cb);
+  const num = h('span', { class: 'num' }, '#' + card.localId);
+  const rar = h('span', { class: 'rar' });
+  const ctl = h('div', { class: 'ctl' });
+  const el = h('div', { class: 'card' }, media, dbl, num, h('span', { class: 'nm' }, name), rar, ctl);
+  let cb = null, mark = null, qv = null, minus = null, plus = null, chips = [], unChip = null;
 
-  function sync() {
-    const n = mine[id] || 0;
-    el.classList.toggle('own', n > 0);
-    cb.checked = n > 0;
-    qv.textContent = String(n || 1);
-    dbl.textContent = '×' + n; dbl.hidden = n < 2;
-    minus.disabled = n <= 1; plus.disabled = n >= MAXQ;
-  }
-  const step = (d) => (e) => {
-    e.preventDefault(); e.stopPropagation();
-    mine[id] = Math.max(1, Math.min(MAXQ, (mine[id] || 1) + d));
-    sync(); onChange();
+  const t = {
+    el, card, mine, id, name, setName: ctx.setName, text: '',
+    get info() { return info; },
+    setInfo(i) { info = i; build(); sync(); },
+    get value() { return mine[id]; },
+    set(key, q) { setQty(mine, id, key, q); sync(); onChange(); },
+    clearUnassigned() { const v = mine[id]; if (isMulti(v)) setQty(mine, id, '_', 0); else delete mine[id]; sync(); onChange(); },
   };
-  minus.addEventListener('click', step(-1));
-  plus.addEventListener('click', step(1));
-  cb.addEventListener('change', () => {
-    if (cb.checked) mine[id] = 1; else delete mine[id];
-    sync(); onChange();
-  });
-  sync();
-  return { el, card, text: norm(`${name} ${card.localId} ${id}`) };
+
+  function build() {
+    rar.textContent = info && info.rar ? info.rar : '';
+    t.text = norm(`${name} ${card.localId} ${id} ${info && info.rar ? info.rar : ''}`);
+    el.querySelector('.cb')?.remove(); ctl.replaceChildren(); chips = []; unChip = null;
+    if (hasVersions(info)) {
+      cb = null; qv = minus = plus = null;
+      mark = h('span', { class: 'cb ind', 'aria-hidden': 'true' }); el.append(mark);
+      const shown = info.vars.slice(0, MAXCHIPS);
+      shown.forEach((v) => {
+        const c = h('button', { type: 'button', class: 'chip', title: v.label, 'aria-pressed': 'false', 'aria-label': `${v.label} — ${name}` });
+        c.addEventListener('click', () => t.set(v.key, qtyOfKey(v.key) ? 0 : 1));
+        chips.push([v, c]); ctl.append(c);
+      });
+      if (info.vars.length > MAXCHIPS) ctl.append(h('button', { type: 'button', class: 'chip more', onclick: () => ctx.zoom(t), title: 'Toutes les versions' }, `+${info.vars.length - MAXCHIPS}`));
+      unChip = h('button', { type: 'button', class: 'chip unk', hidden: true, title: 'Ancienne coche sans version précisée : touchez pour la retirer, puis choisissez la bonne version.' });
+      unChip.addEventListener('click', () => t.clearUnassigned());
+      ctl.append(unChip);
+    } else {
+      mark = null;
+      cb = h('input', { type: 'checkbox', class: 'cb', 'aria-label': `Je possède ${name} (n° ${card.localId})` });
+      cb.addEventListener('change', () => t.set(null, cb.checked ? 1 : 0));
+      el.append(cb);
+      qv = h('span', { class: 'qv', 'aria-live': 'polite' }, '1');
+      minus = h('button', { type: 'button', class: 'qb', 'aria-label': `Un exemplaire de moins de ${name}` }, '−');
+      plus = h('button', { type: 'button', class: 'qb', 'aria-label': `Un exemplaire de plus de ${name}` }, '+');
+      minus.addEventListener('click', () => t.set(null, Math.max(1, qtyTotal(mine[id]) - 1)));
+      plus.addEventListener('click', () => t.set(null, Math.min(MAXQ, qtyTotal(mine[id]) + 1)));
+      ctl.append(h('div', { class: 'qty' }, minus, qv, plus));
+    }
+  }
+  function qtyOfKey(k) { const v = mine[id]; return isMulti(v) ? (v[k] || 0) : 0; }
+  function sync() {
+    const v = mine[id], total = qtyTotal(v), mx = qtyMax(v);
+    el.classList.toggle('own', total > 0);
+    dbl.textContent = '×' + mx; dbl.hidden = mx < 2;
+    if (cb) {
+      cb.checked = total > 0; qv.textContent = String(total || 1);
+      minus.disabled = total <= 1; plus.disabled = total >= MAXQ;
+    } else {
+      mark.classList.toggle('on', total > 0);
+      for (const [vr, c] of chips) { const q = qtyOfKey(vr.key); c.setAttribute('aria-pressed', String(q > 0)); c.textContent = q >= 2 ? `${vr.label} ×${q}` : vr.label; }
+      const un = isMulti(v) ? (v._ || 0) : (v | 0);
+      unChip.hidden = un <= 0; unChip.textContent = `Version ? ×${un}`;
+    }
+  }
+  build(); sync();
+  return t;
 }
 
 /* Carte en lecture seule (comparaison) */
-function viewTile(card, qty) {
+function viewTile(card, qty, zoom) {
   const name = card.name || '#' + card.localId;
-  const media = h('div', { class: 'media' });
   const badge = qty > 1 ? h('span', { class: 'dbl' }, '×' + qty) : null;
-  const placeholder = () => { media.classList.add('noimg'); media.replaceChildren(...[placeholderContent(name), badge].filter(Boolean)); };
-  if (card.image) media.append(lazyImg(card.image + '/low.webp', name, placeholder)); else placeholder();
-  if (badge && card.image) media.append(badge);
+  const { media } = mediaButton(card, name, zoom, badge);
   return h('div', { class: 'card view' }, media, h('span', { class: 'num' }, '#' + card.localId), h('span', { class: 'nm' }, name));
+}
+
+/* ---------- Agrandissement d'une carte ---------- */
+let lb = null;
+function closeLightbox() {
+  if (!lb) return;
+  document.removeEventListener('keydown', lb.onKey);
+  lb.el.remove(); document.documentElement.classList.remove('lb-open');
+  const f = lb.opener; lb = null;
+  try { f && f.focus({ preventScroll: true }); } catch { /* ignoré */ }
+}
+// items : cartes (tuiles de la grille, ou { card, name, setName } en lecture seule) ; index : celle à afficher
+function openLightbox(items, index, L) {
+  closeLightbox();
+  let i = index;
+  const readonly = !items[0] || !('mine' in items[0]);
+  const img = h('img', { class: 'lb-img', alt: '', draggable: 'false' });
+  const stageBox = h('div', { class: 'lb-stage' });
+  const nameEl = h('h2', { class: 'lb-name' }), subEl = h('p', { class: 'lb-sub' }), rarEl = h('p', { class: 'lb-rar' }), varsEl = h('div', { class: 'lb-vars' });
+  const prev = h('button', { type: 'button', class: 'lb-nav prev', 'aria-label': 'Carte précédente' }, '‹');
+  const next = h('button', { type: 'button', class: 'lb-nav next', 'aria-label': 'Carte suivante' }, '›');
+  const close = h('button', { type: 'button', class: 'lb-close', 'aria-label': 'Fermer l’agrandissement' }, '✕');
+  const el = h('div', { class: 'lb', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Carte agrandie' },
+    close, stageBox, h('div', { class: 'lb-info' }, nameEl, subEl, rarEl, varsEl));
+  stageBox.append(prev, img, next);
+  const opener = document.activeElement;
+
+  const infoOf = (it) => (it.info !== undefined ? it.info : it._info) || null;
+  function qtyRow(label, q, onSet, opts = {}) {
+    const m = h('button', { type: 'button', class: 'qb', 'aria-label': `Un de moins : ${label}`, disabled: q <= 0, onclick: () => onSet(Math.max(0, q - 1)) }, '−');
+    const p = h('button', { type: 'button', class: 'qb', 'aria-label': `Un de plus : ${label}`, disabled: q >= MAXQ || opts.noPlus, onclick: () => onSet(Math.min(MAXQ, q + 1)) }, '+');
+    return h('div', { class: 'vrow' + (q > 0 ? ' on' : '') }, h('span', { class: 'vl' }, label), h('div', { class: 'qty vq' }, m, h('span', { class: 'qv' }, String(q)), p));
+  }
+  function renderVars() {
+    const it = items[i], info = infoOf(it);
+    varsEl.replaceChildren();
+    if (readonly) {
+      if (info && info.vars.length) varsEl.append(h('p', { class: 'lb-help' }, 'Versions existantes : ' + info.vars.map((v) => v.label).join(' · ')));
+      return;
+    }
+    const v = it.value;
+    if (hasVersions(info)) {
+      varsEl.append(h('p', { class: 'lb-help' }, 'Quantité possédée pour chaque version :'));
+      for (const vr of info.vars) {
+        const q = isMulti(v) ? (v[vr.key] || 0) : 0;
+        varsEl.append(qtyRow(vr.label, q, (n) => { it.set(vr.key, n); renderVars(); }));
+      }
+      const un = isMulti(v) ? (v._ || 0) : (v | 0);
+      if (un > 0) {
+        varsEl.append(qtyRow('Version non précisée (ancienne coche)', un, (n) => { if (n <= 0) it.clearUnassigned(); else it.set('_', n); renderVars(); }, { noPlus: true }));
+        varsEl.append(h('p', { class: 'lb-help' }, 'Retirez-la, puis ajoutez la bonne version ci-dessus.'));
+      }
+    } else {
+      varsEl.append(qtyRow('Exemplaires', qtyTotal(v), (n) => { it.set(null, n); renderVars(); }));
+    }
+  }
+  function show() {
+    const it = items[i], c = it.card, info = infoOf(it);
+    nameEl.textContent = it.name;
+    subEl.textContent = `#${c.localId} · ${it.setName || ''} · ${i + 1}/${items.length}`;
+    rarEl.textContent = info && info.rar ? `Rareté : ${info.rar}` : '';
+    rarEl.hidden = !(info && info.rar);
+    img.alt = it.name; img.classList.remove('ok'); img.removeAttribute('src'); stageBox.classList.remove('noimg');
+    stageBox.querySelector('.lb-ph')?.remove();
+    if (c.image) {
+      img.src = c.image + '/low.webp';
+      const hi = new Image(); hi.onload = () => { if (items[i] === it) { img.src = hi.src; } }; hi.src = c.image + '/high.webp';
+      img.onload = () => img.classList.add('ok');
+      img.onerror = () => { if (!stageBox.querySelector('.lb-ph')) { img.classList.remove('ok'); stageBox.append(h('div', { class: 'lb-ph' }, placeholderContent(it.name))); } };
+    } else stageBox.append(h('div', { class: 'lb-ph' }, placeholderContent(it.name)));
+    prev.hidden = items.length < 2; next.hidden = items.length < 2;
+    renderVars();
+    if (!info && L === 'fr') {      // version / rareté absentes de l'instantané : demande en direct
+      fetchCardInfo(L, c.id).then((got) => { if (it.setInfo) it.setInfo(got); else it._info = got; if (items[i] === it && lb) { rarEl.textContent = got.rar ? `Rareté : ${got.rar}` : ''; rarEl.hidden = !got.rar; renderVars(); } }).catch(() => {});
+    }
+  }
+  const go2 = (d) => { if (items.length < 2) return; i = (i + d + items.length) % items.length; show(); };
+  prev.addEventListener('click', () => go2(-1)); next.addEventListener('click', () => go2(1));
+  close.addEventListener('click', closeLightbox);
+  el.addEventListener('click', (e) => { if (e.target === el || e.target === stageBox) closeLightbox(); });
+  const onKey = (e) => { if (e.key === 'Escape') closeLightbox(); else if (e.key === 'ArrowLeft') go2(-1); else if (e.key === 'ArrowRight') go2(1); };
+  document.addEventListener('keydown', onKey);
+  let x0 = null;
+  stageBox.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+  stageBox.addEventListener('touchend', (e) => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 55) go2(dx < 0 ? 1 : -1); }, { passive: true });
+  lb = { el, onKey, opener };
+  document.body.append(el); document.documentElement.classList.add('lb-open');
+  show(); try { close.focus({ preventScroll: true }); } catch { /* ignoré */ }
 }
 
 /* ---------- Fenêtres ---------- */
@@ -604,7 +895,7 @@ function applyImport(incoming, mode) {
   else {
     for (const l of STORAGE_LANGS) for (const [sid, m] of Object.entries(incoming[l])) {
       const cur = owned[l][sid] || (owned[l][sid] = nullObj());
-      for (const [id, qn] of Object.entries(m)) cur[id] = Math.max(cur[id] || 0, qn);
+      for (const [id, qn] of Object.entries(m)) cur[id] = mergeQty(cur[id], qn);
     }
   }
   saveOwned(); closeSheet(); toast(mode === 'replace' ? 'Collection remplacée ✔︎' : 'Collection fusionnée ✔︎'); route();
@@ -867,7 +1158,7 @@ async function showCompare(fid, L, my) {
     const mi = owned[L][sid] || nullObj(), th = f.owned[L][sid] || nullObj();
     const A = Object.keys(mi).filter((id) => !(id in th));
     const B = Object.keys(th).filter((id) => !(id in mi));
-    const D = A.filter((id) => mi[id] >= 2);
+    const D = A.filter((id) => qtyMax(mi[id]) >= 2);
     const union = new Set([...Object.keys(mi), ...Object.keys(th)]).size;
     const total = info.get(sid)?.cardCount?.total ?? 0;
     per.set(sid, { sid, mi, th, A, B, D, Cn: Math.max(0, total - union) });
@@ -945,6 +1236,12 @@ async function showCompare(fid, L, my) {
     const byId = new Map(cards.map((c) => [c.id, c]));
     const metaOf = (id) => (f.meta[L]?.[p.sid]?.[id]) || null;
     const fallback = (id) => { const m = metaOf(id); return { id, localId: m ? m[0] : id.slice(p.sid.length + 1), name: m ? m[1] : '' }; };
+    const items = [];   // agrandissement (lecture seule) : mêmes cartes que la grille
+    const mk = (card, q) => {
+      const it = { card, name: card.name || '#' + card.localId, setName: setName(p.sid) };
+      const idx = items.push(it) - 1;
+      return viewTile(card, q, () => openLightbox(items, idx, L));
+    };
     const notes = [];
     if (failed) notes.push(h('div', { class: 'note warn' }, 'Impossible de charger les images de cette extension (connexion ?). Les cartes sont listées par numéro.'));
     else if (!cards.length) notes.push(h('div', { class: 'note' }, 'TCGdex ne fournit pas les cartes de cette extension : pas d’images ni de noms.'));
@@ -952,14 +1249,14 @@ async function showCompare(fid, L, my) {
     if (myTab === 'C') {
       const known = new Set([...Object.keys(p.mi), ...Object.keys(p.th)]);
       const rest = cards.filter((c) => !known.has(c.id));
-      tiles = rest.map((c) => viewTile(c, 0));
+      tiles = rest.map((c) => mk(c, 0));
       if (!cards.length) notes.push(h('div', { class: 'note' }, `D’après le total annoncé, il reste environ ${plural(p.Cn, 'carte', 'cartes')} que personne n’a, mais la liste détaillée est indisponible.`));
       else if (cards.length !== rest.length + known.size && rest.length !== p.Cn) notes.push(h('div', { class: 'note' }, `TCGdex ne fournit que ${cards.length} cartes pour cette extension : la liste peut différer du compteur (${p.Cn}).`));
     } else {
       const idsList = myTab === 'A' ? p.A : myTab === 'B' ? p.B : p.D;
-      const qtyOf = (id) => (myTab === 'B' ? p.th[id] : p.mi[id]);
+      const qtyOf = (id) => qtyTotal(myTab === 'B' ? p.th[id] : p.mi[id]);
       const pos = new Map(cards.map((c, i) => [c.id, i]));
-      tiles = idsList.slice().sort((a, b) => (pos.get(a) ?? 1e9) - (pos.get(b) ?? 1e9)).map((id) => viewTile(byId.get(id) || fallback(id), qtyOf(id)));
+      tiles = idsList.slice().sort((a, b) => (pos.get(a) ?? 1e9) - (pos.get(b) ?? 1e9)).map((id) => mk(byId.get(id) || fallback(id), qtyOf(id)));
     }
     return h('div', { class: 'part-block' },
       titled && h('h3', { class: 'sub' }, `${setName(p.sid)} · ${cnt(myTab, p).toLocaleString('fr-FR')}`),
