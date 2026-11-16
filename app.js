@@ -16,6 +16,7 @@ const K = {
   owned2: 'cartes.v2',      // format actuel (identifiant → quantité)
   lang: 'cartes.lang', cov: 'cartes.cov', exp: 'cartes.lastExport', tip: 'cartes.tipHidden', order: 'cartes.order',
   friends: 'cartes.friends.v1', pseudo: 'cartes.pseudo',
+  splash: 'cartes.splash', // 'off' = écran d'ouverture désactivé
 };
 const BACKUP_VERSION = 2;   // sauvegarde personnelle
 const SHARE_VERSION = 1;    // fichier de partage entre amis
@@ -291,9 +292,10 @@ async function showList(my) {
   const L = lang;
   const q = h('input', { class: 'search', type: 'search', placeholder: 'Rechercher une extension…', 'aria-label': 'Rechercher une extension', enterkeyhint: 'search', autocomplete: 'off' });
   const top = h('header', { class: 'top' },
-    h('div', { class: 'row' }, h('h1', {}, 'Mes cartes Pokémon'),
+    h('div', { class: 'row' }, h('h1', {}, 'Pijakollection'),
       h('button', { class: 'iconbtn', type: 'button', onclick: () => { location.hash = '#amis'; }, 'aria-label': 'Amis : partager et comparer' }, '👥 Amis'),
-      h('button', { class: 'iconbtn', type: 'button', onclick: openBackup, 'aria-label': 'Sauvegarde et restauration', title: 'Sauvegarde' }, '💾')),
+      h('button', { class: 'iconbtn', type: 'button', onclick: openBackup, 'aria-label': 'Sauvegarde et restauration', title: 'Sauvegarde' }, '💾'),
+      h('button', { class: 'iconbtn', type: 'button', onclick: openSettings, 'aria-label': 'Réglages', title: 'Réglages' }, '⚙️')),
     langSwitch(L, (id) => { listScroll = 0; go(id); }), q);
   const main = h('main', {}, spinner());
   $app.replaceChildren(top, main);
@@ -976,6 +978,58 @@ async function showCompare(fid, L, my) {
   render();
 }
 
+/* ---------- Écran d'ouverture (au lancement seulement, désactivable) ---------- */
+const splash = document.getElementById('splash');
+const splashOn = () => store.get(K.splash) !== 'off';
+let splashBusy = false, splashDownAt = 0, splashTimer;
+
+function hideSplash() {
+  clearTimeout(splashTimer);
+  splash.classList.add('gone'); splash.classList.remove('leaving', 'pressed'); splash.setAttribute('aria-hidden', 'true');
+  splashBusy = false;
+}
+function showSplash() { // « Revoir l'écran d'ouverture » depuis les réglages
+  clearTimeout(splashTimer);
+  splash.classList.remove('gone', 'leaving', 'pressed'); splash.removeAttribute('aria-hidden'); splashBusy = false;
+  try { splash.focus({ preventScroll: true }); } catch { /* ignoré */ }
+}
+function enterApp() {
+  if (splashBusy || splash.classList.contains('gone')) return;
+  splashBusy = true;
+  const wait = Math.max(0, 140 - (performance.now() - splashDownAt)); // l'animation de pression reste visible même sur un appui bref
+  splash.classList.add('pressed');
+  setTimeout(() => {
+    splash.classList.remove('pressed'); splash.classList.add('leaving');
+    splashTimer = setTimeout(hideSplash, 950);
+  }, wait);
+}
+function splashSetup() {
+  if (!splash) return;
+  const press = (on) => { if (!splashBusy) splash.classList.toggle('pressed', on); };
+  splash.addEventListener('pointerdown', () => { splashDownAt = performance.now(); press(true); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach((t) => splash.addEventListener(t, () => press(false)));
+  splash.addEventListener('click', enterApp);
+  splash.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enterApp(); } });
+  if (splashOn()) { try { splash.focus({ preventScroll: true }); } catch { /* ignoré */ } } else splash.classList.add('gone');
+}
+
+/* ---------- Réglages ---------- */
+function openSettings() {
+  const sw = h('input', { type: 'checkbox', role: 'switch', 'aria-label': 'Afficher l’écran d’ouverture au lancement' });
+  sw.checked = splashOn();
+  sw.addEventListener('change', () => {
+    store.set(K.splash, sw.checked ? 'on' : 'off');
+    document.documentElement.classList.toggle('no-splash', !sw.checked);
+    toast(sw.checked ? 'Écran d’ouverture activé' : 'Écran d’ouverture désactivé');
+  });
+  openSheet(
+    h('h2', {}, 'Réglages'),
+    h('label', { class: 'switch' },
+      h('span', {}, h('span', { class: 'st' }, 'Écran d’ouverture'), h('span', { class: 'sd' }, 'Affiche le logo et « Touchez pour entrer » à chaque lancement de l’application.')), sw),
+    h('button', { class: 'btn sec', type: 'button', onclick: () => { closeSheet(); document.documentElement.classList.remove('no-splash'); showSplash(); } }, '▶︎ Revoir l’écran d’ouverture'),
+    h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
+}
+
 /* ---------- Démarrage ---------- */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   const hadController = !!navigator.serviceWorker.controller;
@@ -983,4 +1037,6 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) toast('Mise à jour installée : rechargez la page pour l’utiliser.'); });
 }
 if (!location.hash) history.replaceState(null, '', '#' + lang);
+splashSetup();
 route();
+window.__appReady = true;

@@ -1,17 +1,16 @@
 {
-  "name": "Mes cartes Pokémon",
-  "short_name": "Mes cartes",
-  "description": "Ma collection de cartes Pokémon en français, chinois simplifié et japonais.",
+  "name": "Pijakollection",
+  "short_name": "Pijakollection",
+  "description": "Pijakollection : ma collection de cartes Pokémon, avec partage et comparaison entre amis.",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0f1b2d",
+  "background_color": "#1f2d5a",
   "theme_color": "#1d3557",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ]
 }
