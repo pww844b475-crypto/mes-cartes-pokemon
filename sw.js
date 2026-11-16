@@ -1,12 +1,12 @@
 'use strict';
 // Service worker : l'application s'ouvre hors ligne ; les données TCGdex déjà consultées aussi.
-const SHELL = 'shell-v1';
+const SHELL = 'shell-v2';
 const API = 'api-v1';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'coverage.json', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(FILES.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
