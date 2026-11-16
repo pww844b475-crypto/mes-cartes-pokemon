@@ -2,11 +2,12 @@
 /* Mes cartes Pokémon — application statique, données TCGdex (api.tcgdex.net). */
 
 const API = 'https://api.tcgdex.net/v2';
+// Langues proposées dans l'interface : français seulement. Le stockage garde aussi zh-cn et ja
+// (cases déjà cochées) pour ne rien perdre : elles sont simplement masquées et conservées dans les sauvegardes.
 const LANGS = [
   { id: 'fr', name: 'Français', native: 'Français', flag: '🇫🇷' },
-  { id: 'zh-cn', name: 'Chinois simplifié', short: 'Chinois', native: '简体中文', flag: '🇨🇳' },
-  { id: 'ja', name: 'Japonais', short: 'Japonais', native: '日本語', flag: '🇯🇵' },
 ];
+const STORAGE_LANGS = ['fr', 'zh-cn', 'ja'];
 const LANG_IDS = LANGS.map((l) => l.id);
 const langLabel = (id) => (LANGS.find((x) => x.id === id)?.name || id).toLowerCase();
 const langAttr = (id) => (id === 'zh-cn' ? 'zh-CN' : id);
@@ -62,7 +63,7 @@ function emptyOwned() { return { fr: nullObj(), 'zh-cn': nullObj(), ja: nullObj(
 function sanitizeOwned(o) {
   const r = emptyOwned();
   let budget = 200000;
-  for (const l of LANG_IDS) {
+  for (const l of STORAGE_LANGS) {
     const sets = o && typeof o === 'object' ? o[l] : null;
     if (!sets || typeof sets !== 'object') continue;
     for (const [sid, val] of Object.entries(sets)) {
@@ -85,7 +86,7 @@ function sanitizeOwned(o) {
 function sanitizeMeta(o) {
   const r = {};
   if (!o || typeof o !== 'object') return r;
-  for (const l of LANG_IDS) {
+  for (const l of STORAGE_LANGS) {
     const sets = o[l];
     if (!sets || typeof sets !== 'object') continue;
     for (const [sid, cards] of Object.entries(sets)) {
@@ -151,8 +152,8 @@ const snapReady = fetch('coverage.json').then((r) => (r.ok ? r.json() : {})).the
 
 function coverage(l, id) { return (live[l] && live[l][id]) || (snapshot[l] && snapshot[l][id]) || null; }
 function rememberCoverage(l, id, n, img) { (live[l] ||= {})[id] = [n, img]; store.set(K.cov, JSON.stringify(live)); }
-function dataStatus(l, set) {
-  const c = coverage(l, set.id);
+function dataStatus(l, set, cov) {
+  const c = cov || coverage(l, set.id);
   if (!c) return null;
   const total = set.cardCount?.total ?? 0;
   const [n, img] = c;
@@ -227,7 +228,8 @@ function parseHash() {
   try { parts = decodeURIComponent(location.hash.slice(1)).split('/'); } catch { parts = []; }
   if (parts[0] === 'amis') return { view: 'friends' };
   if (parts[0] === 'comparer') return { view: 'compare', fid: parts[1] || '', lang: LANG_IDS.includes(parts[2]) ? parts[2] : lang };
-  return { view: 'sets', lang: LANG_IDS.includes(parts[0]) ? parts[0] : null, set: parts[1] || null };
+  if (!LANG_IDS.includes(parts[0])) return { view: 'sets', lang: null, set: null }; // ancien lien (#ja, #zh-cn…) → liste française
+  return { view: 'sets', lang: parts[0], set: parts[1] || null };
 }
 function go(l, s) { location.hash = '#' + l + (s ? '/' + encodeURIComponent(s) : ''); }
 
@@ -244,6 +246,7 @@ window.addEventListener('hashchange', route);
 
 /* ---------- Éléments communs ---------- */
 function langSwitch(current, onPick) {
+  if (LANGS.length < 2) return null; // une seule langue : pas de sélecteur
   return h('div', { class: 'seg', role: 'group', 'aria-label': 'Langue' },
     LANGS.map((l) => h('button', { type: 'button', 'aria-pressed': String(l.id === current), lang: langAttr(l.id), 'aria-label': l.name, onclick: () => onPick(l.id) },
       h('span', { class: 'ln' }, `${l.flag} ${l.short || l.name}`), l.id === 'fr' ? null : h('span', { class: 'ls' }, l.native))));
@@ -259,6 +262,28 @@ function privacyNote(extra) {
   return h('div', { class: 'note priv' }, h('b', {}, '🔒 Vos données restent chez vous. '),
     'Les données de vos amis sont stockées uniquement sur cet appareil et ne sont envoyées nulle part : cette application n’a ni serveur ni compte. ',
     'Seules les listes et images publiques de cartes sont demandées à TCGdex. ', extra || '');
+}
+
+/* ---------- Regroupement : collections classiques et galeries de dresseurs ---------- */
+// enfant → extension parente (TCGdex fr). Ces cartes font partie de la même collection que leur parent.
+// Les cases cochées restent enregistrées sous l'identifiant d'origine de chaque carte : rien à migrer.
+const MERGE_INTO = {
+  'cel25cc': 'cel25', '30th-c': '30th',
+  'swsh9tg': 'swsh9', 'swsh10tg': 'swsh10', 'swsh11tg': 'swsh11', 'swsh12tg': 'swsh12', 'swsh12.5gg': 'swsh12.5',
+};
+const parentOf = (sid, idSet) => (MERGE_INTO[sid] && idSet.has(MERGE_INTO[sid]) ? MERGE_INTO[sid] : sid);
+function buildGroups(sets) {
+  const ids = new Set(sets.map((s) => s.id));
+  const groups = new Map();
+  for (const s of sets) if (parentOf(s.id, ids) === s.id) groups.set(s.id, { id: s.id, set: s, members: [s] });
+  for (const s of sets) { const p = parentOf(s.id, ids); if (p !== s.id) groups.get(p).members.push(s); }
+  return groups;
+}
+const groupTotal = (g) => g.members.reduce((n, m) => n + (m.cardCount?.total ?? 0), 0);
+function groupStatus(L, g) {
+  let n = 0, img = 0;
+  for (const m of g.members) { const c = coverage(L, m.id); if (!c) return null; n += c[0]; img += c[1]; }
+  return dataStatus(L, { cardCount: { total: groupTotal(g) } }, [n, img]);
 }
 
 /* ---------- Vue : liste des extensions ---------- */
@@ -280,19 +305,22 @@ async function showList(my) {
   }
   if (my !== tok) return;
 
+  const groups = [...buildGroups(sets).values()];
+  const linked = sets.length - groups.length;
   const reversed = store.get(K.order) === 'asc';
-  const ordered = reversed ? sets.slice() : sets.slice().reverse();
+  const ordered = reversed ? groups.slice() : groups.slice().reverse();
 
   const stat = { empty: 0, partial: 0, noimg: 0 };
-  for (const s of sets) {
-    const st = dataStatus(L, s);
+  for (const g of groups) {
+    const st = groupStatus(L, g);
     if (st) { if (st.lvl === 'bad') stat.empty++; else if (st.lvl === 'warn') stat.partial++; else stat.noimg++; }
   }
   const incomplete = stat.empty + stat.partial;
 
-  const items = ordered.map((s) => {
-    const total = s.cardCount?.total ?? 0, have = ownedCount(L, s.id), st = dataStatus(L, s);
-    const dbl = doublesCount(owned[L][s.id]);
+  const items = ordered.map((g) => {
+    const s = g.set, total = groupTotal(g), st = groupStatus(L, g);
+    const have = g.members.reduce((n, m) => n + ownedCount(L, m.id), 0);
+    const dbl = g.members.reduce((n, m) => n + doublesCount(owned[L][m.id]), 0);
     const logoUrl = s.logo ? s.logo + '.webp' : s.symbol ? s.symbol + '.webp' : null;
     const logo = h('div', { class: 'logo' });
     const ph = () => logo.replaceChildren(h('span', { class: 'ph' }, s.abbreviation?.official || s.id));
@@ -302,12 +330,13 @@ async function showList(my) {
       h('div', { class: 'info' },
         h('div', { class: 'name' }, s.name || s.id),
         h('div', { class: 'sid' }, s.id),
+        g.members.length > 1 && h('div', { class: 'sid' }, 'Inclut : ' + g.members.slice(1).map((m) => m.name || m.id).join(', ')),
         h('div', { class: 'count' }, h('b', {}, plural(have, 'carte possédée', 'cartes possédées')), ` sur ${total.toLocaleString('fr-FR')}`, dbl ? ` · ${plural(dbl, 'double', 'doubles')}` : ''),
         h('div', { class: 'bar', 'aria-hidden': 'true' }, h('i', { style: `width:${total ? Math.min(100, Math.round(have / total * 100)) : 0}%` })),
         st && h('span', { class: 'badge ' + st.lvl }, st.txt)),
       h('span', { class: 'chev', 'aria-hidden': 'true' }, '›'));
     const li = h('li', {}, btn);
-    li._name = norm(`${s.name} ${s.id}`);
+    li._name = norm(g.members.map((m) => `${m.name} ${m.id}`).join(' '));
     return li;
   });
   const ul = h('ul', { class: 'sets' }, items);
@@ -315,11 +344,12 @@ async function showList(my) {
 
   const notes = [];
   notes.push(h('div', { class: 'note' },
-    h('b', {}, `${plural(sets.length, 'extension', 'extensions')} en ${langLabel(L)}`),
+    h('b', {}, `${plural(groups.length, 'extension', 'extensions')} en ${langLabel(L)}`),
     ` · ${plural(ownedTotal(L), 'carte possédée', 'cartes possédées')}. `,
     incomplete || stat.noimg
-      ? `Données TCGdex incomplètes pour cette langue : ${incomplete ? plural(incomplete, 'extension', 'extensions') + ' sans toutes les cartes' : ''}${incomplete && stat.noimg ? ', ' : ''}${stat.noimg ? plural(stat.noimg, 'extension', 'extensions') + ' sans toutes les images' : ''}. Elles sont signalées en dessous.`
+      ? `Données TCGdex incomplètes : ${incomplete ? plural(incomplete, 'extension', 'extensions') + ' sans toutes les cartes' : ''}${incomplete && stat.noimg ? ', ' : ''}${stat.noimg ? plural(stat.noimg, 'extension', 'extensions') + ' sans toutes les images' : ''}. Elles sont signalées en dessous.`
       : 'Aucun défaut de données connu.',
+    linked ? ` ${plural(linked, 'extension liée est regroupée', 'extensions liées sont regroupées')} avec son extension (collections classiques, galeries de dresseurs).` : '',
     hidden ? ` ${plural(hidden, 'extension', 'extensions')} du jeu en ligne (Pokémon Pocket) ${hidden > 1 ? 'sont masquées' : 'est masquée'}.` : '',
     h('button', { type: 'button', onclick: () => { store.set(K.order, reversed ? 'desc' : 'asc'); showList(tok); } }, '↕ Inverser l’ordre')));
   if (isIOS && !isStandalone && !store.get(K.tip)) {
@@ -337,7 +367,7 @@ async function showList(my) {
   if (listScroll) requestAnimationFrame(() => scrollTo(0, listScroll));
 }
 
-/* ---------- Vue : cartes d'une extension ---------- */
+/* ---------- Vue : cartes d'une extension (avec ses extensions liées) ---------- */
 async function showSet(L, setId, my) {
   const back = h('button', { class: 'iconbtn', type: 'button', onclick: () => go(L), 'aria-label': 'Retour aux extensions' }, '‹ Extensions');
   const title = h('h1', {}, setId);
@@ -347,72 +377,99 @@ async function showSet(L, setId, my) {
   $app.replaceChildren(top, main);
   scrollTo(0, 0);
 
-  let set;
-  try { set = await api(`/${L}/sets/${encodeURIComponent(setId)}`); } catch (e) {
-    if (my !== tok) return;
-    const missing = /HTTP 404/.test(e.message || '');
+  let sets = [];
+  try { ({ sets } = await loadSets(L)); } catch { /* liste indisponible : on tente l'extension seule */ }
+  if (my !== tok) return;
+  const idSet = new Set(sets.map((s) => s.id));
+  const pid = parentOf(setId, idSet);
+  if (pid !== setId) { history.replaceState(null, '', '#' + L + '/' + encodeURIComponent(pid)); setId = pid; } // ancien lien vers une extension liée
+  const group = buildGroups(sets).get(setId);
+  const members = group ? group.members : [{ id: setId }];
+
+  const results = await Promise.allSettled(members.map((m) => api(`/${L}/sets/${encodeURIComponent(m.id)}`)));
+  if (my !== tok) return;
+  if (results[0].status === 'rejected') {
+    const e = results[0].reason;
+    const missing = /HTTP 404/.test(e?.message || '');
     main.replaceChildren(missing
       ? h('div', { class: 'note bad' }, h('b', {}, 'Extension introuvable. '), `TCGdex ne connaît pas « ${setId} » en ${langLabel(L)}.`)
-      : errorBox('Vérifiez votre connexion. ' + (e.message || ''), () => showSet(L, setId, tok)));
+      : errorBox('Vérifiez votre connexion. ' + (e?.message || ''), () => showSet(L, setId, tok)));
     return;
   }
-  if (my !== tok) return;
 
-  const cards = Array.isArray(set.cards) ? set.cards : [];
-  const total = set.cardCount?.total ?? cards.length;
-  const withImg = cards.filter((c) => c.image).length;
-  rememberCoverage(L, setId, cards.length, withImg);
-  title.textContent = set.name || setId;
+  const parts = members.map((m, i) => {
+    const data = results[i].status === 'fulfilled' ? results[i].value : null;
+    const cards = Array.isArray(data?.cards) ? data.cards : [];
+    if (data) rememberCoverage(L, m.id, cards.length, cards.filter((c) => c.image).length);
+    return { id: m.id, name: data?.name || m.name || m.id, data, cards, total: data?.cardCount?.total ?? m.cardCount?.total ?? cards.length, mine: owned[L][m.id] || nullObj() };
+  });
+  const allCards = parts.reduce((n, p) => n + p.cards.length, 0);
+  const allTotal = parts.reduce((n, p) => n + p.total, 0);
+  const withImg = parts.reduce((n, p) => n + p.cards.filter((c) => c.image).length, 0);
+  title.textContent = parts[0].name;
   title.setAttribute('lang', langAttr(L));
 
-  const mine = owned[L][setId] || nullObj();
   const counter = h('span', {});
   const bar = h('i', {});
   const progress = h('div', { class: 'progress' }, h('div', { class: 'count' }, counter), h('div', { class: 'bar', 'aria-hidden': 'true' }, bar));
   const refresh = () => {
-    const n = countKeys(mine), d = doublesCount(mine);
-    counter.replaceChildren(h('b', {}, plural(n, 'carte possédée', 'cartes possédées')), ` sur ${total.toLocaleString('fr-FR')}`, d ? ` · dont ${plural(d, 'double', 'doubles')}` : '');
-    bar.style.width = (total ? Math.min(100, Math.round(n / total * 100)) : 0) + '%';
+    const n = parts.reduce((s, p) => s + countKeys(p.mine), 0), d = parts.reduce((s, p) => s + doublesCount(p.mine), 0);
+    counter.replaceChildren(h('b', {}, plural(n, 'carte possédée', 'cartes possédées')), ` sur ${allTotal.toLocaleString('fr-FR')}`, d ? ` · dont ${plural(d, 'double', 'doubles')}` : '');
+    bar.style.width = (allTotal ? Math.min(100, Math.round(n / allTotal * 100)) : 0) + '%';
   };
   refresh();
 
   const notes = [];
-  if (cards.length === 0) {
+  parts.forEach((p, i) => { if (i > 0 && !p.data) notes.push(h('div', { class: 'note warn' }, `Impossible de charger « ${p.name} » (connexion ?). Ses cartes ne sont pas affichées.`)); });
+  if (allCards === 0) {
     notes.push(h('div', { class: 'note bad' }, h('b', {}, 'Cartes indisponibles. '),
-      `TCGdex annonce ${plural(total, 'carte', 'cartes')} pour cette extension en ${langLabel(L)}, mais n’en fournit aucune. Vous ne pouvez donc pas les cocher ici pour l’instant. Essayez une autre langue ou revenez plus tard.`));
+      `TCGdex annonce ${plural(allTotal, 'carte', 'cartes')} pour cette extension en ${langLabel(L)}, mais n’en fournit aucune. Vous ne pouvez donc pas les cocher ici pour l’instant. Revenez plus tard.`));
   } else {
-    if (cards.length < total) notes.push(h('div', { class: 'note warn' }, h('b', {}, 'Extension incomplète. '), `TCGdex ne fournit que ${cards.length} cartes sur ${total} annoncées.`));
+    if (allCards < allTotal) notes.push(h('div', { class: 'note warn' }, h('b', {}, 'Extension incomplète. '), `TCGdex ne fournit que ${allCards} cartes sur ${allTotal} annoncées.`));
     if (withImg === 0) notes.push(h('div', { class: 'note' }, h('b', {}, 'Pas d’images. '), 'TCGdex n’a aucune image pour cette extension ; les cartes sont listées par nom et numéro.'));
-    else if (withImg < cards.length) notes.push(h('div', { class: 'note' }, h('b', {}, 'Images partielles. '), `${withImg} cartes sur ${cards.length} ont une image.`));
+    else if (withImg < allCards) notes.push(h('div', { class: 'note' }, h('b', {}, 'Images partielles. '), `${withImg} cartes sur ${allCards} ont une image.`));
   }
 
   let filter = 'all';
-  const persist = () => {
-    if (countKeys(mine)) owned[L][setId] = mine; else delete owned[L][setId];
+  const persist = (part) => () => {
+    if (countKeys(part.mine)) owned[L][part.id] = part.mine; else delete owned[L][part.id];
     saveOwned(); refresh(); apply();
   };
-  const tiles = cards.map((c) => makeTile(c, mine, persist));
-  const grid = h('div', { class: 'cards' }, tiles.map((t) => t.el));
+  const tiles = [];
+  const sections = parts.map((part) => {
+    const pt = part.cards.map((c) => { const t = makeTile(c, part.mine, persist(part)); t.mine = part.mine; return t; });
+    tiles.push(...pt);
+    const el = h('section', { class: 'part' },
+      parts.length > 1 && h('h2', { class: 'part-h' }, `${part.name} · ${plural(part.cards.length || part.total, 'carte', 'cartes')}`),
+      parts.length > 1 && !part.cards.length && h('p', { class: 'empty' }, 'Cartes indisponibles pour cette partie.'),
+      pt.length ? h('div', { class: 'cards' }, pt.map((t) => t.el)) : null);
+    return { el, tiles: pt };
+  });
   const none = h('p', { class: 'empty', hidden: true }, 'Aucune carte ne correspond.');
 
   const FILTERS = [['all', 'Toutes'], ['own', 'Possédées'], ['miss', 'Manquantes'], ['dbl', 'Doubles']];
   const filterBtns = FILTERS.map(([k, label]) =>
     h('button', { type: 'button', 'aria-pressed': String(k === filter), onclick: () => { filter = k; filterBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(FILTERS[i][0] === k))); apply(); } }, label));
-  if (cards.length) top.append(h('div', { class: 'tools' }, h('div', { class: 'seg small' }, filterBtns)));
+  if (allCards) top.append(h('div', { class: 'tools' }, h('div', { class: 'seg small' }, filterBtns)));
 
   function apply() {
     const n = norm(q.value.trim()); let shown = 0;
-    for (const t of tiles) {
-      const qty = mine[t.card.id] || 0;
-      const byFilter = filter === 'all' || (filter === 'own' && qty > 0) || (filter === 'miss' && qty === 0) || (filter === 'dbl' && qty >= 2);
-      const ok = byFilter && (!n || t.text.includes(n));
-      t.el.hidden = !ok; if (ok) shown++;
+    for (const sec of sections) {
+      let secShown = 0;
+      for (const t of sec.tiles) {
+        const qty = t.mine[t.card.id] || 0;
+        const byFilter = filter === 'all' || (filter === 'own' && qty > 0) || (filter === 'miss' && qty === 0) || (filter === 'dbl' && qty >= 2);
+        const ok = byFilter && (!n || t.text.includes(n));
+        t.el.hidden = !ok; if (ok) secShown++;
+      }
+      shown += secShown;
+      if (sec.tiles.length) sec.el.hidden = secShown === 0; // une partie sans carte visible disparaît pendant un filtre
     }
-    none.hidden = shown > 0 || !cards.length;
+    none.hidden = shown > 0 || !allCards;
   }
   q.addEventListener('input', apply);
   apply();
-  main.replaceChildren(...notes, progress, cards.length ? grid : '', none);
+  main.replaceChildren(...notes, progress, ...sections.map((x) => x.el), none);
 }
 
 function placeholderContent(name) {
@@ -526,7 +583,7 @@ function readImport(file) {
     if (!Number.isInteger(v) || v < 1) return openBackup('Version de sauvegarde invalide : fichier ignoré.');
     if (v > BACKUP_VERSION) return openBackup(`Cette sauvegarde a été créée par une version plus récente de l’application (format ${v}, celle-ci comprend jusqu’au format ${BACKUP_VERSION}). Mettez l’application à jour, puis réessayez.`);
     const incoming = sanitizeOwned(data.owned);
-    const sum = LANG_IDS.reduce((s, l) => s + ownedIn(incoming, l), 0);
+    const sum = STORAGE_LANGS.reduce((s, l) => s + ownedIn(incoming, l), 0);
     if (!sum) return openBackup('La sauvegarde ne contient aucune carte.');
     openSheet(
       h('h2', {}, 'Importer cette sauvegarde ?'),
@@ -543,7 +600,7 @@ const ownedIn = (o, l) => Object.entries(o[l]).reduce((s, [sid, m]) => s + (isDi
 function applyImport(incoming, mode) {
   if (mode === 'replace') owned = incoming;
   else {
-    for (const l of LANG_IDS) for (const [sid, m] of Object.entries(incoming[l])) {
+    for (const l of STORAGE_LANGS) for (const [sid, m] of Object.entries(incoming[l])) {
       const cur = owned[l][sid] || (owned[l][sid] = nullObj());
       for (const [id, qn] of Object.entries(m)) cur[id] = Math.max(cur[id] || 0, qn);
     }
@@ -601,7 +658,7 @@ async function parseShare(input) {
   if (d.version > SHARE_VERSION) return { error: `Ce partage vient d’une version plus récente de l’application (format ${d.version} ; celle-ci comprend le format ${SHARE_VERSION}). Mettez l’application à jour, puis réimportez.` };
   if (!d.owned || typeof d.owned !== 'object') return { error: 'Le partage ne contient pas de liste de cartes.' };
   const ow = sanitizeOwned(d.owned);
-  if (!LANG_IDS.some((l) => ownedIn(ow, l))) return { error: 'Ce partage ne contient aucune carte cochée.' };
+  if (!LANG_IDS.some((l) => ownedIn(ow, l))) return { error: 'Ce partage ne contient aucune carte cochée en français.' };
   const date = typeof d.date === 'string' && !isNaN(new Date(d.date)) ? d.date : null;
   const pseudo = String(d.pseudo ?? '').trim().slice(0, 40);
   return { data: { pseudo, date, owned: ow, meta: sanitizeMeta(d.meta) } };
@@ -813,9 +870,18 @@ async function showCompare(fid, L, my) {
     const total = info.get(sid)?.cardCount?.total ?? 0;
     per.set(sid, { sid, mi, th, A, B, D, Cn: Math.max(0, total - union) });
   }
-  const sorted = [...per.values()].sort((a, b) => { const ia = order.indexOf(a.sid), ib = order.indexOf(b.sid); return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib); });
-  const countOf = (tab, p) => (tab === 'C' ? p.Cn : p[tab].length);
-  const sum = (tab) => sorted.reduce((s, p) => s + countOf(tab, p), 0);
+  const idSet = new Set(sets.map((s) => s.id));
+  const grouped = new Map();
+  for (const p of per.values()) {
+    const gid = parentOf(p.sid, idSet);
+    if (!grouped.has(gid)) grouped.set(gid, { sid: gid, parts: [] });
+    grouped.get(gid).parts.push(p);
+  }
+  for (const g of grouped.values()) g.parts.sort((a, b) => (b.sid === g.sid) - (a.sid === g.sid));
+  const sorted = [...grouped.values()].sort((a, b) => { const ia = order.indexOf(a.sid), ib = order.indexOf(b.sid); return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib); });
+  const cnt = (tab, p) => (tab === 'C' ? p.Cn : p[tab].length);
+  const countOf = (tab, g) => g.parts.reduce((s, p) => s + cnt(tab, p), 0);
+  const sum = (tab) => sorted.reduce((s, g) => s + countOf(tab, g), 0);
   const setName = (sid) => info.get(sid)?.name || sid;
 
   let tab = 'A', selSet = '*';
@@ -831,31 +897,31 @@ async function showCompare(fid, L, my) {
       tabBtns[k].setAttribute('aria-pressed', String(k === tab));
       tabBtns[k].replaceChildren(h('span', { class: 'tn' }, sum(k).toLocaleString('fr-FR')), h('span', { class: 'tl' }, CMP[k].short(f.name)));
     }
-    const rows = sorted.filter((p) => countOf(tab, p) > 0);
-    if (selSet !== '*' && !rows.some((p) => p.sid === selSet)) selSet = '*';
-    picker.replaceChildren(h('option', { value: '*' }, `Toutes les extensions (${rows.length})`), ...rows.map((p) => h('option', { value: p.sid }, `${setName(p.sid)} (${countOf(tab, p)})`)));
+    const rows = sorted.filter((g) => countOf(tab, g) > 0);
+    if (selSet !== '*' && !rows.some((g) => g.sid === selSet)) selSet = '*';
+    picker.replaceChildren(h('option', { value: '*' }, `Toutes les extensions (${rows.length})`), ...rows.map((g) => h('option', { value: g.sid }, `${setName(g.sid)} (${countOf(tab, g)})`)));
     picker.value = selSet;
-    const shown = selSet === '*' ? rows : rows.filter((p) => p.sid === selSet);
-    const n = shown.reduce((s, p) => s + countOf(tab, p), 0);
+    const shown = selSet === '*' ? rows : rows.filter((g) => g.sid === selSet);
+    const n = shown.reduce((s, g) => s + countOf(tab, g), 0);
     heading.textContent = `${CMP[tab].full(f.name)} : ${n.toLocaleString('fr-FR')}`;
     if (!rows.length) {
       body.replaceChildren(h('p', { class: 'empty' }, tab === 'C' ? 'Aucune carte restante à trouver dans les extensions connues.' : 'Aucune carte dans cette liste en ' + langLabel(L) + '.'));
       return;
     }
     const open = shown.length === 1;
-    body.replaceChildren(...shown.map((p) => section(p, open)));
+    body.replaceChildren(...shown.map((g) => section(g, open)));
   }
 
-  function section(p, open) {
-    const n = countOf(tab, p);
+  function section(g, open) {
+    const n = countOf(tab, g);
     const content = h('div', { class: 'sec-body', hidden: !open });
     const head = h('button', { type: 'button', class: 'sec-head', 'aria-expanded': String(open) },
-      h('span', { class: 'sn' }, setName(p.sid)), h('span', { class: 'sc' }, n.toLocaleString('fr-FR')), h('span', { class: 'chev', 'aria-hidden': 'true' }, open ? '⌄' : '›'));
+      h('span', { class: 'sn' }, setName(g.sid)), h('span', { class: 'sc' }, n.toLocaleString('fr-FR')), h('span', { class: 'chev', 'aria-hidden': 'true' }, open ? '⌄' : '›'));
     let loaded = false;
     const toggle = (force) => {
       const o = force ?? content.hidden;
       content.hidden = !o; head.setAttribute('aria-expanded', String(o)); head.lastChild.textContent = o ? '⌄' : '›';
-      if (o && !loaded) { loaded = true; fillSection(p, content); }
+      if (o && !loaded) { loaded = true; fillSection(g, content); }
     };
     head.addEventListener('click', () => toggle());
     const el = h('section', { class: 'sec' }, head, content);
@@ -863,12 +929,17 @@ async function showCompare(fid, L, my) {
     return el;
   }
 
-  async function fillSection(p, content) {
+  async function fillSection(g, content) {
     const myTab = tab;
     content.replaceChildren(spinner());
+    const blocks = await Promise.all(g.parts.filter((p) => cnt(myTab, p) > 0).map((p) => partBlock(p, myTab, g.parts.length > 1)));
+    if (my !== tok) return;
+    content.replaceChildren(...blocks);
+  }
+
+  async function partBlock(p, myTab, titled) {
     let cards = [], failed = false;
     try { cards = (await api(`/${L}/sets/${encodeURIComponent(p.sid)}`)).cards || []; } catch { failed = true; }
-    if (my !== tok) return;
     const byId = new Map(cards.map((c) => [c.id, c]));
     const metaOf = (id) => (f.meta[L]?.[p.sid]?.[id]) || null;
     const fallback = (id) => { const m = metaOf(id); return { id, localId: m ? m[0] : id.slice(p.sid.length + 1), name: m ? m[1] : '' }; };
@@ -888,17 +959,19 @@ async function showCompare(fid, L, my) {
       const pos = new Map(cards.map((c, i) => [c.id, i]));
       tiles = idsList.slice().sort((a, b) => (pos.get(a) ?? 1e9) - (pos.get(b) ?? 1e9)).map((id) => viewTile(byId.get(id) || fallback(id), qtyOf(id)));
     }
-    content.replaceChildren(...notes, tiles.length ? h('div', { class: 'cards' }, tiles) : h('p', { class: 'empty' }, 'Rien à afficher.'));
+    return h('div', { class: 'part-block' },
+      titled && h('h3', { class: 'sub' }, `${setName(p.sid)} · ${cnt(myTab, p).toLocaleString('fr-FR')}`),
+      ...notes, tiles.length ? h('div', { class: 'cards' }, tiles) : h('p', { class: 'empty' }, 'Rien à afficher.'));
   }
 
   picker.addEventListener('change', () => { selSet = picker.value; render(); });
 
   const fl = f.owned[L];
-  const friendLangCount = Object.values(fl).reduce((s, m) => s + countKeys(m), 0);
+  const friendLangCount = ownedIn(f.owned, L);
   main.replaceChildren(
     privacyNote(),
     h('p', { class: 'meta' }, `Données de ${f.name} : version du ${f.date ? fmtDate(f.date) : 'date inconnue'}, importée le ${f.imported ? fmtDate(f.imported) : '?'}. `, `En ${langLabel(L)}, ${f.name} a ${plural(friendLangCount, 'carte cochée', 'cartes cochées')} et vous ${plural(ownedTotal(L), 'carte', 'cartes')}.`),
-    friendLangCount === 0 ? h('div', { class: 'note warn' }, `${f.name} n’a aucune carte en ${langLabel(L)} dans sa dernière version : changez de langue ci-dessus ou importez une version à jour.`) : '',
+    friendLangCount === 0 ? h('div', { class: 'note warn' }, `${f.name} n’a aucune carte en ${langLabel(L)} dans sa dernière version : demandez-lui une version à jour.`) : '',
     tabs, h('label', { class: 'lbl' }, 'Extension', picker), heading, body);
   render();
 }

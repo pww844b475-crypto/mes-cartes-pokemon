@@ -2,7 +2,9 @@
 
 Application web installable (PWA) pour suivre sa collection de cartes Pokémon en **français**, **chinois simplifié** et **japonais**, avec les données et images de [TCGdex](https://tcgdex.dev).
 
-- Une case « je l'ai » par carte **et par langue** ; recherche par nom/numéro ; filtre possédées / manquantes.
+- Interface en **français uniquement** (les onglets chinois et japonais ont été retirés ; les cases déjà cochées dans ces langues restent stockées et dans les sauvegardes).
+- Les extensions du jeu en ligne (Pokémon Pocket) sont masquées. Les collections classiques (25 ans, 30 ans) et les galeries de dresseurs (swsh9 à swsh12.5) sont regroupées avec leur extension : voir `MERGE_INTO` dans `app.js`.
+- Une case « je l'ai » par carte ; recherche par nom/numéro ; filtre possédées / manquantes.
 - Compteur « X cartes possédées sur Y » par extension ; quantité par carte (doubles) avec filtre « Doubles ».
 - **Amis** : partage de collection par fichier ou texte, import, comparaison (4 listes) par langue et par extension — sans serveur ni compte.
 - Les extensions ou cartes que TCGdex ne fournit pas (ou sans image) sont signalées dans l'interface.
