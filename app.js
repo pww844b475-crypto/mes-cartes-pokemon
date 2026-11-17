@@ -308,7 +308,7 @@ function lazyImg(src, alt, onfail) {
   return i;
 }
 
-/* ---------- Routage : #fr · #fr/SV7a · #amis · #comparer/<ami>/<langue> ---------- */
+/* ---------- Routage : #fr · #fr/SV7a · #chercher · #amis · #comparer/<ami>/<langue> ---------- */
 let lang = LANG_IDS.includes(store.get(K.lang)) ? store.get(K.lang) : 'fr';
 let tok = 0;
 let listScroll = 0;
@@ -317,6 +317,7 @@ function parseHash() {
   let parts;
   try { parts = decodeURIComponent(location.hash.slice(1)).split('/'); } catch { parts = []; }
   if (parts[0] === 'amis') return { view: 'friends' };
+  if (parts[0] === 'chercher') return { view: 'search' };
   if (parts[0] === 'comparer') return { view: 'compare', fid: parts[1] || '', lang: LANG_IDS.includes(parts[2]) ? parts[2] : lang };
   if (!LANG_IDS.includes(parts[0])) return { view: 'sets', lang: null, set: null }; // ancien lien (#ja, #zh-cn…) → liste française
   return { view: 'sets', lang: parts[0], set: parts[1] || null };
@@ -328,6 +329,7 @@ function route() {
   tok++;
   if (io) io.disconnect();
   if (r.view === 'friends') return showFriends(tok);
+  if (r.view === 'search') return showSearch(lang, tok);
   if (r.view === 'compare') return showCompare(r.fid, r.lang, tok);
   if (r.lang) { lang = r.lang; store.set(K.lang, lang); }
   if (r.set) showSet(lang, r.set, tok); else showList(tok);
@@ -429,6 +431,7 @@ async function showList(my) {
   const q = h('input', { class: 'search', type: 'search', placeholder: 'Rechercher une extension…', 'aria-label': 'Rechercher une extension', enterkeyhint: 'search', autocomplete: 'off' });
   const top = h('header', { class: 'top' },
     h('div', { class: 'row' }, h('h1', {}, 'Pijakollection'),
+      h('button', { class: 'iconbtn', type: 'button', onclick: () => { listScroll = scrollY; location.hash = '#chercher'; }, 'aria-label': 'Rechercher des cartes dans toute la collection', title: 'Rechercher des cartes' }, '🔎'),
       h('button', { class: 'iconbtn', type: 'button', onclick: () => { location.hash = '#amis'; }, 'aria-label': 'Amis : partager et comparer' }, '👥 Amis'),
       h('button', { class: 'iconbtn', type: 'button', onclick: openBackup, 'aria-label': 'Sauvegarde et restauration', title: 'Sauvegarde' }, '💾'),
       h('button', { class: 'iconbtn', type: 'button', onclick: openSettings, 'aria-label': 'Réglages', title: 'Réglages' }, '⚙️')),
@@ -719,6 +722,157 @@ async function showSet(L, setId, my) {
   q.addEventListener('input', apply);
   apply();
   main.replaceChildren(...notes, progress, ...sections.map((x) => x.el), none);
+}
+
+/* ---------- Vue : recherche dans toute la collection (nom, extension, rareté, version, possession) ---------- */
+// data/names.json : { extension: [[numéro, nom(, 0 = sans image)] ou [idAtypique, numéro, nom(, 0)]…] } (outil : tools/fetch-card-names.py)
+let searchIdx = null;
+async function buildSearchIndex(L, sets) {
+  const names = await fetch('data/names.json').then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  await Promise.all([scansReady, metaReady]);
+  const groups = [...buildGroups(sets).values()], blocks = buildBlocks(groups);
+  const order = blocks.flatMap((b) => b.items.flatMap((g) => g.members.map((m) => [m, g.id]))).filter(([m]) => names[m.id]);
+  const infos = new Map(await Promise.all(order.map(async ([m]) => [m.id, await loadCardInfo(L, m.id)])));
+  const recs = [], vers = new Map(), rars = new Map();
+  for (const [m, gid] of order) {
+    const sid = m.id, serie = setMeta(sid)?.[0], info = infos.get(sid), cards = [];
+    for (const row of names[sid]) {
+      const odd = typeof row[2] === 'string', lid = String(odd ? row[1] : row[0]), nm = odd ? row[2] : row[1], noImg = odd ? row[3] === 0 : row[2] === 0;
+      const id = odd ? row[0] : sid + '-' + lid;
+      cards.push({ id, localId: lid, name: nm, image: !noImg && serie ? `https://assets.tcgdex.net/${L}/${serie}/${sid}/${lid}` : null });
+    }
+    applyScans(cards);
+    for (const c of cards) {
+      const i = info.get(c.id) || null;
+      recs.push({ card: c, sid, gid, setName: m.name || sid, info: i, text: norm(`${c.name} ${c.localId} ${c.id}`) });
+      if (i && i.rar) rars.set(i.rar, (rars.get(i.rar) || 0) + 1);
+      if (i) for (const v of i.vars) { const e = vers.get(v.key) || { label: v.label, n: 0 }; e.n++; vers.set(v.key, e); }
+    }
+  }
+  return { L, recs, infos, blocks, rars, vers };
+}
+
+async function showSearch(L, my) {
+  const back = h('button', { class: 'iconbtn', type: 'button', onclick: () => go(L), 'aria-label': 'Retour aux extensions' }, '‹ Extensions');
+  const q = h('input', { class: 'search', type: 'search', placeholder: 'Nom ou numéro de carte…', 'aria-label': 'Rechercher une carte dans toute la collection', enterkeyhint: 'search', autocomplete: 'off' });
+  const top = h('header', { class: 'top' }, h('div', { class: 'row' }, back, h('h1', {}, 'Rechercher des cartes')), q);
+  const main = h('main', {}, spinner());
+  $app.replaceChildren(top, main);
+  scrollTo(0, 0);
+
+  let idx = searchIdx && searchIdx.L === L ? searchIdx : null;
+  if (!idx) {
+    try {
+      const { sets } = await loadSets(L); await Promise.all([snapReady, metaReady]); await resolveMeta(L, sets);
+      if (my !== tok) return;
+      idx = searchIdx = await buildSearchIndex(L, sets);
+    } catch (e) {
+      if (my !== tok) return;
+      main.replaceChildren(errorBox('Vérifiez votre connexion. ' + (e.message || ''), () => showSearch(L, tok))); return;
+    }
+  }
+  if (my !== tok) return;
+
+  const mines = new Map();
+  for (const r of idx.recs) if (!mines.has(r.sid)) mines.set(r.sid, owned[L][r.sid] || nullObj());
+  const f = { own: 'all', gid: '', rar: '', ver: '' };
+  const POSS = [['all', 'Toutes'], ['own', 'Possédées'], ['miss', 'Manquantes'], ['dbl', 'Doubles']];
+  const gname = new Map(); for (const b of idx.blocks) for (const g of b.items) gname.set(g.id, g.set.name || g.id);
+  const rarList = [...idx.rars.keys()].sort((a, b) => rarityRank(a) - rarityRank(b) || a.localeCompare(b, 'fr'));
+  const verList = [...idx.vers.entries()].sort((a, b) => b[1].n - a[1].n);
+  const activeCount = () => (f.own !== 'all') + !!f.gid + !!f.rar + !!f.ver;
+
+  const match = (r, n) => {
+    if (f.gid && r.gid !== f.gid) return false;
+    if (n && !r.text.includes(n)) return false;
+    const info = r.info;
+    if (f.rar && !(info && info.rar === f.rar)) return false;
+    if (f.ver && !(info && info.vars.some((v) => v.key === f.ver))) return false;
+    if (f.own !== 'all') {
+      const v = mines.get(r.sid)[r.card.id];
+      const qt = f.ver ? (isMulti(v) ? v[f.ver] || 0 : 0) : qtyTotal(v), qm = f.ver ? qt : qtyMax(v);
+      if (f.own === 'own' ? qt <= 0 : f.own === 'miss' ? qt > 0 : qm < 2) return false;
+    }
+    return true;
+  };
+
+  const PAGE = 60, tiles = [];
+  let matches = [], shown = 0, needle = '';
+  const summary = h('p', { class: 'count sum' });
+  const chips = h('div', { class: 'fchips' });
+  const grid = h('div', { class: 'cards' });
+  const moreBtn = h('button', { type: 'button', class: 'btn sec more', hidden: true }, 'Afficher plus de cartes');
+  const none = h('p', { class: 'empty', hidden: true });
+  const persist = (sid) => { const m = mines.get(sid); if (countKeys(m)) owned[L][sid] = m; else delete owned[L][sid]; saveOwned(); };
+  const zoom = (t) => { const vis = tiles.filter((x) => !x.el.hidden); openLightbox(vis, Math.max(0, vis.indexOf(t)), L); };
+  const mk = (r) => {
+    const t = makeTile(r.card, mines.get(r.sid), () => { persist(r.sid); t.el.hidden = !match(r, needle); updateSummary(); }, { info: idx.infos.get(r.sid), setName: r.setName, zoom });
+    t.el.querySelector('.nm').after(h('span', { class: 'setlbl' }, r.setName));
+    tiles.push(t); return t;
+  };
+  const more = () => {
+    const next = matches.slice(shown, shown + PAGE); shown += next.length;
+    grid.append(...next.map((r) => mk(r).el));
+    moreBtn.hidden = shown >= matches.length;
+    moreBtn.textContent = `Afficher plus de cartes (${(matches.length - shown).toLocaleString('fr-FR')} restantes)`;
+  };
+  function updateSummary() {
+    const idle = !needle && !activeCount();
+    if (idle) { summary.textContent = `${idx.recs.length.toLocaleString('fr-FR')} cartes dans ${mines.size} extensions. Tapez un nom ou ouvrez les filtres.`; return; }
+    const have = matches.reduce((n, r) => n + (qtyTotal(mines.get(r.sid)[r.card.id]) > 0 ? 1 : 0), 0);
+    summary.replaceChildren(h('b', {}, plural(matches.length, 'carte trouvée', 'cartes trouvées')), matches.length ? ` · ${have} possédée${have > 1 ? 's' : ''}` : '');
+  }
+  function updateChips() {
+    const items = [];
+    if (f.own !== 'all') items.push([POSS.find((x) => x[0] === f.own)[1], () => { f.own = 'all'; }]);
+    if (f.gid) items.push([gname.get(f.gid) || f.gid, () => { f.gid = ''; }]);
+    if (f.rar) items.push([f.rar, () => { f.rar = ''; }]);
+    if (f.ver) items.push([idx.vers.get(f.ver)?.label || f.ver, () => { f.ver = ''; }]);
+    chips.replaceChildren(...items.map(([label, clear]) => h('button', { type: 'button', class: 'fchip', 'aria-label': `Retirer le filtre : ${label}`, onclick: () => { clear(); run(); } }, label, h('span', { 'aria-hidden': 'true' }, ' ✕'))));
+    chips.hidden = !items.length;
+    const n = activeCount(); filterBtn.querySelector('.nb').textContent = String(n); filterBtn.querySelector('.nb').hidden = !n;
+  }
+  function run() {
+    needle = norm(q.value.trim());
+    const idle = !needle && !activeCount();
+    matches = idle ? [] : idx.recs.filter((r) => match(r, needle));
+    tiles.length = 0; grid.replaceChildren(); shown = 0; more();
+    none.hidden = idle || matches.length > 0; none.textContent = 'Aucune carte ne correspond.';
+    updateChips(); updateSummary(); if (sheetSync) sheetSync();
+  }
+
+  let sheetSync = null;
+  function openFilters() {
+    const segBtns = POSS.map(([k, l]) => h('button', { type: 'button', 'aria-pressed': String(f.own === k), onclick: () => { f.own = k; run(); } }, l));
+    const gSel = h('select', { class: 'field', 'aria-label': 'Extension' }, h('option', { value: '' }, 'Toutes les extensions'),
+      idx.blocks.map((b) => h('optgroup', { label: b.name }, b.items.map((g) => h('option', { value: g.id }, g.set.name || g.id)))));
+    const rSel = h('select', { class: 'field', 'aria-label': 'Rareté' }, h('option', { value: '' }, 'Toutes les raretés'), rarList.map((r) => h('option', { value: r }, `${r} (${idx.rars.get(r).toLocaleString('fr-FR')})`)));
+    const vSel = h('select', { class: 'field', 'aria-label': 'Version' }, h('option', { value: '' }, 'Toutes les versions'), verList.map(([k, e]) => h('option', { value: k }, `${e.label} (${e.n.toLocaleString('fr-FR')})`)));
+    gSel.addEventListener('change', () => { f.gid = gSel.value; run(); }); rSel.addEventListener('change', () => { f.rar = rSel.value; run(); }); vSel.addEventListener('change', () => { f.ver = vSel.value; run(); });
+    const seeBtn = h('button', { class: 'btn', type: 'button', onclick: closeSheet }, 'Voir les cartes');
+    sheetSync = () => {
+      segBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(POSS[i][0] === f.own)));
+      gSel.value = f.gid; rSel.value = f.rar; vSel.value = f.ver;
+      seeBtn.textContent = !needle && !activeCount() ? 'Voir les cartes' : `Voir ${plural(matches.length, 'carte', 'cartes')}`;
+    };
+    const ov = openSheet(
+      h('h2', {}, 'Filtres'),
+      h('p', { class: 'lbl' }, 'Possession'), h('div', { class: 'fseg', role: 'group', 'aria-label': 'Possession' }, segBtns),
+      h('label', { class: 'lbl' }, 'Extension', gSel), h('label', { class: 'lbl' }, 'Rareté', rSel), h('label', { class: 'lbl' }, 'Version', vSel),
+      h('p', { class: 'lb-help' }, 'Avec une version choisie, « Possédées » et « Manquantes » portent sur cette version précise.'),
+      seeBtn,
+      h('button', { class: 'btn sec', type: 'button', onclick: () => { f.own = 'all'; f.gid = f.rar = f.ver = ''; run(); } }, 'Réinitialiser les filtres'));
+    new MutationObserver((_, ob) => { if (!ov.isConnected) { sheetSync = null; ob.disconnect(); } }).observe(document.body, { childList: true });
+    sheetSync();
+  }
+  const filterBtn = h('button', { type: 'button', class: 'tbtn', 'aria-label': 'Filtres', title: 'Filtres', onclick: openFilters }, '⚙︎ Filtres ', h('span', { class: 'nb', hidden: true }, '0'));
+  top.append(h('div', { class: 'tools2' }, filterBtn), chips);
+
+  let timer = null;
+  q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 120); });
+  moreBtn.addEventListener('click', more);
+  main.replaceChildren(summary, grid, moreBtn, none);
+  run();
 }
 
 /* ---------- Rareté et versions de chaque carte (français) ---------- */

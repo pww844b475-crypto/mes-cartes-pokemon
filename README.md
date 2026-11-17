@@ -61,3 +61,7 @@ Settings → Pages → *Deploy from a branch* → branche voulue, dossier `/ (ro
 - Dans une extension : filtre par rareté (avec effectifs), bouton 📊 (récapitulatif possédées/total par rareté, une ligne filtre), rareté colorée par palier. Les paliers sont dans `RARITY_TIER` (`app.js`).
 - Pastille de version : un appui = +1 exemplaire, bouton « − » pour en retirer ; dans l’agrandissement, la quantité se saisit directement (0 à 99).
 - « ➕ Ajout groupé » : ajoute, définit ou retire N exemplaires d’une version pour toutes les cartes affichées (selon recherche et filtres), avec bouton « Annuler ».
+
+## Recherche dans toute la collection
+
+Bouton 🔎 de l’accueil (`#chercher`) : recherche par nom ou numéro dans les 20 226 cartes, et icône « Filtres » (possession : toutes / possédées / manquantes / doubles, extension, rareté, version). Avec une version choisie, possédées/manquantes portent sur cette version. Les noms viennent de `data/names.json`, régénérable avec `python3 -I tools/fetch-card-names.py data/cards data/names.json`.
