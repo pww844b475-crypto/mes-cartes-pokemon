@@ -1637,6 +1637,9 @@ async function showSearchInner(L, my, preset = {}) {
 // data/cards/<extension>.json : { rar:[raretés], var:[[type, taille, foil, sous-type, [tampons]]…], c:{ idCarte:[indexRareté,[indexVersions]] } }
 // Instantané de TCGdex ; une carte absente (nouvelle) est demandée en direct à l'agrandissement.
 const infoCache = new Map();
+// TCGdex nomme « Magnifique rare » les rares secrètes / rainbow : on affiche « Rare secrète »
+const RAR_ALIAS = { 'Magnifique rare': 'Rare secrète', 'Magnifique': 'Rare secrète' };
+const rarName = (r) => (r ? RAR_ALIAS[r] || r : r);
 function descOf(a) {
   const d = { type: a[0] };
   if (a[1] && a[1] !== 'Standard') d.size = a[1];
@@ -1654,7 +1657,7 @@ function loadCardInfo(L, setId) {
   if (!infoCache.has(k)) {
     infoCache.set(k, fetch(`data/cards/${encodeURIComponent(setId)}.json`).then((r) => (r.ok ? r.json() : null)).then((j) => {
       const m = new Map();
-      if (j && j.c) for (const [id, [ri, vi]] of Object.entries(j.c)) m.set(id, { rar: ri >= 0 ? j.rar[ri] : null, vars: withKeys(vi.map((i) => descOf(j.var[i]))) });
+      if (j && j.c) for (const [id, [ri, vi]] of Object.entries(j.c)) m.set(id, { rar: ri >= 0 ? rarName(j.rar[ri]) : null, vars: withKeys(vi.map((i) => descOf(j.var[i]))) });
       return m;
     }).catch(() => new Map()));
   }
@@ -1668,13 +1671,13 @@ async function fetchCardInfo(L, cardId) { // repli en direct (carte absente de l
     if (f.normal) vars.push({ type: 'Normal' }); if (f.reverse) vars.push({ type: 'Reverse' }); if (f.holo) vars.push({ type: 'Holo' });
     if (f.firstEdition) vars.push({ type: 'Normal', stamp: ['1re Édition'] }); if (f.wPromo) vars.push({ type: 'Normal', stamp: ['Promo W'] });
   }
-  return { rar: d.rarity || null, vars: withKeys(vars) };
+  return { rar: rarName(d.rarity) || null, vars: withKeys(vars) };
 }
 // Niveaux de rareté (pour les couleurs et l'ordre du filtre) : modifiable ici. Une rareté inconnue (nouvelle sortie) est classée d'après son nom.
 const RARITY_TIER = {
   'Commune': 'commune', 'Peu Commune': 'peu', 'Rare': 'rare', 'Sans Rareté': 'aucune', 'Promo': 'promo', 'Collection Classique': 'promo',
   'Holo Rare': 'holo', 'Rare Holo': 'holo', 'Rare Holo LV.X': 'holo', 'Rare Prime': 'holo', 'LÉGENDE': 'holo', 'HIGH-TECH rare': 'holo', 'Radieux Rare': 'holo',
-  'Pikachu Rare': 'holo', 'Magnifique rare': 'holo', 'Magnifique': 'holo', 'Rare Noir Blanc': 'holo', 'Futuristic Rare': 'holo',
+  'Pikachu Rare': 'holo', 'Magnifique rare': 'holo', 'Magnifique': 'holo', 'Rare secrète': 'holo', 'Rare Noir Blanc': 'holo', 'Futuristic Rare': 'holo',
   'Ultra Rare': 'ultra', 'Holo Rare V': 'ultra', 'Holo Rare VMAX': 'ultra', 'Holo Rare VSTAR': 'ultra', 'Double rare': 'ultra', 'Dresseur Full Art': 'ultra',
   'Shiny rare': 'ultra', 'Shiny rare V': 'ultra', 'Shiny rare VMAX': 'ultra', 'Chromatique ultra rare': 'ultra', 'Mega Attack Rare': 'ultra', 'RGB Rare': 'ultra',
   'Illustration rare': 'secrete', 'Illustration spéciale rare': 'secrete', 'Hyper rare': 'secrete', 'Méga Hyper Rare': 'secrete',
@@ -1688,7 +1691,7 @@ function rarityKind(r) {
   const m = {
     'Commune': 'circle', 'Peu Commune': 'diamond', 'Rare': 'star', 'Promo': 'promo', 'Collection Classique': 'promo', 'Sans Rareté': 'dash',
     'Double rare': 'two-black', 'Ultra Rare': 'two-silver', 'Illustration rare': 'one-gold', 'Illustration spéciale rare': 'two-gold',
-    'Hyper rare': 'three-gold', 'Méga Hyper Rare': 'three-gold', 'Shiny rare': 'one-hollow', 'Shiny rare V': 'one-hollow', 'Shiny rare VMAX': 'one-hollow', 'Chromatique ultra rare': 'two-hollow', 'Magnifique rare': 'one-small', 'Magnifique': 'one-small',
+    'Hyper rare': 'three-gold', 'Méga Hyper Rare': 'three-gold', 'Shiny rare': 'one-hollow', 'Shiny rare V': 'one-hollow', 'Shiny rare VMAX': 'one-hollow', 'Chromatique ultra rare': 'two-hollow', 'Rare secrète': 'one-small', 'Magnifique rare': 'one-small', 'Magnifique': 'one-small',
     'Mega Attack Rare': 'two-color', 'Futuristic Rare': 'rainbow', 'RGB Rare': 'rgb',
   };
   if (m[r]) return m[r];
