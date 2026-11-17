@@ -1718,11 +1718,7 @@ function rarityIcon(r, size = 22) {
   else if (k === 'star') star(12, 12.5, 9, BLACK, 'none');
   else if (k === 'star-white') star(12, 12.5, 9, '#fff', BLACK);
   else if (k === 'one-gold') star(12, 12.5, 9, GOLD);
-  else if (k === 'amazing') {
-    [[12, 4.8, '#f2c21b'], [18.4, 8.4, '#3aa65a'], [18.4, 15.6, '#2f5db3'], [12, 19.2, '#a0409a'], [5.6, 15.6, '#e45b9a'], [5.6, 8.4, '#e24a3b']].forEach(([x, y, c]) => svg.append(svgEl('circle', { cx: x, cy: y, r: 4.2, fill: c })));
-    svg.append(svgEl('circle', { cx: 12, cy: 12, r: 7.4, fill: '#e24a3b', opacity: '.9' }));
-    svg.append(svgEl('text', { x: 12, y: 16.3, 'text-anchor': 'middle', 'font-size': '12.5', 'font-weight': '900', fill: '#fff', stroke: '#6d2a6b', 'stroke-width': '.5', 'font-family': 'system-ui, sans-serif' }, 'M'));
-  }
+  else if (k === 'amazing') svg.append(svgEl('image', { href: 'images/rarity/amazing.webp', x: 1, y: 1, width: 22, height: 22, preserveAspectRatio: 'xMidYMid meet' }));     // logo officiel fourni (M multicolore)
   else if (k === 'one-small') star(12, 12.5, 6.4, GOLD);
   else if (k === 'one-hollow') star(12, 12.5, 9, 'none', GOLD, 1.8);
   else if (k === 'two-hollow') { star(8, 10, 6, 'none', GOLD, 1.5); star(16, 15, 6, 'none', GOLD, 1.5); }
