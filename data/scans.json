@@ -1,0 +1,156 @@
+{
+ "_source": "PokéCardex — https://www.pokecardex.com/series/30C",
+ "_note": "Scans de la Collection Classique 30ᵉ Anniversaire, absents de TCGdex. p = dossier (low.webp / high.webp) ; n = numéro imprimé ; pk = identifiant de la carte sur PokéCardex.",
+ "cards": {
+  "30th-c-001": {
+   "p": "images/scans/30th-c/001",
+   "n": "4/102",
+   "pk": 26605
+  },
+  "30th-c-002": {
+   "p": "images/scans/30th-c/002",
+   "n": "5/109",
+   "pk": 26611
+  },
+  "30th-c-003": {
+   "p": "images/scans/30th-c/003",
+   "n": "11/113",
+   "pk": 26614
+  },
+  "30th-c-004": {
+   "p": "images/scans/30th-c/004",
+   "n": "11/101",
+   "pk": 26623
+  },
+  "30th-c-005": {
+   "p": "images/scans/30th-c/005",
+   "n": "18/132",
+   "pk": 26606
+  },
+  "30th-c-006": {
+   "p": "images/scans/30th-c/006",
+   "n": "19/109",
+   "pk": 26612
+  },
+  "30th-c-007": {
+   "p": "images/scans/30th-c/007",
+   "n": "25/111",
+   "pk": 26608
+  },
+  "30th-c-008": {
+   "p": "images/scans/30th-c/008",
+   "n": "33/181",
+   "pk": 26628
+  },
+  "30th-c-009": {
+   "p": "images/scans/30th-c/009",
+   "n": "41/122",
+   "pk": 26625
+  },
+  "30th-c-010": {
+   "p": "images/scans/30th-c/010",
+   "n": "43/146",
+   "pk": 26616
+  },
+  "30th-c-011": {
+   "p": "images/scans/30th-c/011",
+   "n": "47/127",
+   "pk": 26617
+  },
+  "30th-c-012": {
+   "p": "images/scans/30th-c/012",
+   "n": "050/185",
+   "pk": 26630
+  },
+  "30th-c-013": {
+   "p": "images/scans/30th-c/013",
+   "n": "57/111",
+   "pk": 26627
+  },
+  "30th-c-014": {
+   "p": "images/scans/30th-c/014",
+   "n": "58/102",
+   "pk": 26604
+  },
+  "30th-c-015": {
+   "p": "images/scans/30th-c/015",
+   "n": "69/132",
+   "pk": 26607
+  },
+  "30th-c-016": {
+   "p": "images/scans/30th-c/016",
+   "n": "85/124",
+   "pk": 26622
+  },
+  "30th-c-017": {
+   "p": "images/scans/30th-c/017",
+   "n": "89/149",
+   "pk": 26626
+  },
+  "30th-c-018": {
+   "p": "images/scans/30th-c/018",
+   "n": "94/102",
+   "pk": 26618
+  },
+  "30th-c-019": {
+   "p": "images/scans/30th-c/019",
+   "n": "99/102",
+   "pk": 26619
+  },
+  "30th-c-020": {
+   "p": "images/scans/30th-c/020",
+   "n": "100/102",
+   "pk": 26620
+  },
+  "30th-c-021": {
+   "p": "images/scans/30th-c/021",
+   "n": "101/101",
+   "pk": 26621
+  },
+  "30th-c-022": {
+   "p": "images/scans/30th-c/022",
+   "n": "106/106",
+   "pk": 26615
+  },
+  "30th-c-023": {
+   "p": "images/scans/30th-c/023",
+   "n": "106/160",
+   "pk": 26624
+  },
+  "30th-c-024": {
+   "p": "images/scans/30th-c/024",
+   "n": "106/105",
+   "pk": 26609
+  },
+  "30th-c-025": {
+   "p": "images/scans/30th-c/025",
+   "n": "108/115",
+   "pk": 26613
+  },
+  "30th-c-026": {
+   "p": "images/scans/30th-c/026",
+   "n": "114/264",
+   "pk": 26631
+  },
+  "30th-c-027": {
+   "p": "images/scans/30th-c/027",
+   "n": "123/172",
+   "pk": 26632
+  },
+  "30th-c-028": {
+   "p": "images/scans/30th-c/028",
+   "n": "138/202",
+   "pk": 26629
+  },
+  "30th-c-029": {
+   "p": "images/scans/30th-c/029",
+   "n": "149/147",
+   "pk": 26610
+  },
+  "30th-c-030": {
+   "p": "images/scans/30th-c/030",
+   "n": "203/193",
+   "pk": 26633
+  }
+ }
+}
