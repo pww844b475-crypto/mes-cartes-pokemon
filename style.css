@@ -223,6 +223,7 @@ textarea.field { resize: vertical; font-family: ui-monospace, Menlo, monospace; 
   position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; overflow: hidden;
   padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
   background:
+    linear-gradient(90deg, #0f1b2d 0, rgba(15, 27, 45, 0) 14%, rgba(15, 27, 45, 0) 86%, #0f1b2d 100%),   /* les bords se fondent avec la bande d'état système (écran intérieur du Duo) */
     radial-gradient(120% 70% at 50% 28%, rgba(86, 128, 214, .38), rgba(86, 128, 214, 0) 62%),
     radial-gradient(90% 60% at 50% 110%, rgba(230, 170, 60, .16), rgba(230, 170, 60, 0) 70%),
     linear-gradient(165deg, #0b1424 0%, #14284a 42%, #1d3557 72%, #26407a 118%);
