@@ -17,7 +17,7 @@ const K = {
   lang: 'cartes.lang', cov: 'cartes.cov', exp: 'cartes.lastExport', tip: 'cartes.tipHidden', order: 'cartes.order',
   friends: 'cartes.friends.v1', pseudo: 'cartes.pseudo',
   splash: 'cartes.splash', // 'off' = écran d'ouverture désactivé
-  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay', cmslug: 'cartes.cmslug2',
+  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay', cmslug: 'cartes.cmslug2', view: 'cartes.view', setview: 'cartes.setview',
 };
 const BACKUP_VERSION = 3;   // sauvegarde personnelle (3 : quantités par version de carte)
 const SHARE_VERSION = 2;    // fichier de partage entre amis (2 : quantités par version de carte)
@@ -578,11 +578,7 @@ async function showList(my) {
   const L = lang;
   const q = h('input', { class: 'search', type: 'search', placeholder: 'Rechercher une extension…', 'aria-label': 'Rechercher une extension', enterkeyhint: 'search', autocomplete: 'off' });
   const top = h('header', { class: 'top' },
-    h('div', { class: 'row' }, h('h1', {}, 'Pijakollection'),
-      h('button', { class: 'iconbtn', type: 'button', onclick: () => { listScroll = scrollY; location.hash = '#chercher'; }, 'aria-label': 'Rechercher des cartes dans toute la collection', title: 'Rechercher des cartes' }, '🔎'),
-      h('button', { class: 'iconbtn', type: 'button', onclick: () => { location.hash = '#amis'; }, 'aria-label': 'Amis : partager et comparer' }, '👥 Amis'),
-      h('button', { class: 'iconbtn', type: 'button', onclick: openBackup, 'aria-label': 'Sauvegarde et restauration', title: 'Sauvegarde' }, '💾'),
-      h('button', { class: 'iconbtn', type: 'button', onclick: openSettings, 'aria-label': 'Réglages', title: 'Réglages' }, '⚙️')),
+    h('div', { class: 'row' }, h('h1', {}, 'Pijakollection')),
     langSwitch(L, (id) => { listScroll = 0; go(id); }), q);
   const main = h('main', {}, spinner());
   $app.replaceChildren(top, main);
@@ -640,7 +636,7 @@ async function showList(my) {
       h('span', { class: 'bc' }, h('b', {}, String(have)), `/${total.toLocaleString('fr-FR')} | ${pctOf(have, total)}%`),
       h('span', { class: 'chev', 'aria-hidden': 'true' }));
     const el = h('section', { class: 'block', 'data-block': b.id }, head, body);
-    const sec = { b, el, head, body, rows, subEls };
+    const sec = { b, el, head, body, rows, subEls, have, total };
     sec.set = (open) => { head.setAttribute('aria-expanded', String(open)); body.hidden = !open; };
     head.addEventListener('click', () => { const open = body.hidden; openState[b.id] = open; saveOpen(); sec.set(open); });
     sec.set(!!openState[b.id]);
@@ -663,7 +659,7 @@ async function showList(my) {
   syncToggle();
   // raccourci vers mes cartes possédées (par rareté) + estimation de leur valeur
   let valRows = [], busy = false;
-  const mineBtn = h('button', { type: 'button', class: 'mine', onclick: () => openOwned(L, valRows, () => recalc(false)) }, h('span', {}, '🃏 Mes cartes possédées'), h('b', { class: 'mn' }, '0'));
+  const mineBtn = h('button', { type: 'button', class: 'mine mtile', 'aria-label': 'Mes cartes possédées', onclick: () => openOwned(L, valRows, () => recalc(false)) }, h('span', { class: 'mi' }, '🃏'), h('span', { class: 'ml' }, 'Mes cartes'), h('b', { class: 'mn' }, '0'));
   const valNum = h('b', { class: 'vv' }, '…'), valSub = h('span', { class: 'vs' });
   const refreshBtn = h('button', { type: 'button', class: 'tbtn2', 'aria-label': 'Actualiser les prix', title: 'Actualiser les prix', onclick: () => recalc(true) }, '⟳');
   const valbox = h('div', { class: 'valbox' }, h('button', { type: 'button', class: 'vt', 'aria-label': 'Détail de la valeur par rareté', onclick: () => openOwned(L, valRows, () => recalc(false)) }, h('span', { class: 'vl' }, 'Valeur estimée'), valNum, valSub), refreshBtn);
@@ -692,14 +688,47 @@ async function showList(my) {
       await ensurePrices(L, valRows, refresh, (d, n) => { if (my === tok) paint(`${d}/${n}`); });
     } finally { busy = false; if (my === tok) paint(); }
   }
-  const homebar = h('div', { class: 'homebar' }, toggleAll, mineBtn);
+  // statistiques de la collection
+  function openStats() {
+    const sm = summarize(valRows);
+    const haveAll = secs.reduce((n, x) => n + x.have, 0), totAll = secs.reduce((n, x) => n + x.total, 0);
+    const done = blocks.flatMap((b) => b.items).filter((g) => { const t = groupTotal(g); return t > 0 && g.members.reduce((n, m) => n + ownedCount(L, m.id), 0) >= t; }).length;
+    const dbl = blocks.flatMap((b) => b.items).reduce((n, g) => n + g.members.reduce((k, m) => k + doublesCount(owned[L][m.id]), 0), 0);
+    openSheet(
+      h('h2', {}, 'Statistiques'),
+      h('p', { class: 'owned-total' }, h('b', {}, plural(haveAll, 'carte possédée', 'cartes possédées')), ` sur ${totAll.toLocaleString('fr-FR')} · ${pctOf(haveAll, totAll)} %`),
+      h('div', { class: 'bar', 'aria-hidden': 'true' }, h('i', { style: `width:${pctOf(haveAll, totAll)}%` })),
+      h('ul', { class: 'stats' },
+        h('li', {}, `${plural(sm.copies, 'exemplaire', 'exemplaires')} au total`),
+        h('li', {}, `${plural(dbl, 'carte en double', 'cartes en double')} (2 exemplaires ou plus d’une version)`),
+        h('li', {}, `${plural(done, 'extension complète', 'extensions complètes')}`),
+        h('li', {}, `Valeur estimée : ${eur(sm.total)}`)),
+      h('h2', {}, 'Par bloc'),
+      h('div', { class: 'orows' }, secs.map((x) => h('div', { class: 'orow' }, h('div', { class: 'orow-l' }, h('span', { class: 'rn' }, x.b.name), h('span', { class: 'rc' }, h('b', {}, String(x.have)), `/${x.total.toLocaleString('fr-FR')} · ${pctOf(x.have, x.total)} %`)))).concat([])),
+      h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
+  }
+  const goto = (hash) => () => { listScroll = scrollY; location.hash = hash; };
+  const mtile = (icon, label, aria, onclick) => h('button', { type: 'button', class: 'mtile', 'aria-label': aria, onclick }, h('span', { class: 'mi' }, icon), h('span', { class: 'ml' }, label));
+  const menu = h('nav', { class: 'menu', 'aria-label': 'Menu' },
+    mineBtn,
+    mtile('📊', 'Statistiques', 'Statistiques de la collection', openStats),
+    mtile('🔎', 'Rechercher', 'Rechercher des cartes dans toute la collection', goto('#chercher')),
+    mtile('👥', 'Amis', 'Amis : partager et comparer', goto('#amis')),
+    mtile('💾', 'Sauvegarde', 'Sauvegarde et restauration', () => openBackup()),
+    mtile('⚙️', 'Réglages', 'Réglages', () => openSettings()));
+  let setView = store.get(K.setview) === 'grille' ? 'grille' : 'liste';
+  const vBtns = [['liste', 'Liste'], ['grille', 'Grille']].map(([k, l]) => h('button', { type: 'button', 'aria-pressed': String(setView === k), onclick: () => {
+    setView = k; store.set(K.setview, k); vBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(['liste', 'grille'][i] === k))); main.classList.toggle('setgrid', k === 'grille');
+  } }, l));
+  const colhead = h('div', { class: 'colhead' }, h('h2', {}, 'Collection'), toggleAll, h('div', { class: 'vseg', role: 'group', 'aria-label': 'Affichage des extensions' }, vBtns));
   const notes = [];
   if (isIOS && !isStandalone && !store.get(K.tip)) {
     notes.push(h('div', { class: 'note warn' },
       h('b', {}, 'Astuce iPhone / iPad : '), 'touchez Partager ⬆︎ puis « Sur l’écran d’accueil ». Cochez vos cartes depuis l’icône installée : ses données sont séparées de celles de Safari (utilisez Sauvegarde pour les transférer).',
       h('button', { type: 'button', onclick: (e) => { store.set(K.tip, '1'); e.target.closest('.note').remove(); } }, 'Compris')));
   }
-  main.replaceChildren(...notes, askSlot, homebar, valbox, ...secs.map((x) => x.el), none);
+  main.replaceChildren(...notes, askSlot, menu, valbox, colhead, ...secs.map((x) => x.el), none);
+  main.classList.toggle('setgrid', setView === 'grille');
   recalc(false);
 
   q.addEventListener('input', () => {
@@ -954,6 +983,30 @@ async function showSet(L, setId, my) {
       h('button', { type: 'button', class: 'tbtn wide', 'aria-label': 'Ajout groupé', onclick: openBulk }, '➕ Ajout groupé')),
     selBar);
 
+  // --- en-tête de l'extension : logo, date, avancement, détail par rareté ; onglets Cartes / Liste / Grille ---
+  const meta0 = setMeta(parts[0].id) || [];
+  const logoBox = h('div', { class: 'sc-logo' });
+  { const lu = parts[0].data && parts[0].data.logo ? parts[0].data.logo + '.webp' : null; const ph = () => logoBox.replaceChildren(h('span', { class: 'ph' }, meta0[2] || parts[0].id)); if (lu) logoBox.append(lazyImg(lu, '', ph)); else ph(); }
+  const rbk = h('div', { class: 'rbk', role: 'group', 'aria-label': 'Avancement par rareté' });
+  function paintRbk() {
+    rbk.replaceChildren(...rarList.map((r) => {
+      const ts = tiles.filter((t) => t.info && t.info.rar === r), have = ts.filter((t) => qtyTotal(t.mine[t.card.id]) > 0).length;
+      return h('button', { type: 'button', class: 'rbkc' + (rarFilter === r ? ' on' : ''), 'aria-pressed': String(rarFilter === r), title: `${r} : ${have} sur ${ts.length}`,
+        onclick: () => { rarFilter = rarFilter === r ? '' : r; rarSel.value = rarFilter; apply(); } },
+        h('span', { class: 'rdot rt-' + rarityTier(r) }), h('b', {}, String(have)), h('span', { class: 'rt' }, '/' + ts.length), h('span', { class: 'rn' }, r));
+    }));
+    rbk.hidden = !rarList.length;
+  }
+  const fmtD = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString('fr-FR'); };
+  const setcard = h('section', { class: 'setcard' },
+    h('div', { class: 'sc-top' }, logoBox, h('div', { class: 'sc-info' }, h('h2', {}, parts[0].name), meta0[1] ? h('p', {}, 'Date de sortie : ' + fmtD(meta0[1])) : null, meta0[2] ? h('span', { class: 'sc-abbr' }, meta0[2]) : null)),
+    progress, rbk);
+  let view = ['cartes', 'liste', 'grille'].includes(store.get(K.view)) ? store.get(K.view) : 'grille';
+  const VIEWS = [['cartes', 'Cartes'], ['liste', 'Liste'], ['grille', 'Grille']];
+  const applyView = () => { VIEWS.forEach(([k]) => main.classList.toggle('view-' + k, k === view)); viewBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(VIEWS[i][0] === view))); };
+  const viewBtns = VIEWS.map(([k, l]) => h('button', { type: 'button', 'aria-pressed': String(k === view), onclick: () => { view = k; store.set(K.view, k); applyView(); } }, l));
+  const viewSeg = h('div', { class: 'vseg views', role: 'group', 'aria-label': 'Affichage des cartes' }, viewBtns);
+
   function apply() {
     const n = norm(q.value.trim()); let shown = 0;
     for (const sec of sections) {
@@ -969,10 +1022,11 @@ async function showSet(L, setId, my) {
       if (sec.tiles.length) sec.el.hidden = secShown === 0; // une partie sans carte visible disparaît pendant un filtre
     }
     none.hidden = shown > 0 || !allCards;
+    paintRbk();
   }
   q.addEventListener('input', apply);
-  apply();
-  main.replaceChildren(...notes, progress, ...sections.map((x) => x.el), none);
+  apply(); applyView();
+  main.replaceChildren(...notes, setcard, viewSeg, ...sections.map((x) => x.el), none);
   priceTiles(L, tiles, my);
 }
 
