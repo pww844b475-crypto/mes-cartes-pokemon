@@ -208,17 +208,28 @@ function dataStatus(l, set, cov) {
 // data/scans.json : { cartes: { idCarte: { p: dossier contenant low.webp et high.webp } } } — scans PokéCardex embarqués dans l'application.
 // Ne liste que des cartes dont TCGdex n'a pas d'image, ou dont l'adresse d'image ne répond pas (404) : le scan remplace alors l'image TCGdex.
 let scans = {};
-const scansReady = fetch('data/scans.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.cards) scans = j.cards; }).catch(() => {});
+const localScansReady = fetch('data/scans.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.cards) scans = j.cards; }).catch(() => {});
+// data/scans-remote.json : { idCarte: [code de série PokéCardex, n° d'image] } — ~2 900 autres cartes sans image utilisable.
+// Ces scans ne sont PAS copiés dans l'application : ils sont chargés depuis le serveur d'images de PokéCardex (taille « md » pour la grille, « hd » à l'agrandissement).
+let remote = {}, remoteBase = 'https://pokecardex-scans.b-cdn.net/sets/';
+const remoteScansReady = fetch('data/scans-remote.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.cards) { remote = j.cards; if (j._base) remoteBase = j._base; } }).catch(() => {});
+const scansReady = Promise.all([localScansReady, remoteScansReady]);
 function applyScans(cards) {
   let n = 0;
   for (const c of cards) {
-    const sc = scans[c.id];
-    if (!sc || c._scan) continue;
-    c.image = sc.p; c._scan = true; n++;
-    if (sc.n) { c._lid = c.localId; c.localId = sc.n; }     // numéro imprimé sur la carte (« 4/102 », « R/RGB »)
+    if (c._scan) continue;
+    const sc = scans[c.id], rm = remote[c.id];
+    if (sc) {
+      c.image = sc.p; c._scan = true; n++;
+      if (sc.n) { c._lid = c.localId; c.localId = sc.n; }     // numéro imprimé sur la carte (« 4/102 », « R/RGB »)
+    } else if (rm) {
+      c._remote = rm; c.image = `${remoteBase}${rm[0]}/FR/${rm[1]}.jpg`; c._scan = true; n++;
+    }
   }
   return n;
 }
+const imgLow = (c) => (c._remote ? c.image + '?class=md' : c.image + '/low.webp');     // grille
+const imgHigh = (c) => (c._remote ? c.image + '?class=hd' : c.image + '/high.webp');   // agrandissement
 // data/order.json : vrai ordre des cartes (celui de PokéCardex) pour les extensions où TCGdex les range autrement.
 let orders = {};
 const orderReady = fetch('data/order.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j) orders = j; }).catch(() => {});
@@ -326,7 +337,7 @@ const isStandalone = window.navigator.standalone === true || matchMedia('(displa
 function privacyNote(extra) {
   return h('div', { class: 'note priv' }, h('b', {}, '🔒 Vos données restent chez vous. '),
     'Les données de vos amis sont stockées uniquement sur cet appareil et ne sont envoyées nulle part : cette application n’a ni serveur ni compte. ',
-    'Seules les listes et images publiques de cartes sont demandées à TCGdex. ', extra || '');
+    'Seules les listes et images publiques de cartes sont demandées à TCGdex (et, pour les cartes qui n’y ont pas d’image, au serveur d’images de PokéCardex). ', extra || '');
 }
 
 /* ---------- Regroupement : collections classiques et galeries de dresseurs ---------- */
@@ -582,9 +593,11 @@ async function showSet(L, setId, my) {
   }
 
   const fromScans = parts.reduce((n, p) => n + p.cards.filter((c) => c._scan).length, 0);
+  const fromRemote = parts.reduce((n, p) => n + p.cards.filter((c) => c._remote).length, 0);
   if (fromScans) notes.push(h('div', { class: 'note' }, h('b', {}, 'Scans PokéCardex. '),
-    `${plural(fromScans, 'carte de cette extension n’a', 'cartes de cette extension n’ont')} pas d’image dans TCGdex : ${fromScans > 1 ? 'leurs scans viennent' : 'son scan vient'} de `,
-    h('a', { href: 'https://www.pokecardex.com/series/30C', target: '_blank', rel: 'noopener noreferrer' }, 'PokéCardex'), '.'));
+    `${plural(fromScans, 'carte de cette extension n’a', 'cartes de cette extension n’ont')} pas d’image utilisable dans TCGdex : ${fromScans > 1 ? 'leurs scans viennent' : 'son scan vient'} de `,
+    h('a', { href: 'https://www.pokecardex.com/', target: '_blank', rel: 'noopener noreferrer' }, 'PokéCardex'),
+    fromRemote ? ` (${fromRemote > 1 ? 'chargés' : 'chargé'} depuis son serveur d’images).` : '.'));
 
   let filter = 'all';
   const persist = (part) => () => {
@@ -678,7 +691,7 @@ function placeholderContent(name) {
 function mediaButton(card, name, onclick, badge) {
   const media = h('button', { type: 'button', class: 'media', 'aria-label': `Agrandir ${name}`, onclick });
   const placeholder = () => { media.classList.add('noimg'); media.replaceChildren(placeholderContent(name), ...(badge ? [badge] : [])); };
-  if (card.image) { media.append(lazyImg(card.image + '/low.webp', name, placeholder)); if (badge) media.append(badge); } else placeholder();
+  if (card.image) { media.append(lazyImg(imgLow(card), name, placeholder)); if (badge) media.append(badge); } else placeholder();
   return { media, placeholder };
 }
 
@@ -824,8 +837,8 @@ function openLightbox(items, index, L) {
     img.alt = it.name; img.classList.remove('ok'); img.removeAttribute('src'); stageBox.classList.remove('noimg');
     stageBox.querySelector('.lb-ph')?.remove();
     if (c.image) {
-      img.src = c.image + '/low.webp';
-      const hi = new Image(); hi.onload = () => { if (items[i] === it) { img.src = hi.src; } }; hi.src = c.image + '/high.webp';
+      img.src = imgLow(c);
+      const hi = new Image(); hi.onload = () => { if (items[i] === it) { img.src = hi.src; } }; hi.src = imgHigh(c);
       img.onload = () => img.classList.add('ok');
       img.onerror = () => { if (!stageBox.querySelector('.lb-ph')) { img.classList.remove('ok'); stageBox.append(h('div', { class: 'lb-ph' }, placeholderContent(it.name))); } };
     } else stageBox.append(h('div', { class: 'lb-ph' }, placeholderContent(it.name)));
