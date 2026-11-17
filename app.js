@@ -538,9 +538,9 @@ function openOwned(L, rows, onToggle) {
 }
 
 // Affiche le prix sur les tuiles (celui déjà connu) et relève, en arrière-plan, celui des cartes de valeur (AR, SAR, hyper rares…)
-function priceTiles(L, tiles, my) {
+function priceTiles(L, tiles, my, all) {   // all : toutes les cartes (résultat d'un scan), sinon seulement les cartes de valeur
   tiles.forEach((t) => t.paintPrice());
-  const todo = tiles.filter((t) => !priceCache[t.id] && t.info && t.info.rar && VALUE_TIERS.has(rarityTier(t.info.rar)));
+  const todo = tiles.filter((t) => !priceCache[t.id] && (all || (t.info && t.info.rar && VALUE_TIERS.has(rarityTier(t.info.rar)))));
   if (!todo.length) return;
   let i = 0, n = 0;
   const worker = async () => {
@@ -709,8 +709,12 @@ async function showList(my) {
   }
   const goto = (hash) => () => { listScroll = scrollY; location.hash = hash; };
   const mtile = (icon, label, aria, onclick) => h('button', { type: 'button', class: 'mtile', 'aria-label': aria, onclick }, h('span', { class: 'mi' }, icon), h('span', { class: 'ml' }, label));
+  const homeScanIn = h('input', { type: 'file', accept: 'image/*', capture: 'environment', hidden: true, 'aria-label': 'Photo de la carte à scanner' });
+  homeScanIn.addEventListener('change', () => { const file = homeScanIn.files[0]; homeScanIn.value = ''; if (!file) return; pendingScan = file; listScroll = scrollY; location.hash = '#chercher/scan'; });
   const menu = h('nav', { class: 'menu', 'aria-label': 'Menu' },
     mineBtn,
+    mtile('📷', 'Scanner', 'Scanner une carte avec l’appareil photo', () => homeScanIn.click()),
+    homeScanIn,
     mtile('📊', 'Statistiques', 'Statistiques de la collection', openStats),
     mtile('🔎', 'Rechercher', 'Rechercher des cartes dans toute la collection', goto('#chercher')),
     mtile('👥', 'Amis', 'Amis : partager et comparer', goto('#amis')),
@@ -1062,6 +1066,7 @@ async function buildSearchIndex(L, sets) {
 // Tesseract.js (dossier vendor/), chargé seulement à la première utilisation. On lit le nom et le numéro imprimé (« 001/131 »),
 // puis on cherche dans data/names.json les cartes qui correspondent.
 let ocrWorker = null;
+let pendingScan = null;    // photo prise depuis l'accueil, analysée dès l'ouverture de la page de recherche
 const loadScript = (src) => new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = () => rej(new Error('Chargement du lecteur impossible')); document.head.append(el); });
 async function getOcr() {
   if (ocrWorker) return ocrWorker;
@@ -1174,7 +1179,7 @@ async function showSearch(L, my, preset = {}) {
   };
   const more = () => {
     const next = matches.slice(shown, shown + PAGE); shown += next.length;
-    const made = next.map((r) => mk(r)); grid.append(...made.map((t) => t.el)); priceTiles(L, made, my);
+    const made = next.map((r) => mk(r)); grid.append(...made.map((t) => t.el)); priceTiles(L, made, my, !!f.ids);
     moreBtn.hidden = shown >= matches.length;
     moreBtn.textContent = `Afficher plus de cartes (${(matches.length - shown).toLocaleString('fr-FR')} restantes)`;
   };
@@ -1232,16 +1237,20 @@ async function showSearch(L, my, preset = {}) {
   const filterBtn = h('button', { type: 'button', class: 'tbtn', 'aria-label': 'Filtres', title: 'Filtres', onclick: openFilters }, '⚙︎ Filtres ', h('span', { class: 'nb', hidden: true }, '0'));
   const scanIn = h('input', { type: 'file', accept: 'image/*', capture: 'environment', hidden: true, 'aria-label': 'Photo de la carte' });
   const scanBtn = h('button', { type: 'button', class: 'tbtn', 'aria-label': 'Scanner une carte avec l’appareil photo', title: 'Scanner une carte', onclick: () => scanIn.click() }, '📷 Scanner');
-  scanIn.addEventListener('change', async () => {
-    const file = scanIn.files[0]; scanIn.value = ''; if (!file) return;
+  async function runScan(file) {
     scanBtn.disabled = true; summary.textContent = 'Analyse de la photo… (la première fois, quelques secondes)';
     try {
       const text = await ocrPhoto(file); if (my !== tok) return;
       const ids = matchScan(idx, parseCardText(text));
       if (!ids.length) { f.ids = f.rank = null; run(); toast('Carte non reconnue. Photo de face, bien éclairée, nom et numéro lisibles ; ou tapez son nom.'); }
-      else { q.value = ''; f.ids = new Set(ids); f.rank = new Map(ids.map((id, i) => [id, i])); run(); toast(plural(ids.length, 'carte trouvée', 'cartes trouvées') + ' : vérifiez le nom et le numéro.'); }
+      else {
+        q.value = ''; f.ids = new Set(ids); f.rank = new Map(ids.map((id, i) => [id, i])); run();
+        if (matches.length === 1 && tiles[0]) zoom(tiles[0]);          // une seule carte : on l'ouvre avec son prix
+        else toast(plural(ids.length, 'carte trouvée', 'cartes trouvées') + ' : touchez la bonne, son prix s’affiche.');
+      }
     } catch (e) { run(); toast('Scan impossible : ' + (e && e.message ? e.message : 'erreur')); } finally { scanBtn.disabled = false; }
-  });
+  }
+  scanIn.addEventListener('change', () => { const file = scanIn.files[0]; scanIn.value = ''; if (file) runScan(file); });
   top.append(h('div', { class: 'tools2' }, filterBtn, scanBtn, scanIn), chips);
 
   let timer = null;
@@ -1249,6 +1258,7 @@ async function showSearch(L, my, preset = {}) {
   moreBtn.addEventListener('click', more);
   main.replaceChildren(summary, grid, moreBtn, none);
   run();
+  if (pendingScan) { const file = pendingScan; pendingScan = null; history.replaceState(null, '', '#chercher'); runScan(file); }
 }
 
 /* ---------- Rareté et versions de chaque carte (français) ---------- */

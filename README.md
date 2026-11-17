@@ -85,7 +85,8 @@ Bouton « 📷 Scanner » de la page de recherche : on prend la carte en photo, 
 
 ## Accueil en tuiles et fiche d'extension
 
-- Accueil : menu de tuiles (Mes cartes, Statistiques, Rechercher, Amis, Sauvegarde, Réglages), encart de valeur, titre « Collection » avec l'icône déplier/replier et la bascule Liste / Grille des extensions (mémorisée).
+- Accueil : menu de tuiles (Mes cartes, Scanner, Statistiques, Rechercher, Amis, Sauvegarde, Réglages), encart de valeur, titre « Collection » avec l'icône déplier/replier et la bascule Liste / Grille des extensions (mémorisée).
 - Statistiques : cartes possédées / total, exemplaires, doubles, extensions complètes, valeur estimée, avancement par bloc.
 - Fiche d'extension : en-tête (logo, date de sortie, abréviation, avancement) avec le détail par rareté (touchez une rareté pour filtrer), et onglets Cartes (grandes images) / Liste (une ligne par carte) / Grille (par défaut), mémorisés.
 - Pas encore repris de la maquette de référence : barre de navigation du bas, Pokédex, Illustrateurs, Produits, cartes gradées, tri, favoris.
+- Scan depuis la première page : la tuile « Scanner » ouvre directement l'appareil photo ; la photo est analysée à l'ouverture de la recherche. Résultat : le prix de chaque carte candidate s'affiche tout seul (une requête par candidate, 40 au plus) ; si une seule carte est reconnue, elle s'ouvre directement avec son prix et ses liens.
