@@ -46,3 +46,10 @@ Settings → Pages → *Deploy from a branch* → branche voulue, dossier `/ (ro
 - `data/scans.json` indique, pour chaque carte, son dossier d'image, son numéro imprimé et son identifiant PokéCardex. Le scan **remplace** l'image TCGdex de ces cartes uniquement ; l'application affiche leur numéro imprimé (« 4/102 », « R/RGB »), mentionne la source dans l'extension concernée, et ne contacte jamais PokéCardex à l'exécution (tout est servi par l'application).
 - Les illustrations des cartes restent la propriété de leurs ayants droit (The Pokémon Company / Nintendo / Creatures / GAME FREAK) ; les scans sont celui de PokéCardex.
 - `data/order.json` : vrai ordre des cartes (celui de PokéCardex) pour le 30ᵉ Anniversaire : 001 … 158 puis Mew R, G, B ; Collection Classique dans l'ordre de PokéCardex. Les extensions absentes de ce fichier gardent l'ordre de TCGdex.
+
+## Scans distants (PokéCardex)
+- **2 922 autres cartes** sans image utilisable dans TCGdex (2 941 sans adresse d'image, 15 dont l'adresse répond 404 ; Diamant & Perle, Soleil et Lune, Kits du dresseur, McDonald's, promos de bloc, galeries…) sont illustrées par `data/scans-remote.json` : `idCarte → [code de série PokéCardex, n° d'image]`.
+- Ces scans **ne sont pas copiés dans le dépôt** : l'application les charge depuis le serveur d'images de PokéCardex (`…/sets/<série>/FR/<n°>.jpg?class=md` en grille, `class=hd` à l'agrandissement) et n'appelle jamais leur site. Si une image ne se charge pas, la carte affiche l'emplacement « Image indisponible ».
+- Appariement vérifié : séries PokéCardex trouvées par nom + alias, cartes appariées par numéro et nom, règle « position = numéro d'image » contrôlée sur 218 pages (1 exception : Kits Raichu, numérotés 31 à 60), 2 922 adresses testées (200), ~140 cartes contrôlées visuellement.
+- Reste sans scan : `2019sm-fr-33b` (une seule carte « Taupiqueur d'Alola » chez PokéCardex pour les n° 33 et 33b).
+- Régénération : voir `tools/` (collecte TCGdex des images manquantes, appariement par série).
