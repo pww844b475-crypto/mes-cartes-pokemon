@@ -209,11 +209,21 @@ function dataStatus(l, set, cov) {
 // Ne liste que des cartes dont TCGdex n'a pas d'image, ou dont l'adresse d'image ne répond pas (404) : le scan remplace alors l'image TCGdex.
 let scans = {};
 const localScansReady = fetch('data/scans.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.cards) scans = j.cards; }).catch(() => {});
-// data/scans-remote.json : { idCarte: [code de série PokéCardex, n° d'image] } — ~2 900 autres cartes sans image utilisable.
-// Ces scans ne sont PAS copiés dans l'application : ils sont chargés depuis le serveur d'images de PokéCardex (taille « md » pour la grille, « hd » à l'agrandissement).
+// data/scans-remote.json : { idCarte: [code de série PokéCardex, n° d'image] } — adresses des mêmes cartes sur le serveur d'images de PokéCardex,
+// utilisées seulement en repli (appareil sans AVIF) : taille « md » pour la grille, « hd » à l'agrandissement.
 let remote = {}, remoteBase = 'https://pokecardex-scans.b-cdn.net/sets/';
 const remoteScansReady = fetch('data/scans-remote.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.cards) { remote = j.cards; if (j._base) remoteBase = j._base; } }).catch(() => {});
-const scansReady = Promise.all([localScansReady, remoteScansReady]);
+// data/scans-embedded.json : { ids } — scans embarqués dans l'application (AVIF 444×620, une seule image par carte pour la grille et l'agrandissement) :
+// images/scans/cards/<id de carte, caractères spéciaux en _XX>.avif. Le serveur de PokéCardex ne sert plus que de repli si l'appareil ne sait pas lire l'AVIF.
+let embedded = new Set();
+const embeddedReady = fetch('data/scans-embedded.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.ids) embedded = new Set(j.ids); }).catch(() => {});
+const slugId = (id) => id.replace(/[^A-Za-z0-9._-]/g, (ch) => '_' + ch.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'));
+let avifOk = true;
+const avifReady = new Promise((res) => {   // l'AVIF se lit sur iOS / iPadOS 16 et plus, et sur les navigateurs récents
+  const i = new Image(); i.onload = () => res(true); i.onerror = () => res(false);
+  i.src = 'data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAADrbWV0YQAAAAAAAAAhaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAAAAAAAOcGl0bQAAAAAAAQAAAB5pbG9jAAAAAEQAAAEAAQAAAAEAAAETAAAAJwAAAChpaW5mAAAAAAABAAAAGmluZmUCAAAAAAEAAGF2MDFDb2xvcgAAAABqaXBycAAAAEtpcGNvAAAAFGlzcGUAAAAAAAAAAgAAAAIAAAAQcGl4aQAAAAADCAgIAAAADGF2MUOBAAwAAAAAE2NvbHJuY2x4AAEADQAGgAAAABdpcG1hAAAAAAAAAAEAAQQBAoMEAAAAL21kYXQSAAoIGAA2iAhoNCAyGRlHh4Yhh5555oAAAJBAyRxhSgnBjgTNEYw='; setTimeout(() => res(false), 4000);
+}).then((v) => { avifOk = v; return v; });
+const scansReady = Promise.all([localScansReady, remoteScansReady, embeddedReady, avifReady]);
 function applyScans(cards) {
   let n = 0;
   for (const c of cards) {
@@ -222,14 +232,16 @@ function applyScans(cards) {
     if (sc) {
       c.image = sc.p; c._scan = true; n++;
       if (sc.n) { c._lid = c.localId; c.localId = sc.n; }     // numéro imprimé sur la carte (« 4/102 », « R/RGB »)
-    } else if (rm) {
+    } else if (embedded.has(c.id) && avifOk) {
+      c.image = `images/scans/cards/${slugId(c.id)}.avif`; c._emb = true; c._scan = true; n++;
+    } else if (rm) {                                           // repli : appareil sans AVIF
       c._remote = rm; c.image = `${remoteBase}${rm[0]}/FR/${rm[1]}.jpg`; c._scan = true; n++;
     }
   }
   return n;
 }
-const imgLow = (c) => (c._remote ? c.image + '?class=md' : c.image + '/low.webp');     // grille
-const imgHigh = (c) => (c._remote ? c.image + '?class=hd' : c.image + '/high.webp');   // agrandissement
+const imgLow = (c) => (c._emb ? c.image : c._remote ? c.image + '?class=md' : c.image + '/low.webp');     // grille
+const imgHigh = (c) => (c._emb ? c.image : c._remote ? c.image + '?class=hd' : c.image + '/high.webp');   // agrandissement
 // data/order.json : vrai ordre des cartes (celui de PokéCardex) pour les extensions où TCGdex les range autrement.
 let orders = {};
 const orderReady = fetch('data/order.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j) orders = j; }).catch(() => {});
@@ -337,7 +349,7 @@ const isStandalone = window.navigator.standalone === true || matchMedia('(displa
 function privacyNote(extra) {
   return h('div', { class: 'note priv' }, h('b', {}, '🔒 Vos données restent chez vous. '),
     'Les données de vos amis sont stockées uniquement sur cet appareil et ne sont envoyées nulle part : cette application n’a ni serveur ni compte. ',
-    'Seules les listes et images publiques de cartes sont demandées à TCGdex (et, pour les cartes qui n’y ont pas d’image, au serveur d’images de PokéCardex). ', extra || '');
+    'Seules les listes et images publiques de cartes sont demandées à TCGdex (et, uniquement sur un appareil trop ancien pour lire les images AVIF embarquées, au serveur d’images de PokéCardex pour quelques cartes). ', extra || '');
 }
 
 /* ---------- Regroupement : collections classiques et galeries de dresseurs ---------- */
@@ -597,7 +609,7 @@ async function showSet(L, setId, my) {
   if (fromScans) notes.push(h('div', { class: 'note' }, h('b', {}, 'Scans PokéCardex. '),
     `${plural(fromScans, 'carte de cette extension n’a', 'cartes de cette extension n’ont')} pas d’image utilisable dans TCGdex : ${fromScans > 1 ? 'leurs scans viennent' : 'son scan vient'} de `,
     h('a', { href: 'https://www.pokecardex.com/', target: '_blank', rel: 'noopener noreferrer' }, 'PokéCardex'),
-    fromRemote ? ` (${fromRemote > 1 ? 'chargés' : 'chargé'} depuis son serveur d’images).` : '.'));
+    fromRemote ? ` (${fromRemote > 1 ? 'chargés' : 'chargé'} depuis son serveur d’images, cet appareil ne lisant pas l’AVIF).` : '.'));
 
   let filter = 'all';
   const persist = (part) => () => {
