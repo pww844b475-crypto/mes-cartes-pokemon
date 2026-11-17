@@ -101,3 +101,14 @@ Bouton « 📷 Scanner » de la page de recherche : on prend la carte en photo, 
 - Prix Cardmarket (TCGdex) : « tendance » = tirage normal de la carte (y compris une carte **Holo**) ; « tendance holo » = tirage **Reverse**. Une version Reverse est donc valorisée au prix reverse, toute autre version (Normal, Holo…) au prix normal. (Avant, les versions Holo étaient à tort valorisées au prix reverse.)
 - Numérotation par groupe : une carte « H01 » fait partie des « H » (affichée `#H01/H32`), pas des 147 cartes numérotées d'Aquapolis ; idem TG, GG, SV… Le scan lit « H01/H32 » et ne le confond plus avec « 01/147 » ; les « V1 / V2 » des adresses Cardmarket ne comptent que les cartes du même groupe de numéros.
 - Zarbi d'EX Forces Cachées (set TCGdex « Collection Zarbi », `exu`, 28 cartes `!`, `?`, `A` à `Z`) : rattachés à EX Forces Cachées comme partie à part (comme la Collection Classique des 30 ans) ; numéros affichés `A/28`, `?/28` (le « %3F » de TCGdex est décodé) ; le scan lit « A/28 » / « ?/28 ». Les anciennes cartes cochées restent enregistrées sous `exu`.
+
+## Adresses Cardmarket : sûres, déduites, à vérifier
+
+- `data/cm-links.json` : adresses calculées des 27 cartes de la Collection Classique des 30 ans (`30th-Celebration/Mew-VMAX-30CFST-114` : code `30C` + abréviation de l'extension d'origine + numéro d'origine, retrouvés grâce au numéro imprimé dans `data/scans.json`). 3 cartes sans correspondance unique n'ont pas d'adresse (recherche).
+- Extensions confirmées par des liens réels (`CM_VERIFIED` dans `app.js`) : 30th, Aquapolis, EX Forces Cachées (+ Zarbi). Pour les autres cas sensibles (partie d'une autre extension, promos, numéros à lettres, série EX, signe dans le nom), l'adresse est construite mais marquée « Adresse déduite, non vérifiée » dans l'agrandissement.
+- `docs/liens-cardmarket-a-verifier.md` : liste des 92 extensions concernées, avec une carte d'exemple et l'adresse construite, pour vérification par clic.
+- Quand un lien est confirmé : ajouter l'identifiant de l'extension à `CM_VERIFIED`.
+
+## Scan : améliorations
+
+Lecture supplémentaire de la bande du haut (nom) à deux hauteurs, agrandie, et tolérance aux petites erreurs de lecture (une ou deux lettres) quand aucun nom exact n'est trouvé. Sur 24 scans du dépôt : carte retrouvée parmi les candidats 19 fois sur 24 (17 avant), plus aucune photo « non reconnue » (3 avant).
