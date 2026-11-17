@@ -81,7 +81,10 @@ Bouton 🔎 de l’accueil (`#chercher`) : recherche par nom ou numéro dans les
 
 Bouton « 📷 Scanner » de la page de recherche : on prend la carte en photo, le nom et le numéro imprimé sont lus **dans l'appareil** (Tesseract.js, dossier `vendor/tesseract/`, chargé à la première utilisation ; la photo n'est envoyée nulle part), puis les cartes correspondantes de `data/names.json` s'affichent avec leur prix. Ordre : nom + numéro + total de l'extension d'abord, sinon toutes les éditions du nom, de l'extension la plus récente à la plus ancienne. Si plusieurs cartes ressortent, on choisit à l'image. La fiabilité dépend de la photo (de face, bien éclairée, texte net) : le numéro imprimé, petit, est le plus difficile à lire.
 - Liens eBay.fr et Cardmarket : filtres « vendeur en France » (`LH_PrefLoc=1`) et, pour Cardmarket, vendeur France / français / Near Mint (`sellerCountry=12&language=2&minCondition=2`) ; ouverts par l'utilisateur, pas par l'application.
-- Lien Cardmarket : fiche exacte de la carte, `…/fr/Pokemon/Products/Singles/<Extension-en-anglais>/<Nom-en-anglais>-<ABRÉVIATION><numéro>?language=2&sellerCountry=12&minCondition=2` (ex. `30th-Celebration/Pikachu-30C034`, adresse fournie par l'utilisateur). Nom anglais demandé à TCGdex (`/en/cards/<id>`), abréviation depuis `data/sets-meta.json`, adresse mémorisée dans `cartes.cmslug` ; repli sur la recherche par nom si elle ne peut pas être construite. Deux cartes du même nom dans une extension (ex. « Saquedeneu d'Erika » n° 7 et n° 218) : « V1 », « V2 »… sont ajoutés dans l'ordre des numéros (`Erikas-Tangela-V1-ASC007`) — règle déduite d'un cas signalé, non vérifiable depuis l'environnement de développement (Cloudflare).
+- Lien Cardmarket : fiche exacte de la carte, `…/fr/Pokemon/Products/Singles/<Extension-en-anglais>/<Nom-en-anglais>-<ABRÉVIATION><numéro>?language=2&sellerCountry=12&minCondition=2` (ex. `30th-Celebration/Pikachu-30C034`). Nom anglais demandé à TCGdex (`/en/cards/<id>`), abréviation depuis `data/sets-meta.json`, adresse mémorisée dans `cartes.cmslug3` ; repli sur la recherche par nom si elle ne peut pas être construite. Règles déduites d'adresses réelles fournies par l'utilisateur :
+  - cartes du même nom dans l'extension : `-V1`, `-V2`… ; les cartes « H » passent avant les cartes numérotées (`Aquapolis/Umbreon-V1-AQH29`, la carte numérotée du même nom est `-V2`) ;
+  - Zarbi : `EX-Unseen-Forces/Unown-A-UFA-28` (extension principale, nom-lettre-ABRÉVIATION+lettre-total) ; les extensions de la série EX sont préfixées « EX » ; les Zarbi `?` et `!` n'ont pas d'adresse connue (recherche).
+  Cloudflare bloque la vérification automatique : les autres cas particuliers ne sont pas vérifiés.
 
 ## Accueil en tuiles et fiche d'extension
 
@@ -92,3 +95,20 @@ Bouton « 📷 Scanner » de la page de recherche : on prend la carte en photo, 
 - Scan depuis la première page : la tuile « Scanner » ouvre directement l'appareil photo ; la photo est analysée à l'ouverture de la recherche. Résultat : le prix de chaque carte candidate s'affiche tout seul (une requête par candidate, 40 au plus) ; si une seule carte est reconnue, elle s'ouvre directement avec son prix et ses liens.
 - Dans l'agrandissement de toute carte (donc après un scan) : bouton « ➕ Ajouter à ma collection » (un exemplaire ; première version si la carte en a plusieurs, ajustable juste dessous), remplacé par « ✓ Dans ma collection : N exemplaires » une fois ajoutée.
 - Logo de l'accueil : `icons/logo-banner.webp` (bandeau « Pijakollection » fourni par l'utilisateur, 1000 px, 24 Ko) à la place du titre en texte ; le texte reste présent pour les lecteurs d'écran.
+
+## Prix par version, numéros par groupe (H01/H32, TG07/TG30…)
+
+- Prix Cardmarket (TCGdex) : « tendance » = tirage normal de la carte (y compris une carte **Holo**) ; « tendance holo » = tirage **Reverse**. Une version Reverse est donc valorisée au prix reverse, toute autre version (Normal, Holo…) au prix normal. (Avant, les versions Holo étaient à tort valorisées au prix reverse.)
+- Numérotation par groupe : une carte « H01 » fait partie des « H » (affichée `#H01/H32`), pas des 147 cartes numérotées d'Aquapolis ; idem TG, GG, SV… Le scan lit « H01/H32 » et ne le confond plus avec « 01/147 » ; les « V1 / V2 » des adresses Cardmarket ne comptent que les cartes du même groupe de numéros.
+- Zarbi d'EX Forces Cachées (set TCGdex « Collection Zarbi », `exu`, 28 cartes `!`, `?`, `A` à `Z`) : rattachés à EX Forces Cachées comme partie à part (comme la Collection Classique des 30 ans) ; numéros affichés `A/28`, `?/28` (le « %3F » de TCGdex est décodé) ; le scan lit « A/28 » / « ?/28 ». Les anciennes cartes cochées restent enregistrées sous `exu`.
+
+## Adresses Cardmarket : sûres, déduites, à vérifier
+
+- `data/cm-links.json` : adresses calculées des 27 cartes de la Collection Classique des 30 ans (`30th-Celebration/Mew-VMAX-30CFST-114` : code `30C` + abréviation de l'extension d'origine + numéro d'origine, retrouvés grâce au numéro imprimé dans `data/scans.json`). 3 cartes sans correspondance unique n'ont pas d'adresse (recherche).
+- Extensions confirmées par des liens réels (`CM_VERIFIED` dans `app.js`) : 30th, Aquapolis, EX Forces Cachées (+ Zarbi). Pour les autres cas sensibles (partie d'une autre extension, promos, numéros à lettres, série EX, signe dans le nom), l'adresse est construite mais marquée « Adresse déduite, non vérifiée » dans l'agrandissement.
+- `docs/liens-cardmarket-a-verifier.md` : liste des 87 extensions concernées, avec une carte d'exemple et l'adresse construite, pour vérification par clic.
+- Quand un lien est confirmé : ajouter l'identifiant de l'extension à `CM_VERIFIED`.
+
+## Scan : améliorations
+
+Lecture supplémentaire de la bande du haut (nom) à deux hauteurs, agrandie, et tolérance aux petites erreurs de lecture (une ou deux lettres) quand aucun nom exact n'est trouvé. Sur 24 scans du dépôt : carte retrouvée parmi les candidats 19 fois sur 24 (17 avant), plus aucune photo « non reconnue » (3 avant).

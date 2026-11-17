@@ -17,7 +17,7 @@ const K = {
   lang: 'cartes.lang', cov: 'cartes.cov', exp: 'cartes.lastExport', tip: 'cartes.tipHidden', order: 'cartes.order',
   friends: 'cartes.friends.v1', pseudo: 'cartes.pseudo',
   splash: 'cartes.splash', // 'off' = écran d'ouverture désactivé
-  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay', cmslug: 'cartes.cmslug2', view: 'cartes.view', setview: 'cartes.setview',
+  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay', cmslug: 'cartes.cmslug4', view: 'cartes.view', setview: 'cartes.setview',
 };
 const BACKUP_VERSION = 3;   // sauvegarde personnelle (3 : quantités par version de carte)
 const SHARE_VERSION = 2;    // fichier de partage entre amis (2 : quantités par version de carte)
@@ -360,7 +360,7 @@ function privacyNote(extra) {
 // enfant → extension parente (TCGdex fr). Ces cartes font partie de la même collection que leur parent.
 // Les cases cochées restent enregistrées sous l'identifiant d'origine de chaque carte : rien à migrer.
 const MERGE_INTO = {
-  'cel25cc': 'cel25', '30th-c': '30th',
+  'cel25cc': 'cel25', '30th-c': '30th', 'exu': 'ex10',      // exu : Collection Zarbi (A/28 … ?/28), cartes secrètes d'EX Forces Cachées
   'swsh9tg': 'swsh9', 'swsh10tg': 'swsh10', 'swsh11tg': 'swsh11', 'swsh12tg': 'swsh12', 'swsh12.5gg': 'swsh12.5',
 };
 const parentOf = (sid, idSet) => (MERGE_INTO[sid] && idSet.has(MERGE_INTO[sid]) ? MERGE_INTO[sid] : sid);
@@ -439,8 +439,9 @@ async function fetchPrice(L, id) {
   try { const d = await api(path); mem.delete(path); c = d.pricing && d.pricing.cardmarket; } catch (e) { if (!/HTTP 404/.test(e.message || '')) throw e; }
   priceCache[id] = c ? [numOrNull(c.trend) ?? numOrNull(c.avg) ?? numOrNull(c.low), numOrNull(c['trend-holo']) ?? numOrNull(c['avg-holo']) ?? numOrNull(c['low-holo']), Date.now(), numOrNull(c.idProduct)] : [null, null, Date.now(), null];   // [prix, prix holo, date, identifiant produit Cardmarket]
 }
-// version « Normal » → prix normal ; Reverse / Holo… → prix holo s'il existe
-const cmUnit = (e, key) => ((key && !/^normal(\/|$)/.test(key)) ? (e[1] ?? e[0]) : (e[0] ?? e[1]));
+// Prix Cardmarket de la fiche : « tendance » = tirage normal de la carte (y compris une carte Holo), « tendance holo » = tirage Reverse.
+// Version Reverse → prix reverse (repli : prix normal) ; toute autre version (Normal, Holo…) → prix normal (repli : prix reverse).
+const cmUnit = (e, key) => ((key && /^reverse(\/|$)/.test(key)) ? (e[1] ?? e[0]) : (e[0] ?? e[1]));
 // Vente eBay.fr relevée à la main (dernière vente réussie) : { idCarte: [prix] } (d'anciennes saisies de 1 à 3 prix sont lues : leur moyenne compte) ; combinée à celle de Cardmarket
 function sanitizeEbay(o) {
   const out = {};
@@ -557,19 +558,45 @@ function priceTiles(L, tiles, my, all) {   // all : toutes les cartes (résultat
 // ex. « 30th-Celebration/Pikachu-30C034 ». Le nom anglais vient de TCGdex (/en/cards/<id>), mémorisé dans cartes.cmslug.
 const slugCm = (t) => String(t == null ? '' : t).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/['’`.:!?,()]/g, '').replace(/&/g, ' ').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 let cmSlugs = {};
-try { const o = JSON.parse(store.get(K.cmslug) || '{}'); for (const [k, v] of Object.entries(o || {})) if (typeof v === 'string' && /^[A-Za-z0-9-]+\/[A-Za-z0-9-]+$/.test(v)) cmSlugs[k] = v; } catch { cmSlugs = {}; }
+try { const o = JSON.parse(store.get(K.cmslug) || '{}'); for (const [k, v] of Object.entries(o || {})) if (typeof v === 'string' && /^[A-Za-z0-9-]+\/[A-Za-z0-9-]+\??$/.test(v)) cmSlugs[k] = v; } catch { cmSlugs = {}; }
+let cmStatic = {};   // data/cm-links.json : adresses calculées pour les cartes de la Collection Classique des 30 ans (…/30th-Celebration/Mew-VMAX-30CFST-114)
+fetch('data/cm-links.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && typeof j === 'object') cmStatic = j; }).catch(() => {});
+// Extensions dont les adresses ont été confirmées par des liens réels fournis par l'utilisateur (les autres cas sensibles sont marqués « à vérifier »).
+const CM_VERIFIED = new Set(['30th', '30th-c', 'ecard2', 'ex10', 'exu']);
+const CM_PROMO_SERIES = new Set(['pop', 'mc', 'tk', 'misc']);
+const CM_PARENT = { exu: 'ex10' };      // la collection Zarbi est une partie de « EX Forces Cachées » chez Cardmarket
+// Règles déduites d'adresses réelles :
+//  · …/Singles/Aquapolis/Umbreon-V1-AQH29 : cartes du même nom dans l'extension = V1, V2… ; les cartes « H » passent avant les cartes numérotées ;
+//  · …/Singles/EX-Unseen-Forces/Unown-A-UFA-28 : Zarbi = nom-lettre-ABRÉVIATION+lettre-total, dans l'extension principale ; les extensions de la série EX sont préfixées « EX ».
 async function ensureCmSlug(id) {
-  if (cmSlugs[id]) return;
+  if (cmSlugs[id] || cmStatic[id]) return;
   const d = await api(`/en/cards/${encodeURIComponent(id)}`);
-  const sid = d.set && d.set.id; let abbr = (sid && (setMeta(sid) || [])[2]) || '';
-  if (!abbr && sid) { try { const sd = await api(`/en/sets/${encodeURIComponent(sid)}`); abbr = (sd.abbreviation && sd.abbreviation.official) || ''; } catch { /* repli : recherche */ } }
-  const setS = slugCm(d.set && d.set.name); let nameS = slugCm(d.name); const abbrS = slugCm(abbr), numS = slugCm(d.localId);
-  if (!setS || !nameS || !abbrS || !numS) return;
-  // deux cartes du même nom dans l'extension (ex. « Saquedeneu d'Erika » n° 7 et n° 218) : Cardmarket ajoute V1, V2… dans l'ordre des numéros
-  const sd = await api(`/en/sets/${encodeURIComponent(sid)}`);
-  const same = (sd.cards || []).filter((x) => slugCm(x.name) === nameS);
-  if (same.length > 1) { const k = same.findIndex((x) => x.id === id); if (k >= 0) nameS += `-V${k + 1}`; }
-  cmSlugs[id] = `${setS}/${nameS}-${abbrS}${numS}`;
+  const own = d.set && d.set.id; if (!own) return;
+  const top = CM_PARENT[own] || own;                                  // extension affichée par Cardmarket
+  let setName = d.set.name;
+  if (top !== own) setName = (await api(`/en/sets/${encodeURIComponent(top)}`)).name;
+  let abbr = (setMeta(top) || [])[2] || '';
+  if (!abbr) { try { const sd0 = await api(`/en/sets/${encodeURIComponent(top)}`); abbr = (sd0.abbreviation && sd0.abbreviation.official) || ''; } catch { /* repli : recherche */ } }
+  if ((setMeta(top) || [])[0] === 'ex' && !/^EX /i.test(setName || '')) setName = 'EX ' + setName;
+  const setS = slugCm(setName); let nameS = slugCm(d.name); const abbrS = slugCm(abbr);
+  if (!setS || !nameS || !abbrS) return;
+  const sd = await api(`/en/sets/${encodeURIComponent(own)}`), grp = numGroup(d.localId);
+  // adresse déduite d'une règle non confirmée pour cette extension ? (partie d'une autre, promo, numéros à lettres, série EX, signe dans le nom) → « ? » = à vérifier
+  const serie = (setMeta(own) || [])[0] || '';
+  const doubt = !CM_VERIFIED.has(own) && (top !== own || grp !== '' || CM_PROMO_SERIES.has(serie) || /promo|black star/i.test(setName || '') || serie === 'ex' || /[&:]/.test(setName || '')) ? '?' : '';
+  if (grp === '*') {                                                   // Zarbi : « A/28 »
+    const ch = slugCm(lidShow(d.localId)); if (!ch) return;            // « ? » et « ! » : pas d'adresse connue → recherche
+    const total = (sd.cards || []).filter((x) => numGroup(x.localId) === '*').length;
+    cmSlugs[id] = `${setS}/${nameS}-${ch}-${abbrS}${ch}-${total}${doubt}`;
+  } else {
+    const numS = slugCm(d.localId); if (!numS) return;
+    const same = (sd.cards || []).filter((x) => slugCm(x.name) === nameS);
+    if (same.length > 1) {
+      same.sort((a, b) => ((numGroup(a.localId) === '') - (numGroup(b.localId) === '')) || lidShow(a.localId).localeCompare(lidShow(b.localId), 'en', { numeric: true }));
+      const k = same.findIndex((x) => x.id === id); if (k >= 0) nameS += `-V${k + 1}`;
+    }
+    cmSlugs[id] = `${setS}/${nameS}-${abbrS}${numS}${doubt}`;
+  }
   store.set(K.cmslug, JSON.stringify(cmSlugs));
 }
 
@@ -840,7 +867,8 @@ async function showSet(L, setId, my) {
     openLightbox(vis, Math.max(0, vis.indexOf(t)), L);
   };
   const sections = parts.map((part) => {
-    const pt = part.cards.map((c) => makeTile(c, part.mine, persist(part), { info: part.info, setName: part.name, zoom }));
+    const ptot = prefixTotals(part.cards);
+    const pt = part.cards.map((c) => makeTile(c, part.mine, persist(part), { info: part.info, setName: part.name, zoom, prefixTotals: ptot }));
     tiles.push(...pt);
     const el = h('section', { class: 'part' },
       parts.length > 1 && h('h2', { class: 'part-h' }, `${part.name} · ${plural(part.cards.length || part.total, 'carte', 'cartes')}`),
@@ -1054,12 +1082,13 @@ async function buildSearchIndex(L, sets) {
     applyScans(cards);
     for (const c of cards) {
       const i = info.get(c.id) || null;
-      recs.push({ card: c, sid, gid, setName: m.name || sid, info: i, text: norm(`${c.name} ${c.localId} ${c.id}`) });
+      recs.push({ card: c, sid, gid, setName: m.name || sid, info: i, text: norm(`${c.name} ${lidShow(c.localId)} ${c.id}`) });
       if (i && i.rar) rars.set(i.rar, (rars.get(i.rar) || 0) + 1);
       if (i) for (const v of i.vars) { const e = vers.get(v.key) || { label: v.label, n: 0 }; e.n++; vers.set(v.key, e); }
     }
   }
-  return { L, recs, infos, blocks, rars, vers, official: new Map(sets.map((x) => [x.id, x.cardCount && x.cardCount.official])) };
+  const prefix = new Map(); for (const [m] of order) prefix.set(m.id, prefixTotals((names[m.id] || []).map((row) => ({ localId: typeof row[2] === 'string' ? row[1] : row[0] }))));
+  return { L, recs, infos, blocks, rars, vers, prefix, official: new Map(sets.map((x) => [x.id, x.cardCount && x.cardCount.official])) };
 }
 
 /* ---------- Scan d'une carte : reconnaissance du texte dans l'appareil (la photo n'est envoyée nulle part) ---------- */
@@ -1075,47 +1104,70 @@ async function getOcr() {
   ocrWorker = await Tesseract.createWorker('fra', 1, { workerPath: abs('vendor/tesseract/worker.min.js'), corePath: abs('vendor/tesseract/core'), langPath: abs('vendor/tesseract/lang') });
   return ocrWorker;
 }
-async function photoCanvases(file) { // photo entière (réduite) + bande du bas (où se trouve le numéro), agrandie
+async function photoCanvases(file) { // photo entière (réduite), bande du bas (numéro) et bandes du haut (nom), agrandies
   const bmp = await createImageBitmap(file);
   const k = Math.min(1, 1800 / Math.max(bmp.width, bmp.height));
   const full = document.createElement('canvas'); full.width = Math.round(bmp.width * k); full.height = Math.round(bmp.height * k);
   full.getContext('2d').drawImage(bmp, 0, 0, full.width, full.height);
-  const sh = Math.round(bmp.height * 0.2), sy = bmp.height - sh, ks = Math.min(2, 1800 / bmp.width);
-  const strip = document.createElement('canvas'); strip.width = Math.round(bmp.width * ks); strip.height = Math.round(sh * ks);
-  strip.getContext('2d').drawImage(bmp, 0, sy, bmp.width, sh, 0, 0, strip.width, strip.height);
+  const band = (y0, frac, kmax) => {
+    const sh = Math.round(bmp.height * frac), sy = Math.round(bmp.height * y0), ks = Math.min(kmax, 1800 / bmp.width);
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * ks); c.height = Math.round(sh * ks);
+    c.getContext('2d').drawImage(bmp, 0, sy, bmp.width, sh, 0, 0, c.width, c.height); return c;
+  };
+  const out = [full, band(0.8, 0.2, 2), band(0, 0.16, 3), band(0, 0.22, 3)];
   if (bmp.close) bmp.close();
-  return [full, strip];
+  return out;
 }
 async function ocrPhoto(file) {
-  const w = await getOcr(), [full, strip] = await photoCanvases(file);
+  const w = await getOcr(), cs = await photoCanvases(file); let text = '';
   await w.setParameters({ tessedit_pageseg_mode: '6' });
-  let text = (await w.recognize(full)).data.text;
-  await w.setParameters({ tessedit_pageseg_mode: '6' });
-  text += '\n' + (await w.recognize(strip)).data.text;
+  for (const c of cs) text += '\n' + (await w.recognize(c)).data.text;      // page, numéro (bas), nom (haut, deux hauteurs)
   return text;
 }
 function parseCardText(text) {
-  const nums = [...text.replace(/[Il|]/g, '1').matchAll(/(\d{1,3})\s*[\/\\]\s*(\d{2,3})/g)].map((m) => [parseInt(m[1], 10), parseInt(m[2], 10)]);
-  const pick = nums.find(([a, b]) => a > 0 && b >= 10 && a <= b + 40) || null;
-  return { n: pick ? pick[0] : null, total: pick ? pick[1] : null, norm: ' ' + norm(text).replace(/[^a-z0-9]+/g, ' ') + ' ' };
+  const t = text.replace(/[Il|]/g, '1').toUpperCase();
+  const nums = [...t.matchAll(/(^|[^A-Z])([A-Z]{0,3})\s?(\d{1,3})\s*[\/\\]\s*([A-Z]{0,3})\s?(\d{2,3})/g)].map((m) => ({ pre: m[2], n: parseInt(m[3], 10), tpre: m[4], total: parseInt(m[5], 10) }));   // le préfixe (H, TG, GG, SV…) ne doit pas être la fin d'un mot
+  const pick = nums.find((x) => x.n > 0 && x.total >= 10 && x.n <= x.total + 40 && (x.pre === x.tpre || !x.tpre)) || null;
+  const cm = pick ? null : t.match(/(^|[^A-Z0-9])([A-Z!?])\s?\/\s?(\d{2,3})(?![0-9])/);      // Zarbi : « A/28 », « ?/28 »
+  return { ch: cm ? cm[2] : '', chTotal: cm ? parseInt(cm[3], 10) : null, n: pick ? pick.n : null, pre: pick ? pick.pre : '', total: pick ? pick.total : null, tpre: pick ? pick.tpre : '', norm: ' ' + norm(text).replace(/[^a-z0-9]+/g, ' ') + ' ' };
 }
+// distance d'édition (petites erreurs de lecture : « Guemlande » ≈ « Guérilande »)
+function lev(a, b) {
+  if (a === b) return 0; if (Math.abs(a.length - b.length) > 2) return 9;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) { const cur = [i]; for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = cur; }
+  return prev[b.length];
+}
+const nameBase = (n) => norm(n).replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter((w) => w !== 'mega')[0] || '';
 // → liste d'identifiants de cartes, de la plus probable à la moins probable
 function matchScan(idx, p) {
   const out = [];
+  const lm = (r) => String(r.card.localId).match(/^([A-Za-z]*)0*(\d+)$/);
+  const rate = (r, sc) => {
+    const m = lm(r);        // « H01 » → groupe H, numéro 1 ; « 1 » → groupe vide, numéro 1
+    const numHit = p.n != null && !!m && m[1].toUpperCase() === (p.tpre ? p.pre : '') && parseInt(m[2], 10) === p.n;   // total sans lettre (« 103/130 ») : carte à numéro simple ; lettres parasites avant le numéro ignorées
+    const chHit = !!p.ch && lidShow(r.card.localId).toUpperCase() === p.ch;
+    const totHit = chHit ? (idx.prefix.get(r.sid) && idx.prefix.get(r.sid).get('*')) === p.chTotal : p.total != null && (p.tpre ? (idx.prefix.get(r.sid) && idx.prefix.get(r.sid).get(p.tpre)) === p.total : idx.official.get(r.sid) === p.total);
+    out.push({ id: r.card.id, score: sc + ((numHit || chHit) ? 200 : 0) + (totHit ? 40 : 0), numHit: numHit || chHit });
+  };
   for (const r of idx.recs) {
     const full = norm(r.card.name).replace(/[^a-z0-9]+/g, ' ').trim();
     const base = full.split(' ').filter((w) => w !== 'mega')[0] || '';       // « Mentali-GX » → « mentali » (le suffixe est souvent mal lu)
-    let sc = -1;
-    if (full.length >= 5 && p.norm.includes(' ' + full + ' ')) sc = 100 + full.length;
-    else if (base.length >= 5 && p.norm.includes(' ' + base + ' ')) sc = base.length;
-    if (sc < 0) continue;
-    const digits = String(r.card.localId).replace(/\D/g, '');
-    const numHit = p.n != null && digits !== '' && parseInt(digits, 10) === p.n;
-    const totHit = p.total != null && idx.official.get(r.sid) === p.total;
-    out.push({ id: r.card.id, score: sc + (numHit ? 200 : 0) + (totHit ? 40 : 0), numHit });
+    if (full.length >= 5 && p.norm.includes(' ' + full + ' ')) rate(r, 100 + full.length);
+    else if (base.length >= 5 && p.norm.includes(' ' + base + ' ')) rate(r, base.length);
+  }
+  if (!out.length) {                    // rien d'exact : nom approché (une ou deux lettres mal lues)
+    const words = [...new Set(p.norm.split(' ').filter((w) => w.length >= 5 && /^[a-z]/.test(w)))];
+    if (!idx.bases) { idx.bases = new Map(); idx.recs.forEach((r, i) => { const b = nameBase(r.card.name); if (b.length >= 5) { if (!idx.bases.has(b)) idx.bases.set(b, []); idx.bases.get(b).push(i); } }); }
+    const near = [];
+    for (const [b, list] of idx.bases) {
+      let best = 9; for (const w of words) { const d = lev(b, w); if (d < best) best = d; }
+      if (best <= (b.length >= 8 ? 2 : 1)) near.push([b, best, list]);
+    }
+    near.sort((x, y) => x[1] - y[1]).slice(0, 6).forEach(([b, d, list]) => list.forEach((i) => rate(idx.recs[i], b.length - 12 * d)));
   }
   const best = out.some((x) => x.numHit) ? out.filter((x) => x.numHit) : out;
-  return best.map((x, i) => [x, i]).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 40).map(([x]) => x.id);   // à score égal : extension la plus récente d'abord
+  return best.map((x, i) => [x, i]).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 60).map(([x]) => x.id);   // à score égal : extension la plus récente d'abord
 }
 
 async function showSearch(L, my, preset = {}) {
@@ -1173,7 +1225,7 @@ async function showSearch(L, my, preset = {}) {
   const persist = (sid) => { const m = mines.get(sid); if (countKeys(m)) owned[L][sid] = m; else delete owned[L][sid]; saveOwned(); };
   const zoom = (t) => { const vis = tiles.filter((x) => !x.el.hidden); openLightbox(vis, Math.max(0, vis.indexOf(t)), L); };
   const mk = (r) => {
-    const t = makeTile(r.card, mines.get(r.sid), () => { persist(r.sid); t.el.hidden = !match(r, needle); updateSummary(); }, { info: idx.infos.get(r.sid), setName: r.setName, zoom });
+    const t = makeTile(r.card, mines.get(r.sid), () => { persist(r.sid); t.el.hidden = !match(r, needle); updateSummary(); }, { info: idx.infos.get(r.sid), setName: r.setName, zoom, prefixTotals: idx.prefix.get(r.sid) });
     t.el.querySelector('.nm').after(h('span', { class: 'setlbl' }, r.setName));
     tiles.push(t); return t;
   };
@@ -1323,6 +1375,17 @@ function mediaButton(card, name, onclick, badge) {
   return { media, placeholder };
 }
 
+// Numérotation par groupe : « H01 » fait partie des « H » (H01/H32), pas des 147 cartes numérotées d'Aquapolis ; idem TG, GG, SV…
+// Les cartes numérotées par une lettre ou un signe (Zarbi « A/28 », « ?/28 ») forment le groupe « * ».
+const lidShow = (lid) => { try { return decodeURIComponent(String(lid)); } catch { return String(lid); } };      // « %3F » → « ? »
+const numPrefix = (lid) => (String(lid).match(/^[A-Za-z]+/) || [''])[0].toUpperCase();
+const numGroup = (lid) => { const d = lidShow(lid); if (d.includes('/')) return ''; return /\d/.test(d) ? numPrefix(d) : '*'; };      // un numéro déjà complet (« R/RGB ») n'a pas de groupe
+function prefixTotals(cards) { const m = new Map(); for (const c of cards) { const g = numGroup(c.localId); if (g) m.set(g, (m.get(g) || 0) + 1); } return m; }
+const numLabelOf = (card, totals) => {
+  const d = lidShow(card.localId), g = numGroup(card.localId), n = g && totals && totals.get(g);
+  if (!(n > 1)) return d;
+  return g === '*' ? `${d}/${n}` : `${d}/${g}${String(n).padStart(2, '0')}`;
+};
 const MAXCHIPS = 4;
 function makeTile(card, mine, onChange, ctx) {
   const id = card.id, name = card.name || '#' + card.localId;
@@ -1330,7 +1393,8 @@ function makeTile(card, mine, onChange, ctx) {
   const { media } = mediaButton(card, name, () => ctx.zoom(t));
 
   const dbl = h('span', { class: 'dbl', hidden: true });
-  const num = h('span', { class: 'num' }, '#' + card.localId);
+  const numLabel = numLabelOf(card, ctx.prefixTotals);
+  const num = h('span', { class: 'num' }, '#' + numLabel);
   const rar = h('span', { class: 'rar' });
   const price = h('span', { class: 'price', hidden: true });
   const ctl = h('div', { class: 'ctl' });
@@ -1338,7 +1402,7 @@ function makeTile(card, mine, onChange, ctx) {
   let cb = null, mark = null, qv = null, minus = null, plus = null, chips = [], unChip = null;
 
   const t = {
-    el, card, mine, id, name, setName: ctx.setName, text: '',
+    el, card, mine, id, name, setName: ctx.setName, numLabel, text: '',
     get info() { return info; },
     setInfo(i) { info = i; build(); sync(); },
     get value() { return mine[id]; },
@@ -1352,7 +1416,7 @@ function makeTile(card, mine, onChange, ctx) {
   function build() {
     rar.textContent = info && info.rar ? info.rar : '';
     rar.className = 'rar' + (info && info.rar ? ' rt-' + rarityTier(info.rar) : '');
-    t.text = norm(`${name} ${card.localId} ${id} ${info && info.rar ? info.rar : ''}`);
+    t.text = norm(`${name} ${lidShow(card.localId)} ${id} ${info && info.rar ? info.rar : ''}`);
     el.querySelector('.cb')?.remove(); ctl.replaceChildren(); chips = []; unChip = null;
     if (hasVersions(info)) {
       cb = null; qv = minus = plus = null;
@@ -1371,7 +1435,7 @@ function makeTile(card, mine, onChange, ctx) {
       ctl.append(unChip);
     } else {
       mark = null;
-      cb = h('input', { type: 'checkbox', class: 'cb', 'aria-label': `Je possède ${name} (n° ${card.localId})` });
+      cb = h('input', { type: 'checkbox', class: 'cb', 'aria-label': `Je possède ${name} (n° ${lidShow(card.localId)})` });
       cb.addEventListener('change', () => t.set(null, cb.checked ? 1 : 0));
       el.append(cb);
       qv = h('span', { class: 'qv', 'aria-live': 'polite' }, '1');
@@ -1478,8 +1542,8 @@ function openLightbox(items, index, L) {
     const e = priceCache[it.card.id];
     if (!e) { priceEl.textContent = 'Prix : relevé en cours…'; return; }
     const parts = [];
-    if (e[0] != null) parts.push(`Normal ${eur(e[0])}`);
-    if (e[1] != null && e[1] !== e[0]) parts.push(`Reverse / Holo ${eur(e[1])}`);
+    if (e[0] != null) parts.push(`Normal / Holo ${eur(e[0])}`);
+    if (e[1] != null && e[1] !== e[0]) parts.push(`Reverse ${eur(e[1])}`);
     priceEl.replaceChildren(parts.length ? h('b', {}, 'Prix Cardmarket (tendance) : ') : 'Prix indisponible pour cette carte.', parts.join(' · '),
       parts.length ? h('span', { class: 'lb-help' }, ' Tous vendeurs et toutes langues (pas seulement la France).') : '');
   }
@@ -1501,23 +1565,24 @@ function openLightbox(items, index, L) {
   }
   // fiche exacte de la carte avec les filtres : carte française, vendeur en France, Near Mint ou mieux
   function cmUrl(it) {
-    const F = 'language=2&sellerCountry=12&minCondition=2', slug = cmSlugs[it.card.id];
-    return slug ? `https://www.cardmarket.com/fr/Pokemon/Products/Singles/${slug}?${F}` : 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, it.card.localId].filter(Boolean).join(' ')) + '&' + F;
+    const F = 'language=2&sellerCountry=12&minCondition=2', slug = cmStatic[it.card.id] || (cmSlugs[it.card.id] || '').replace(/\?$/, '');
+    return slug ? `https://www.cardmarket.com/fr/Pokemon/Products/Singles/${slug}?${F}` : 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, lidShow(it.card.localId).replace(/[^A-Za-z0-9]/g, '')].filter(Boolean).join(' ')) + '&' + F;
   }
   function paintLinks(it) {
-    const c = it.card, term = [it.name, c.localId].filter(Boolean).join(' ');
+    const c = it.card, term = [it.name, lidShow(c.localId).replace(/[^A-Za-z0-9]/g, '')].filter(Boolean).join(' ');
     linksEl.replaceChildren(
       h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term) + '&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1', target: '_blank', rel: 'noopener noreferrer' }, 'Ventes terminées sur eBay.fr ↗'),
       ' · ',
-      h('a', { href: cmUrl(it), target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket (carte française, vendeurs France, NM) ↗'));
+      h('a', { href: cmUrl(it), target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket (carte française, vendeurs France, NM) ↗'),
+      /\?$/.test(cmSlugs[it.card.id] || '') && !cmStatic[it.card.id] ? h('span', { class: 'lb-help' }, ' Adresse déduite, non vérifiée : si la page est introuvable, signalez-le.') : null);
   }
   function show() {
     const it = items[i], c = it.card, info = infoOf(it);
     paintPrice(it); paintLinks(it); paintEbay(it);
-    if (L === 'fr' && !cmSlugs[c.id]) ensureCmSlug(c.id).then(() => { if (items[i] === it && lb) paintLinks(it); }).catch(() => {});
+    if (L === 'fr' && !cmSlugs[c.id] && !cmStatic[c.id]) ensureCmSlug(c.id).then(() => { if (items[i] === it && lb) paintLinks(it); }).catch(() => {});
     if (!priceCache[c.id] && L === 'fr') fetchPrice(L, c.id).then(() => { savePrices(); if (items[i] === it && lb) paintPrice(it); }).catch(() => { if (items[i] === it && lb) priceEl.textContent = 'Prix indisponible pour le moment.'; });
     nameEl.textContent = it.name;
-    subEl.textContent = `#${c.localId} · ${it.setName || ''} · ${i + 1}/${items.length}`;
+    subEl.textContent = `#${it.numLabel || lidShow(c.localId)} · ${it.setName || ''} · ${i + 1}/${items.length}`;
     rarEl.textContent = info && info.rar ? `Rareté : ${info.rar}` : '';
     rarEl.className = 'lb-rar' + (info && info.rar ? ' rt-' + rarityTier(info.rar) : '');
     rarEl.hidden = !(info && info.rar);
