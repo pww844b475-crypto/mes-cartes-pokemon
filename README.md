@@ -65,3 +65,9 @@ Settings → Pages → *Deploy from a branch* → branche voulue, dossier `/ (ro
 ## Recherche dans toute la collection
 
 Bouton 🔎 de l’accueil (`#chercher`) : recherche par nom ou numéro dans les 20 226 cartes, et icône « Filtres » (possession : toutes / possédées / manquantes / doubles, extension, rareté, version). Avec une version choisie, possédées/manquantes portent sur cette version. Les noms viennent de `data/names.json`, régénérable avec `python3 -I tools/fetch-card-names.py data/cards data/names.json`.
+
+## Valeur de la collection, sélection et ajout groupé limité
+
+- Accueil : icône ⊞/⊟ (tout déplier / replier), raccourci « Mes cartes possédées » (détail par rareté, cases à cocher pour additionner certaines raretés, › pour voir les cartes d’une rareté) et encart « Valeur estimée ».
+- Prix : demandés à TCGdex (`pricing.cardmarket`, en euros, tendance ; prix « holo » pour les versions Reverse/Holo) uniquement pour les cartes possédées, mémorisés dans `cartes.prices` ; ⟳ les redemande. Ce sont les prix Cardmarket de la fiche produit, **tous vendeurs et toutes langues** : TCGdex ne fournit pas de prix « vendeur français ».
+- Extension : bouton ☑︎ (mode sélection : toucher une photo sélectionne la carte) et, dans « Ajout groupé », option « Seulement les N premières » (dans l’ordre affiché, par ex. 50 cartes d’une rareté).

@@ -405,3 +405,33 @@ html.lb-open body { overflow: hidden; }
 .tbtn .nb[hidden] { display: none; }
 .fseg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .fseg button { font-size: 14px; padding: 0 2px; }
+
+/* ---- accueil : icône, mes cartes, valeur ---- */
+.homebar { display: flex; gap: 8px; margin: 0 0 12px; }
+.toggleall { flex: none; width: 46px; min-height: 46px; margin: 0; padding: 0; font-size: 22px; line-height: 1; }
+.mine { flex: 1; min-width: 0; min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 15px; font-weight: 700; }
+.mine .mn { color: var(--brand); }
+@media (prefers-color-scheme: dark) { .mine .mn { color: #8db4ff; } }
+.valbox { display: flex; align-items: stretch; gap: 8px; margin: 0 0 12px; }
+.valbox .vt { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 2px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); }
+.valbox .vl { font-size: 13px; color: var(--muted); font-weight: 600; }
+.valbox .vv { font-size: 24px; line-height: 1.15; }
+.valbox .vs { font-size: 12px; color: var(--muted); }
+.tbtn2 { flex: none; width: 46px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 20px; }
+.orows { display: grid; gap: 6px; margin: 8px 0; }
+.orow { display: flex; align-items: center; gap: 6px; }
+.orow-l { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
+.orow-l input { width: 20px; height: 20px; flex: none; }
+.orow-l .rn { flex: 1; min-width: 0; font-weight: 650; }
+.orow-l .rc { font-size: 13.5px; color: var(--muted); white-space: nowrap; }
+.orow-go { flex: none; width: 40px; height: 44px; border: 0; border-radius: 12px; background: var(--surface-2); color: var(--text); font-size: 22px; }
+.owned-total { font-size: 18px; margin: 12px 0 4px; }
+/* mode sélection */
+.selbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.selbar .sc { flex: 1 1 100%; color: #fff; font-size: 14px; font-weight: 600; }
+.selecting .card .media { cursor: copy; }
+.card.picked { outline: 3px solid #f4b942; outline-offset: -3px; border-radius: 10px; }
+.card.picked::after { content: '✓'; position: absolute; top: 6px; right: 6px; z-index: 3; width: 26px; height: 26px; border-radius: 50%; background: #f4b942; color: #14202e; font-weight: 800; display: grid; place-items: center; }
+.selbar[hidden], .valbox [hidden], .homebar [hidden] { display: none; }
+.tools2 { flex-wrap: wrap; }
+@media (max-width: 460px) { .tools2 .sel { flex: 1 1 100%; } .tools2 .tbtn.wide { flex: 1; } }
