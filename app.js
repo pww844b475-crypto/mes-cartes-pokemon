@@ -335,8 +335,8 @@ async function digitalIds(L) {
   }
   return (digital[L] = ids);
 }
-// Extensions listées par TCGdex mais sans aucune carte en français : « Radiant Collection » (rc, ses cartes RC sont dans Générations).
-const HIDDEN_SETS = new Set(['rc']);
+// Extensions listées par TCGdex mais sans aucune carte en français : pas affichées. « Radiant Collection » (rc ; les cartes RC sont dans Générations), « W Promotional » (wp), « Cartes Jumbo » (jumbo).
+const HIDDEN_SETS = new Set(['rc', 'wp', 'jumbo']);
 async function loadSets(L) {
   const [all, dig] = await Promise.all([api(`/${L}/sets`), digitalIds(L)]);
   const sets = all.filter((s) => !dig.has(s.id) && !HIDDEN_SETS.has(s.id));
