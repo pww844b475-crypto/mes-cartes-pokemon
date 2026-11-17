@@ -1637,8 +1637,8 @@ async function showSearchInner(L, my, preset = {}) {
 // data/cards/<extension>.json : { rar:[raretés], var:[[type, taille, foil, sous-type, [tampons]]…], c:{ idCarte:[indexRareté,[indexVersions]] } }
 // Instantané de TCGdex ; une carte absente (nouvelle) est demandée en direct à l'agrandissement.
 const infoCache = new Map();
-// TCGdex nomme « Magnifique rare » les rares secrètes / rainbow : on affiche « Rare secrète »
-const RAR_ALIAS = { 'Magnifique rare': 'Rare secrète', 'Magnifique': 'Rare secrète' };
+// TCGdex : « Magnifique rare » = rares secrètes / rainbow de toutes les époques (affichées « Rare secrète ») ; « Magnifique » = les 9 vraies Magnifiques rares d'Épée et Bouclier (logo M)
+const RAR_ALIAS = { 'Magnifique rare': 'Rare secrète', 'Magnifique': 'Magnifique rare' };
 const rarName = (r) => (r ? RAR_ALIAS[r] || r : r);
 function descOf(a) {
   const d = { type: a[0] };
@@ -1691,7 +1691,7 @@ function rarityKind(r) {
   const m = {
     'Commune': 'circle', 'Peu Commune': 'diamond', 'Rare': 'star', 'Promo': 'promo', 'Collection Classique': 'promo', 'Sans Rareté': 'dash',
     'Double rare': 'two-black', 'Ultra Rare': 'two-silver', 'Illustration rare': 'one-gold', 'Illustration spéciale rare': 'two-gold',
-    'Hyper rare': 'three-gold', 'Méga Hyper Rare': 'three-gold', 'Shiny rare': 'one-hollow', 'Shiny rare V': 'one-hollow', 'Shiny rare VMAX': 'one-hollow', 'Chromatique ultra rare': 'two-hollow', 'Rare secrète': 'one-small', 'Magnifique rare': 'one-small', 'Magnifique': 'one-small',
+    'Hyper rare': 'three-gold', 'Méga Hyper Rare': 'three-gold', 'Shiny rare': 'one-hollow', 'Shiny rare V': 'one-hollow', 'Shiny rare VMAX': 'one-hollow', 'Chromatique ultra rare': 'two-hollow', 'Rare secrète': 'one-small', 'Magnifique rare': 'amazing', 'Magnifique': 'amazing',
     'Mega Attack Rare': 'two-color', 'Futuristic Rare': 'rainbow', 'RGB Rare': 'rgb',
   };
   if (m[r]) return m[r];
@@ -1707,6 +1707,11 @@ function rarityIcon(r, size = 22) {
   else if (k === 'star') star(12, 12.5, 9, BLACK, 'none');
   else if (k === 'star-white') star(12, 12.5, 9, '#fff', BLACK);
   else if (k === 'one-gold') star(12, 12.5, 9, GOLD);
+  else if (k === 'amazing') {
+    [[12, 4.8, '#f2c21b'], [18.4, 8.4, '#3aa65a'], [18.4, 15.6, '#2f5db3'], [12, 19.2, '#a0409a'], [5.6, 15.6, '#e45b9a'], [5.6, 8.4, '#e24a3b']].forEach(([x, y, c]) => svg.append(svgEl('circle', { cx: x, cy: y, r: 4.2, fill: c })));
+    svg.append(svgEl('circle', { cx: 12, cy: 12, r: 7.4, fill: '#e24a3b', opacity: '.9' }));
+    svg.append(svgEl('text', { x: 12, y: 16.3, 'text-anchor': 'middle', 'font-size': '12.5', 'font-weight': '900', fill: '#fff', stroke: '#6d2a6b', 'stroke-width': '.5', 'font-family': 'system-ui, sans-serif' }, 'M'));
+  }
   else if (k === 'one-small') star(12, 12.5, 6.4, GOLD);
   else if (k === 'one-hollow') star(12, 12.5, 9, 'none', GOLD, 1.8);
   else if (k === 'two-hollow') { star(8, 10, 6, 'none', GOLD, 1.5); star(16, 15, 6, 'none', GOLD, 1.5); }
