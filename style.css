@@ -353,3 +353,39 @@ html.lb-open body { overflow: hidden; }
 .vrow.on .vl { color: var(--ok); }
 .lb .qty, .vrow .qty { display: flex; flex: none; width: 140px; margin-top: 0; }
 @media (min-width: 800px) { .lb { align-items: center; } .lb-stage { min-height: 0; } .lb-info { width: min(560px, 100%); border-radius: 20px; margin-bottom: 24px; } }
+
+/* ---------- Un seul bouton déplier / replier ---------- */
+.toggleall { display: block; width: 100%; min-height: 46px; margin: 0 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 15px; font-weight: 700; }
+.toggleall:active { background: var(--surface-2); }
+
+/* ---------- Pastilles de version : « + » (ajoute un exemplaire) et « − » ---------- */
+.chiprow { display: flex; gap: 4px; margin-top: 4px; }
+.chiprow .chip { margin-top: 0; flex: 1; min-width: 0; }
+.cm { flex: none; width: 40px; min-height: 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font-size: 22px; font-weight: 800; line-height: 1; padding: 0; }
+.cm:active { background: var(--line); }
+.cm[hidden] { display: none; }
+.vrow .qin { flex: 1; min-width: 0; width: 46px; border: 0; background: var(--surface); color: var(--text); text-align: center; font-weight: 700; font-size: 17px; padding: 0; -moz-appearance: textfield; appearance: textfield; }
+.vrow .qin::-webkit-inner-spin-button, .vrow .qin::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.vrow .qin:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* ---------- Raretés ---------- */
+:root { --rt-commune: #5b6b7e; --rt-peu: #2f8a8a; --rt-rare: #a97800; --rt-holo: #7c3aed; --rt-ultra: #c2255c; --rt-secrete: #d6232a; --rt-promo: #0b7285; --rt-aucune: #5b6b7e; }
+@media (prefers-color-scheme: dark) { :root { --rt-commune: #9fb0c5; --rt-peu: #62c4c4; --rt-rare: #f0c040; --rt-holo: #b794f6; --rt-ultra: #ff7aa8; --rt-secrete: #ff8787; --rt-promo: #4dd0e1; --rt-aucune: #9fb0c5; } }
+.rt-commune { color: var(--rt-commune); } .rt-peu { color: var(--rt-peu); } .rt-rare { color: var(--rt-rare); } .rt-holo { color: var(--rt-holo); }
+.rt-ultra { color: var(--rt-ultra); } .rt-secrete { color: var(--rt-secrete); } .rt-promo { color: var(--rt-promo); } .rt-aucune { color: var(--rt-aucune); }
+.rar.rt-ultra, .rar.rt-secrete, .rar.rt-holo { font-weight: 700; }
+.lb-rar.rt-commune, .lb-rar.rt-peu, .lb-rar.rt-rare, .lb-rar.rt-holo, .lb-rar.rt-ultra, .lb-rar.rt-secrete, .lb-rar.rt-promo, .lb-rar.rt-aucune { font-weight: 750; }
+.tools2 { display: flex; gap: 6px; margin-top: 8px; }
+.sel { flex: 1; min-width: 0; height: 44px; border: 0; border-radius: 12px; padding: 0 10px; font-size: 15px; background: #fff; color: #14202e; }
+.tbtn { flex: none; min-width: 48px; height: 44px; border: 0; border-radius: 12px; padding: 0 12px; background: rgba(255,255,255,.14); color: #fff; font-size: 15px; font-weight: 650; }
+.tbtn:active { background: rgba(255,255,255,.28); }
+.rarlist { display: grid; gap: 8px; margin: 10px 0; }
+.rarrow { display: grid; grid-template-columns: 14px 1fr auto; align-items: center; column-gap: 10px; row-gap: 6px; width: 100%; min-height: 54px; padding: 8px 12px; text-align: left; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--text); }
+.rarrow .bar { grid-column: 1 / -1; margin: 0; }
+.rarrow .rn { font-weight: 650; }
+.rarrow .rc { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rdot { width: 12px; height: 12px; border-radius: 50%; background: currentColor; }
+
+/* ---------- Message avec bouton « Annuler » ---------- */
+#toast.act { pointer-events: auto; display: flex; align-items: center; gap: 14px; }
+.toast-btn { border: 0; border-radius: 999px; padding: 8px 16px; background: #fff; color: #14202e; font-weight: 750; font-size: 14.5px; }
