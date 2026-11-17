@@ -351,6 +351,9 @@ const io = 'IntersectionObserver' in window
   }, { rootMargin: '400px' })
   : null;
 
+// Logos absents de TCGdex (nouvelles sorties, promos) : copies locales (source : pokecardex.com), réduites en WebP
+const LOCAL_LOGOS = new Set(['me06', 'base1', 'sve', 'mee', 'mep', '30th', 'svp']);
+const setLogoUrl = (id, data) => (data && data.logo ? data.logo + '.webp' : LOCAL_LOGOS.has(id) ? `images/set-logos/${id}.webp` : data && data.symbol ? data.symbol + '.webp' : null);
 function lazyImg(src, alt, onfail) {
   const i = h('img', { alt, decoding: 'async', draggable: 'false' });
   i.dataset.src = src;
@@ -846,7 +849,7 @@ async function showListInner(my) {
     const s = g.set, total = groupTotal(g), st = groupStatus(L, g);
     const have = g.members.reduce((n, m) => n + ownedCount(L, m.id), 0);
     const dbl = g.members.reduce((n, m) => n + doublesCount(owned[L][m.id]), 0);
-    const logoUrl = s.logo ? s.logo + '.webp' : s.symbol ? s.symbol + '.webp' : null;
+    const logoUrl = setLogoUrl(s.id, s);
     const logo = h('div', { class: 'logo' });
     const ph = () => logo.replaceChildren(h('span', { class: 'ph' }, s.abbreviation?.official || setMeta(s.id)?.[2] || s.id));
     if (logoUrl) logo.append(lazyImg(logoUrl, '', ph)); else ph();
@@ -981,7 +984,6 @@ async function showListInner(my) {
     mtile('📷', 'Scanner', 'Scanner une carte avec l’appareil photo', () => homeScanIn.click()),
     homeScanIn,
     mtile('📊', 'Statistiques', 'Statistiques de la collection', openStats),
-    mtile('🔎', 'Rechercher', 'Rechercher des cartes dans toute la collection', goto('#chercher')),
     mtile('👥', 'Amis', 'Amis : partager et comparer', goto('#amis')),
     mtile('💾', 'Sauvegarde', 'Sauvegarde et restauration', () => openBackup()),
     mtile('⚙️', 'Réglages', 'Réglages', () => openSettings()));
@@ -1280,14 +1282,14 @@ async function showSetInner(L, setId, my) {
   // --- en-tête de l'extension : logo, date, avancement, détail par rareté ; onglets Cartes / Liste / Grille ---
   const meta0 = setMeta(parts[0].id) || [];
   const logoBox = h('div', { class: 'sc-logo' });
-  { const lu = parts[0].data && parts[0].data.logo ? parts[0].data.logo + '.webp' : null; const ph = () => logoBox.replaceChildren(h('span', { class: 'ph' }, meta0[2] || parts[0].id)); if (lu) logoBox.append(lazyImg(lu, '', ph)); else ph(); }
+  { const lu = setLogoUrl(parts[0].id, parts[0].data); const ph = () => logoBox.replaceChildren(h('span', { class: 'ph' }, meta0[2] || parts[0].id)); if (lu) logoBox.append(lazyImg(lu, '', ph)); else ph(); }
   const rbk = h('div', { class: 'rbk', role: 'group', 'aria-label': 'Avancement par rareté' });
   function paintRbk() {
     rbk.replaceChildren(...rarList.map((r) => {
       const ts = tiles.filter((t) => t.info && t.info.rar === r), have = ts.filter((t) => qtyTotal(t.mine[t.card.id]) > 0).length;
       return h('button', { type: 'button', class: 'rbkc' + (rarFilter === r ? ' on' : ''), 'aria-pressed': String(rarFilter === r), title: `${r} : ${have} sur ${ts.length}`,
         onclick: () => { rarFilter = rarFilter === r ? '' : r; rarSel.value = rarFilter; apply(); } },
-        h('span', { class: 'rdot rt-' + rarityTier(r) }), h('b', {}, String(have)), h('span', { class: 'rt' }, '/' + ts.length), h('span', { class: 'rn' }, r));
+        h('span', { class: 'rbi' }, rarityIcon(r, 20)), h('b', {}, String(have)), h('span', { class: 'rt' }, '/' + ts.length), h('span', { class: 'rn' }, r));
     }));
     rbk.hidden = !rarList.length;
   }
@@ -1548,8 +1550,8 @@ async function showSearchInner(L, my, preset = {}) {
     const list = [...cnt.keys()].sort((a, b) => rarityRank(a) - rarityRank(b) || a.localeCompare(b, 'fr'));
     const total = [...cnt.values()].reduce((n, c) => n + c, 0);
     const btn = (label, sym, tier, n, on, set) => h('button', { type: 'button', class: 'rpb' + (on ? ' on' : ''), 'aria-pressed': String(on), title: `${label} : ${n}`, onclick: () => { f.rar = set; run(); } },
-      h('span', { class: 'rps rt-' + tier, 'aria-hidden': 'true' }, sym), h('span', { class: 'rpn' }, label), h('b', {}, String(n)));
-    rarPick.replaceChildren(btn('Toutes', '✦', 'aucune', total, !f.rar, ''), ...list.map((r) => btn(r, raritySymbol(r), rarityTier(r), cnt.get(r), f.rar === r, r)));
+      h('span', { class: 'rps', 'aria-hidden': 'true' }, sym), h('span', { class: 'rpn' }, label), h('b', {}, String(n)));
+    rarPick.replaceChildren(btn('Toutes', '✦', 'aucune', total, !f.rar, ''), ...list.map((r) => btn(r, rarityIcon(r, 26), rarityTier(r), cnt.get(r), f.rar === r, r)));
     rarPick.hidden = !list.length;
   }
   const carSlot = h('div', { class: 'carslot', hidden: true });
@@ -1680,14 +1682,38 @@ const RARITY_TIER = {
 const TIER_ORDER = ['commune', 'peu', 'rare', 'holo', 'ultra', 'secrete', 'promo', 'aucune'];
 const rarityTier = (r) => RARITY_TIER[r] || (/ultra|vmax|vstar|full art|hyper|illustration/i.test(r || '') ? 'ultra' : 'holo');
 const rarityRank = (r) => TIER_ORDER.indexOf(rarityTier(r));
-// Pictogramme d'une rareté (comme sur les cartes) : ● commune, ◆ peu commune, ★ rare, étoiles dorées pour les illustrations, argentées pour les ultra rares
-function raritySymbol(r) {
-  if (r === 'Commune') return '●'; if (r === 'Peu Commune') return '◆'; if (r === 'Rare') return '★';
-  if (r === 'Illustration rare') return '★'; if (r === 'Illustration spéciale rare') return '★★';
-  if (r === 'Hyper rare' || r === 'Méga Hyper Rare') return '★★★';
-  if (r === 'Double rare' || r === 'Ultra Rare') return '★★';
+// Pictogramme d'une rareté (SVG, d'après les symboles imprimés sur les cartes) : ● commune, ◆ peu commune, ★ rare, ☆ holo, étoiles dorées pour les illustrations…
+const STAR_PTS = (cx, cy, R) => Array.from({ length: 10 }, (_, k) => { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? R * 0.42 : R; return `${(cx + r * Math.cos(a)).toFixed(2)},${(cy + r * Math.sin(a)).toFixed(2)}`; }).join(' ');
+function rarityKind(r) {
+  const m = {
+    'Commune': 'circle', 'Peu Commune': 'diamond', 'Rare': 'star', 'Promo': 'promo', 'Collection Classique': 'promo', 'Sans Rareté': 'dash',
+    'Double rare': 'two-black', 'Ultra Rare': 'two-silver', 'Illustration rare': 'one-gold', 'Illustration spéciale rare': 'two-gold',
+    'Hyper rare': 'three-gold', 'Méga Hyper Rare': 'three-gold', 'Shiny rare': 'sparkle', 'Shiny rare V': 'sparkle', 'Shiny rare VMAX': 'sparkle',
+    'Chromatique ultra rare': 'two-color', 'Magnifique rare': 'rainbow', 'Magnifique': 'rainbow',
+  };
+  if (m[r]) return m[r];
   const t = rarityTier(r);
-  return t === 'holo' ? '★' : t === 'ultra' ? '★★' : t === 'secrete' ? '★' : t === 'promo' ? 'P' : '●';
+  return t === 'ultra' ? 'two-silver' : t === 'secrete' ? 'one-gold' : t === 'promo' ? 'promo' : t === 'aucune' ? 'dash' : t === 'commune' ? 'circle' : t === 'peu' ? 'diamond' : t === 'rare' ? 'star' : 'star-white';
+}
+function rarityIcon(r, size = 22) {
+  const k = rarityKind(r), svg = svgEl('svg', { viewBox: '0 0 24 24', width: size, height: size, class: 'ric', 'aria-hidden': 'true', focusable: 'false' });
+  const star = (cx, cy, R, fill, stroke = '#fff') => svg.append(svgEl('polygon', { points: STAR_PTS(cx, cy, R), fill, stroke, 'stroke-width': '1', 'stroke-linejoin': 'round' }));
+  const GOLD = '#f0b429', SILVER = '#a9adb5', BLACK = '#1d1d1f';
+  if (k === 'circle') svg.append(svgEl('circle', { cx: 12, cy: 12, r: 6.5, fill: BLACK }));
+  else if (k === 'diamond') svg.append(svgEl('polygon', { points: '12,4.5 18,12 12,19.5 6,12', fill: BLACK }));
+  else if (k === 'star') star(12, 12.5, 9, BLACK, 'none');
+  else if (k === 'star-white') star(12, 12.5, 9, '#fff', BLACK);
+  else if (k === 'one-gold') star(12, 12.5, 9, GOLD);
+  else if (k === 'two-black') { star(8, 10, 6, BLACK, 'none'); star(16, 15, 6, BLACK, 'none'); }
+  else if (k === 'two-silver') { star(8, 10, 6, SILVER); star(16, 15, 6, SILVER); }
+  else if (k === 'two-gold') { star(8, 10, 6, GOLD); star(16, 15, 6, GOLD); }
+  else if (k === 'three-gold') { star(12, 6.5, 5.2, GOLD); star(7, 15.5, 5.2, GOLD); star(17, 15.5, 5.2, GOLD); }
+  else if (k === 'sparkle') { svg.append(svgEl('path', { d: 'M12 2 L14.6 9.4 L22 12 L14.6 14.6 L12 22 L9.4 14.6 L2 12 L9.4 9.4 Z', fill: GOLD, stroke: BLACK, 'stroke-width': '1.2', 'stroke-linejoin': 'round' })); svg.append(svgEl('path', { d: 'M12 6.5 L13.3 10.7 L17.5 12 L13.3 13.3 L12 17.5 L10.7 13.3 L6.5 12 L10.7 10.7 Z', fill: BLACK })); }
+  else if (k === 'two-color') { star(8, 10, 6, '#e98bc0'); star(16, 15, 6, '#7ccf9b'); }
+  else if (k === 'rainbow') { const id = 'rg' + Math.random().toString(36).slice(2, 7); const g = svgEl('linearGradient', { id, x1: 0, y1: 0, x2: 1, y2: 1 }, svgEl('stop', { offset: '0', 'stop-color': '#2bb3a3' }), svgEl('stop', { offset: '1', 'stop-color': '#8e2f8f' })); svg.append(svgEl('defs', {}, g)); star(12, 12.5, 9, `url(#${id})`); }
+  else if (k === 'promo') { star(12, 12.5, 9, BLACK, 'none'); svg.append(svgEl('text', { x: 12, y: 14.6, 'text-anchor': 'middle', 'font-size': '5.2', 'font-weight': '900', fill: '#fff', 'font-family': 'system-ui, sans-serif' }, 'PROMO')); }
+  else svg.append(svgEl('line', { x1: 7, y1: 17, x2: 17, y2: 7, stroke: '#7a7f8a', 'stroke-width': '2.6', 'stroke-linecap': 'round' }));
+  return svg;
 }
 
 const hasVersions = (info) => !!(info && info.vars && info.vars.length >= 2);
