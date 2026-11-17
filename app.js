@@ -17,7 +17,7 @@ const K = {
   lang: 'cartes.lang', cov: 'cartes.cov', exp: 'cartes.lastExport', tip: 'cartes.tipHidden', order: 'cartes.order',
   friends: 'cartes.friends.v1', pseudo: 'cartes.pseudo',
   splash: 'cartes.splash', // 'off' = écran d'ouverture désactivé
-  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay',
+  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay', cmslug: 'cartes.cmslug',
 };
 const BACKUP_VERSION = 3;   // sauvegarde personnelle (3 : quantités par version de carte)
 const SHARE_VERSION = 2;    // fichier de partage entre amis (2 : quantités par version de carte)
@@ -437,7 +437,7 @@ async function fetchPrice(L, id) {
   const path = `/${L}/cards/${encodeURIComponent(id)}`;
   let c = null;
   try { const d = await api(path); mem.delete(path); c = d.pricing && d.pricing.cardmarket; } catch (e) { if (!/HTTP 404/.test(e.message || '')) throw e; }
-  priceCache[id] = c ? [numOrNull(c.trend) ?? numOrNull(c.avg) ?? numOrNull(c.low), numOrNull(c['trend-holo']) ?? numOrNull(c['avg-holo']) ?? numOrNull(c['low-holo']), Date.now()] : [null, null, Date.now()];
+  priceCache[id] = c ? [numOrNull(c.trend) ?? numOrNull(c.avg) ?? numOrNull(c.low), numOrNull(c['trend-holo']) ?? numOrNull(c['avg-holo']) ?? numOrNull(c['low-holo']), Date.now(), numOrNull(c.idProduct)] : [null, null, Date.now(), null];   // [prix, prix holo, date, identifiant produit Cardmarket]
 }
 // version « Normal » → prix normal ; Reverse / Holo… → prix holo s'il existe
 const cmUnit = (e, key) => ((key && !/^normal(\/|$)/.test(key)) ? (e[1] ?? e[0]) : (e[0] ?? e[1]));
@@ -499,9 +499,9 @@ async function ensurePrices(L, rows, refresh, onProgress) {
   savePrices();
   return ids.length;
 }
-// Par défaut, seules les cartes de valeur sont estimées (Illustration rare, Illustration spéciale rare, Hyper rare…) : moins de requêtes, et les autres comptent peu.
+// Par défaut, toutes les raretés sont estimées ; l'option « seulement les cartes de valeur » (Illustration rare, Illustration spéciale rare, Hyper rare…) réduit le nombre de requêtes.
 const VALUE_TIERS = new Set(['secrete']);
-const valueOnly = () => store.get('cartes.valueOnly') !== '0';
+const valueOnly = () => store.get('cartes.valueOnly') === '1';     // par défaut : toutes les raretés
 const isValued = (r) => !valueOnly() || (r.rar != null && VALUE_TIERS.has(rarityTier(r.rar)));
 const NO_RAR = 'Rareté inconnue';
 function openOwned(L, rows, onToggle) {
@@ -551,6 +551,22 @@ function priceTiles(L, tiles, my) {
     }
   };
   Promise.all(Array.from({ length: 4 }, worker)).then(savePrices);
+}
+
+// Adresse de la fiche Cardmarket d'une carte : /fr/Pokemon/Products/Singles/<Extension-en-anglais>/<Nom-en-anglais>-<ABRÉVIATION><numéro>
+// ex. « 30th-Celebration/Pikachu-30C034 ». Le nom anglais vient de TCGdex (/en/cards/<id>), mémorisé dans cartes.cmslug.
+const slugCm = (t) => String(t == null ? '' : t).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/['’`.:!?,()]/g, '').replace(/&/g, ' ').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+let cmSlugs = {};
+try { const o = JSON.parse(store.get(K.cmslug) || '{}'); for (const [k, v] of Object.entries(o || {})) if (typeof v === 'string' && /^[A-Za-z0-9-]+\/[A-Za-z0-9-]+$/.test(v)) cmSlugs[k] = v; } catch { cmSlugs = {}; }
+async function ensureCmSlug(id) {
+  if (cmSlugs[id]) return;
+  const d = await api(`/en/cards/${encodeURIComponent(id)}`);
+  const sid = d.set && d.set.id; let abbr = (sid && (setMeta(sid) || [])[2]) || '';
+  if (!abbr && sid) { try { const sd = await api(`/en/sets/${encodeURIComponent(sid)}`); abbr = (sd.abbreviation && sd.abbreviation.official) || ''; } catch { /* repli : recherche */ } }
+  const setS = slugCm(d.set && d.set.name), nameS = slugCm(d.name), abbrS = slugCm(abbr), numS = slugCm(d.localId);
+  if (!setS || !nameS || !abbrS || !numS) return;
+  cmSlugs[id] = `${setS}/${nameS}-${abbrS}${numS}`;
+  store.set(K.cmslug, JSON.stringify(cmSlugs));
 }
 
 /* ---------- Vue : liste des extensions, par blocs ---------- */
@@ -1412,16 +1428,22 @@ function openLightbox(items, index, L) {
     ebayEl.replaceChildren(h('p', { class: 'lb-help' }, 'Mes 3 dernières ventes réussies sur eBay.fr (en €) :'), h('div', { class: 'ebrow' }, inputs), res);
     upd();
   }
+  // fiche exacte de la carte avec les filtres : carte française, vendeur en France, Near Mint ou mieux
+  function cmUrl(it) {
+    const F = 'language=2&sellerCountry=12&minCondition=2', slug = cmSlugs[it.card.id];
+    return slug ? `https://www.cardmarket.com/fr/Pokemon/Products/Singles/${slug}?${F}` : 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, it.card.localId].filter(Boolean).join(' ')) + '&' + F;
+  }
   function paintLinks(it) {
     const c = it.card, term = [it.name, c.localId].filter(Boolean).join(' ');
     linksEl.replaceChildren(
       h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term) + '&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1', target: '_blank', rel: 'noopener noreferrer' }, 'Ventes terminées sur eBay.fr ↗'),
       ' · ',
-      h('a', { href: 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, c.localId].filter(Boolean).join(' ')) + '&sellerCountry=12&language=2&minCondition=2', target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket ↗'));
+      h('a', { href: cmUrl(it), target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket (carte française, vendeurs France, NM) ↗'));
   }
   function show() {
     const it = items[i], c = it.card, info = infoOf(it);
     paintPrice(it); paintLinks(it); paintEbay(it);
+    if (L === 'fr' && !cmSlugs[c.id]) ensureCmSlug(c.id).then(() => { if (items[i] === it && lb) paintLinks(it); }).catch(() => {});
     if (!priceCache[c.id] && L === 'fr') fetchPrice(L, c.id).then(() => { savePrices(); if (items[i] === it && lb) paintPrice(it); }).catch(() => { if (items[i] === it && lb) priceEl.textContent = 'Prix indisponible pour le moment.'; });
     nameEl.textContent = it.name;
     subEl.textContent = `#${c.localId} · ${it.setName || ''} · ${i + 1}/${items.length}`;
