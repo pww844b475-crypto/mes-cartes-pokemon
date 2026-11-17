@@ -457,7 +457,7 @@ html.lb-open body { overflow: hidden; }
 
 /* ---- accueil en tuiles ---- */
 .menu { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); margin: 0 0 12px; }
-@media (min-width: 560px) { .menu { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 480px) { .menu { grid-template-columns: repeat(4, 1fr); } }
 @media (min-width: 900px) { .menu { grid-template-columns: repeat(7, 1fr); } }
 .mtile { position: relative; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 6px; min-height: 84px; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--line); text-align: left; color: var(--text);
   background: linear-gradient(160deg, var(--surface), var(--surface-2)); }
