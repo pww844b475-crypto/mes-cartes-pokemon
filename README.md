@@ -157,3 +157,10 @@ L'application ne cherche pas à reconnaître le modèle d'iPhone (une page web n
 
 ## Prix corrigés (Règne Delta)
 TCGdex rattache toutes les versions d'un même Pokémon de **Règne Delta (me06)** à un seul produit Cardmarket (celui de la première version) : une Illustration spéciale rare héritait du prix de la Double rare (ex. Méga‑Rayquaza‑ex : 3,32 € au lieu de ~295 €). `tools/fetch-cm-prices.py` lit les fichiers publics de Cardmarket (liste des produits + guide des prix, toutes langues), associe le N‑ième produit à la N‑ième carte (noms contrôlés) et écrit `data/price-fix.json`. L'application utilise ce fichier à la place de l'API pour ces cartes, et remplace tout de suite les anciens prix erronés déjà mémorisés. **Relevé du jour de la génération** : à relancer (`python3 tools/fetch-cm-prices.py`) pour rafraîchir ; d'autres extensions peuvent être ajoutées dans `FIX` si elles présentent le même défaut (contrôle fait sur me01‑me05 et sv05‑sv10 : seule me06 est touchée).
+
+## Liens Cardmarket : règles tirées des liens réels (Épée et Bouclier)
+- 13 liens fournis par l'utilisateur sont enregistrés tels quels dans `data/cm-links.json` (Rebel Clash, Shining Fates, Chilling Reign, Evolving Skies, Celebrations).
+- Règles déduites (extension de la série `swsh` seulement) : carte au **nom unique** dans l'extension → `…/Dhelmise-VMAX` (sans numéro, confirmé : `…/Eternatus-VMAX` s'ouvre) ; **dernière de 3 versions ou plus** → `…-V3` sans numéro ; autres versions → `…-V1-CHR097`. Un test réel a montré que `…/Galarian-Moltres-V-V1` (sans numéro) et `…/Galarian-Perrserker-V2` ne s'ouvrent pas.
+- Cas non expliqués : `Flareon-VMAX-V1-EVS018` (carte unique chez TCGdex mais V1 chez Cardmarket) et `Galarian-Perrserker-RCL205` (même nom que la n° 127 mais autre carte, sans V).
+- La fiche d'une carte propose toujours un second lien **« ou recherche Cardmarket »**, valable quand l'adresse directe échoue.
+- Cardmarket bloque les robots : aucune vérification automatique des pages n'est possible.

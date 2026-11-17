@@ -678,6 +678,11 @@ async function ensureCmSlug(id) {
     if (same.length > 1) {
       same.sort((a, b) => ((numGroup(a.localId) === '') - (numGroup(b.localId) === '')) || lidShow(a.localId).localeCompare(lidShow(b.localId), 'en', { numeric: true }));
       const k = same.findIndex((x) => x.id === id); if (k >= 0) nameS += `-V${k + 1}`;
+      // Épée et Bouclier (liens réels fournis) : la dernière de 3 versions ou plus n'a pas de suffixe de numéro (…/Galarian-Moltres-V-V3, …/Umbreon-VMAX-V3)
+      if (serie === 'swsh' && same.length >= 3 && k === same.length - 1) { cmSlugs[id] = `${setS}/${nameS}${doubt}`; store.set(K.cmslug, JSON.stringify(cmSlugs)); return; }
+    } else if (serie === 'swsh' && grp === '') {
+      // Épée et Bouclier : une carte au nom unique dans l'extension s'écrit sans numéro (…/Shining-Fates/Dhelmise-VMAX, …/Celebrations/Zamazenta-V)
+      cmSlugs[id] = `${setS}/${nameS}${doubt}`; store.set(K.cmslug, JSON.stringify(cmSlugs)); return;
     }
     cmSlugs[id] = `${setS}/${nameS}-${abbrS}${numS}${doubt}`;
   }
@@ -1937,6 +1942,7 @@ function openLightbox(items, index, L) {
     upd();
   }
   // fiche exacte de la carte avec les filtres : carte française, vendeur en France, Near Mint ou mieux
+  const cmSearchUrl = (it) => 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, lidShow(it.card.localId).replace(/[^A-Za-z0-9]/g, '')].filter(Boolean).join(' ')) + '&language=2&sellerCountry=12&minCondition=2';
   function cmUrl(it) {
     const F = 'language=2&sellerCountry=12&minCondition=2', slug = cmStatic[it.card.id] || (cmSlugs[it.card.id] || '').replace(/\?$/, '');
     return slug ? `https://www.cardmarket.com/fr/Pokemon/Products/Singles/${slug}?${F}` : 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, lidShow(it.card.localId).replace(/[^A-Za-z0-9]/g, '')].filter(Boolean).join(' ')) + '&' + F;
@@ -1947,7 +1953,9 @@ function openLightbox(items, index, L) {
       h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term) + '&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1', target: '_blank', rel: 'noopener noreferrer' }, 'Ventes terminées sur eBay.fr ↗'),
       ' · ',
       h('a', { href: cmUrl(it), target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket (carte française, vendeurs France, NM) ↗'),
-      /\?$/.test(cmSlugs[it.card.id] || '') && !cmStatic[it.card.id] ? h('span', { class: 'lb-help' }, ' Adresse déduite, non vérifiée : si la page est introuvable, signalez-le.') : null].filter(Boolean));
+      ' · ',
+      h('a', { href: cmSearchUrl(it), target: '_blank', rel: 'noopener noreferrer' }, 'ou recherche Cardmarket ↗'),     // toujours valable si l'adresse directe est introuvable
+      /\?$/.test(cmSlugs[it.card.id] || '') && !cmStatic[it.card.id] ? h('span', { class: 'lb-help' }, ' Adresse déduite, non vérifiée : si la page est introuvable, utilisez « ou recherche Cardmarket ».') : null].filter(Boolean));
   }
   function show() {
     const it = items[i], c = it.card, info = infoOf(it);
