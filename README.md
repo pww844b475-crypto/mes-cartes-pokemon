@@ -164,3 +164,4 @@ TCGdex rattache toutes les versions d'un même Pokémon de **Règne Delta (me06)
 - Cas non expliqués : `Flareon-VMAX-V1-EVS018` (carte unique chez TCGdex mais V1 chez Cardmarket) et `Galarian-Perrserker-RCL205` (même nom que la n° 127 mais autre carte, sans V).
 - La fiche d'une carte propose toujours un second lien **« ou recherche Cardmarket »**, valable quand l'adresse directe échoue.
 - Cardmarket bloque les robots : aucune vérification automatique des pages n'est possible.
+- Test réel (utilisateur) : `https://www.cardmarket.com/fr/Pokemon/Products?idProduct=<n>` ouvre la bonne carte dans la bonne extension, mais parfois **une autre version** (ex. produit 458033 → Galarian Perrserker n° 127 au lieu de la n° 205) ; les formes `Singles?idProduct=` et `…/<Extension>?idProduct=` ne fonctionnent pas. Ce lien sert de **second lien de repli** (« ou page de la carte (choisir la version) ») quand le numéro de produit est connu ; sinon recherche.
