@@ -40,3 +40,8 @@ Settings → Pages → *Deploy from a branch* → branche voulue, dossier `/ (ro
 - Régénérer après de nouvelles sorties : `python3 -I tools/fetch-sets-meta.py data/sets-meta.json`, puis `python3 -I tools/fetch-card-data.py <brut>` (reprise possible, ~21 000 requêtes à rythme poli) et `python3 -I tools/compact-card-data.py <brut> data/cards`.
 - Stockage d'une carte possédée : un nombre (carte à version unique, ou ancienne coche) ou un objet `{ cléDeVersion: quantité }`. La clé `_` = « version non précisée » (ancienne coche sur une carte à plusieurs versions : aucune version n'est inventée).
 - Formats : sauvegarde = 3 (accepte 1 et 2), partage = 2 (accepte 1) ; un format plus récent est refusé avec un message clair.
+
+## Scans de remplacement
+- TCGdex n'a pas d'image pour certaines cartes. Pour la **Collection Classique 30ᵉ Anniversaire** (`30th-c`, 30 cartes), les scans viennent de [PokéCardex](https://www.pokecardex.com/series/30C) : `images/scans/30th-c/<n°>/high.webp` (scan d'origine, 444×620, copié tel quel) et `low.webp` (245×342, pour la grille).
+- `data/scans.json` indique, pour chaque carte, son dossier d'image, son numéro imprimé et son identifiant PokéCardex. L'application ne l'utilise **que** pour les cartes sans image TCGdex, mentionne la source dans l'extension concernée, et ne contacte jamais PokéCardex à l'exécution (tout est servi par l'application).
+- Les illustrations des cartes restent la propriété de leurs ayants droit (The Pokémon Company / Nintendo / Creatures / GAME FREAK) ; les scans sont celui de PokéCardex.

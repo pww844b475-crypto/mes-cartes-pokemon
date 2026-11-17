@@ -204,6 +204,16 @@ function dataStatus(l, set, cov) {
   return null;
 }
 
+/* ---------- Scans de remplacement : cartes sans image dans TCGdex ---------- */
+// data/scans.json : { cartes: { idCarte: { p: dossier contenant low.webp et high.webp } } } — scans PokéCardex embarqués dans l'application.
+let scans = {};
+const scansReady = fetch('data/scans.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.cards) scans = j.cards; }).catch(() => {});
+function applyScans(cards) { // ne remplace jamais une image TCGdex : seulement les cartes qui n'en ont pas
+  let n = 0;
+  for (const c of cards) if (!c.image && scans[c.id]) { c.image = scans[c.id].p; c._scan = true; n++; }
+  return n;
+}
+
 /* ---------- Réseau ---------- */
 const mem = new Map();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -521,10 +531,12 @@ async function showSet(L, setId, my) {
   }
 
   const infos = await Promise.all(members.map((m) => loadCardInfo(L, m.id)));   // rareté + versions (instantané, petit fichier)
+  await scansReady;
   if (my !== tok) return;
   const parts = members.map((m, i) => {
     const data = results[i].status === 'fulfilled' ? results[i].value : null;
     const cards = Array.isArray(data?.cards) ? data.cards : [];
+    applyScans(cards);
     if (data) rememberCoverage(L, m.id, cards.length, cards.filter((c) => c.image).length);
     return { id: m.id, name: data?.name || m.name || m.id, data, cards, info: infos[i], total: data?.cardCount?.total ?? m.cardCount?.total ?? cards.length, mine: owned[L][m.id] || nullObj() };
   });
@@ -554,6 +566,11 @@ async function showSet(L, setId, my) {
     if (withImg === 0) notes.push(h('div', { class: 'note' }, h('b', {}, 'Pas d’images. '), 'TCGdex n’a aucune image pour cette extension ; les cartes sont listées par nom et numéro.'));
     else if (withImg < allCards) notes.push(h('div', { class: 'note' }, h('b', {}, 'Images partielles. '), `${withImg} cartes sur ${allCards} ont une image.`));
   }
+
+  const fromScans = parts.reduce((n, p) => n + p.cards.filter((c) => c._scan).length, 0);
+  if (fromScans) notes.push(h('div', { class: 'note' }, h('b', {}, 'Scans PokéCardex. '),
+    `${plural(fromScans, 'carte de cette extension n’a', 'cartes de cette extension n’ont')} pas d’image dans TCGdex : ${fromScans > 1 ? 'leurs scans viennent' : 'son scan vient'} de `,
+    h('a', { href: 'https://www.pokecardex.com/series/30C', target: '_blank', rel: 'noopener noreferrer' }, 'PokéCardex'), '.'));
 
   let filter = 'all';
   const persist = (part) => () => {
@@ -1233,6 +1250,7 @@ async function showCompare(fid, L, my) {
   async function partBlock(p, myTab, titled) {
     let cards = [], failed = false;
     try { cards = (await api(`/${L}/sets/${encodeURIComponent(p.sid)}`)).cards || []; } catch { failed = true; }
+    await scansReady; applyScans(cards);
     const byId = new Map(cards.map((c) => [c.id, c]));
     const metaOf = (id) => (f.meta[L]?.[p.sid]?.[id]) || null;
     const fallback = (id) => { const m = metaOf(id); return { id, localId: m ? m[0] : id.slice(p.sid.length + 1), name: m ? m[1] : '' }; };
