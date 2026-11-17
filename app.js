@@ -247,9 +247,20 @@ const imgHigh = (c) => (c._emb ? c.image : c._remote ? c.image + '?class=hd' : c
 // data/order.json : vrai ordre des cartes (celui de PokéCardex) pour les extensions où TCGdex les range autrement.
 let orders = {};
 const orderReady = fetch('data/order.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j) orders = j; }).catch(() => {});
+// Groupes de cartes à lettres (RC, TG, SV, H…) : ordre naturel RC1, RC2… RC10 (TCGdex les range RC1, RC10, RC11…). Les cartes à numéro simple gardent l'ordre de TCGdex, chaque groupe reste à sa place.
+function natGroups(cards) {
+  const first = new Map(); cards.forEach((c, i) => { const g = numGroup(c.localId); if (!first.has(g)) first.set(g, i); });
+  const num = (c) => { const m = lidShow(c.localId).match(/\d+/); return m ? parseInt(m[0], 10) : 0; };
+  return cards.map((c, i) => [c, i]).sort((a, b) => {
+    const ga = numGroup(a[0].localId), gb = numGroup(b[0].localId);
+    if (ga !== gb) return first.get(ga) - first.get(gb);
+    if (ga === '' || ga === '*') return a[1] - b[1];
+    return num(a[0]) - num(b[0]) || a[1] - b[1];
+  }).map((x) => x[0]);
+}
 function sortCards(L, setId, cards) {
   const o = orders[L] && orders[L][setId];
-  if (!o) return cards;
+  if (!o) return natGroups(cards);
   const pos = new Map(o.map((id, i) => [id, i]));
   return cards.map((c, i) => [c, i]).sort((a, b) => (pos.has(a[0].id) ? pos.get(a[0].id) : 1e6 + a[1]) - (pos.has(b[0].id) ? pos.get(b[0].id) : 1e6 + b[1])).map((x) => x[0]);
 }
