@@ -52,10 +52,12 @@ function h(tag, props, ...kids) {
 }
 
 let toastTimer;
-function toast(msg) {
+function toast(msg, action) { // action : { label, run } → bouton dans le message (ex. « Annuler »)
   const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+  t.replaceChildren(msg); t.classList.toggle('act', !!action);
+  if (action) t.append(h('button', { type: 'button', class: 'toast-btn', onclick: () => { t.classList.remove('show'); clearTimeout(toastTimer); action.run(); } }, action.label));
+  t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), action ? 9000 : 3200);
 }
 
 /* ---------- Collection : owned[langue][extension][id de carte] = quantité ---------- */
@@ -434,23 +436,15 @@ async function showList(my) {
   const main = h('main', {}, spinner());
   $app.replaceChildren(top, main);
 
-  let sets, hidden = 0;
-  try { ({ sets, hidden } = await loadSets(L)); await Promise.all([snapReady, metaReady]); await resolveMeta(L, sets); } catch (e) {
+  let sets;
+  try { ({ sets } = await loadSets(L)); await Promise.all([snapReady, metaReady]); await resolveMeta(L, sets); } catch (e) {
     if (my !== tok) return;
     main.replaceChildren(errorBox('Vérifiez votre connexion. ' + (e.message || ''), () => showList(tok))); return;
   }
   if (my !== tok) return;
 
   const groups = [...buildGroups(sets).values()];
-  const linked = sets.length - groups.length;
   const blocks = buildBlocks(groups);
-
-  const stat = { empty: 0, partial: 0, noimg: 0 };
-  for (const g of groups) {
-    const st = groupStatus(L, g);
-    if (st) { if (st.lvl === 'bad') stat.empty++; else if (st.lvl === 'warn') stat.partial++; else stat.noimg++; }
-  }
-  const incomplete = stat.empty + stat.partial;
   const pctOf = (have, total) => (total ? Math.min(100, Math.round(have / total * 100)) : 0);
 
   const rowFor = (g) => {
@@ -503,24 +497,25 @@ async function showList(my) {
   });
   const none = h('p', { class: 'empty', hidden: true }, 'Aucune extension ne correspond.');
 
+  // un seul bouton : déplie tout, ou replie tout quand tout est déjà déplié
+  const toggleAll = h('button', { type: 'button', class: 'toggleall' });
+  const syncToggle = () => {
+    const all = secs.every((x) => openState[x.b.id]);
+    toggleAll.textContent = all ? 'Tout replier' : 'Tout déplier'; toggleAll.setAttribute('aria-expanded', String(all));
+  };
+  toggleAll.addEventListener('click', () => {
+    const open = !secs.every((x) => openState[x.b.id]);
+    secs.forEach((x) => { openState[x.b.id] = open; x.set(open); }); saveOpen(); syncToggle();
+  });
+  secs.forEach((x) => x.head.addEventListener('click', syncToggle));
+  syncToggle();
   const notes = [];
-  notes.push(h('div', { class: 'note' },
-    h('b', {}, `${plural(groups.length, 'extension', 'extensions')} en ${blocks.length} blocs`),
-    ` · ${plural(ownedTotal(L), 'carte possédée', 'cartes possédées')}. `,
-    incomplete || stat.noimg
-      ? `Données TCGdex incomplètes : ${incomplete ? plural(incomplete, 'extension', 'extensions') + ' sans toutes les cartes' : ''}${incomplete && stat.noimg ? ', ' : ''}${stat.noimg ? plural(stat.noimg, 'extension', 'extensions') + ' sans toutes les images' : ''}. Elles sont signalées en dessous.`
-      : 'Aucun défaut de données connu.',
-    linked ? ` ${plural(linked, 'extension liée est regroupée', 'extensions liées sont regroupées')} avec son extension (collections classiques, galeries de dresseurs).` : '',
-    hidden ? ` ${plural(hidden, 'extension', 'extensions')} du jeu en ligne (Pokémon Pocket) ${hidden > 1 ? 'sont masquées' : 'est masquée'}.` : '',
-    h('span', { class: 'rowbtns' },
-      h('button', { type: 'button', onclick: () => { secs.forEach((x) => { openState[x.b.id] = true; x.set(true); }); saveOpen(); } }, 'Tout déplier'),
-      h('button', { type: 'button', onclick: () => { secs.forEach((x) => { openState[x.b.id] = false; x.set(false); }); saveOpen(); } }, 'Tout replier'))));
   if (isIOS && !isStandalone && !store.get(K.tip)) {
     notes.push(h('div', { class: 'note warn' },
       h('b', {}, 'Astuce iPhone / iPad : '), 'touchez Partager ⬆︎ puis « Sur l’écran d’accueil ». Cochez vos cartes depuis l’icône installée : ses données sont séparées de celles de Safari (utilisez Sauvegarde pour les transférer).',
       h('button', { type: 'button', onclick: (e) => { store.set(K.tip, '1'); e.target.closest('.note').remove(); } }, 'Compris')));
   }
-  main.replaceChildren(...notes, ...secs.map((x) => x.el), none);
+  main.replaceChildren(...notes, toggleAll, ...secs.map((x) => x.el), none);
 
   q.addEventListener('input', () => {
     const n = norm(q.value.trim()); let shown = 0;
@@ -635,7 +630,75 @@ async function showSet(L, setId, my) {
   const FILTERS = [['all', 'Toutes'], ['own', 'Possédées'], ['miss', 'Manquantes'], ['dbl', 'Doubles']];
   const filterBtns = FILTERS.map(([k, label]) =>
     h('button', { type: 'button', 'aria-pressed': String(k === filter), onclick: () => { filter = k; filterBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(FILTERS[i][0] === k))); apply(); } }, label));
-  if (allCards) top.append(h('div', { class: 'tools' }, h('div', { class: 'seg small' }, filterBtns)));
+
+  // --- raretés : filtre + récapitulatif par rareté ---
+  let rarFilter = '';
+  const rarTotals = new Map();
+  for (const t of tiles) { const r = t.info && t.info.rar; if (r) rarTotals.set(r, (rarTotals.get(r) || 0) + 1); }
+  const rarList = [...rarTotals.keys()].sort((a, b) => rarityRank(a) - rarityRank(b) || a.localeCompare(b, 'fr'));
+  const rarSel = h('select', { class: 'sel', 'aria-label': 'Filtrer par rareté' }, h('option', { value: '' }, 'Toutes les raretés'), ...rarList.map((r) => h('option', { value: r }, `${r} (${rarTotals.get(r)})`)));
+  rarSel.addEventListener('change', () => { rarFilter = rarSel.value; apply(); });
+  const pc = (a, b) => (b ? Math.round(a / b * 100) : 0);
+  function openRarities() {
+    const rows = rarList.map((r) => { const ts = tiles.filter((t) => t.info && t.info.rar === r); return { r, total: ts.length, have: ts.filter((t) => qtyTotal(t.mine[t.card.id]) > 0).length }; });
+    const unknown = tiles.filter((t) => !(t.info && t.info.rar)).length;
+    openSheet(
+      h('h2', {}, 'Raretés de cette extension'),
+      h('p', {}, 'Cartes possédées sur le total, pour chaque rareté. Touchez une ligne pour n’afficher que ces cartes.'),
+      h('div', { class: 'rarlist' }, rows.map((x) => h('button', { type: 'button', class: 'rarrow', onclick: () => { rarFilter = x.r; rarSel.value = x.r; apply(); closeSheet(); } },
+        h('span', { class: 'rdot rt-' + rarityTier(x.r) }), h('span', { class: 'rn' }, x.r), h('span', { class: 'rc' }, h('b', {}, String(x.have)), `/${x.total} · ${pc(x.have, x.total)} %`),
+        h('span', { class: 'bar', 'aria-hidden': 'true' }, h('i', { style: `width:${pc(x.have, x.total)}%` }))))),
+      unknown ? h('p', {}, `${plural(unknown, 'carte', 'cartes')} sans rareté connue.`) : null,
+      h('button', { class: 'btn sec', type: 'button', onclick: () => { rarFilter = ''; rarSel.value = ''; apply(); closeSheet(); } }, 'Toutes les raretés'),
+      h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
+  }
+
+  // --- ajout groupé : une version, pour toutes les cartes affichées (selon recherche et filtres) ---
+  function openBulk() {
+    const vis = tiles.filter((x) => !x.el.hidden && !x.el.closest('[hidden]'));
+    if (!vis.length) { toast('Aucune carte affichée : rien à modifier.'); return; }
+    const kinds = new Map(); let singles = 0;
+    for (const t of vis) {
+      if (hasVersions(t.info)) for (const v of t.info.vars) { const k = kinds.get(v.key) || { label: v.label, n: 0 }; k.n++; kinds.set(v.key, k); } else singles++;
+    }
+    const options = [...kinds.entries()].sort((a, b) => b[1].n - a[1].n).map(([key, k]) => [key, `${k.label} (${plural(k.n, 'carte', 'cartes')})`]);
+    if (singles) options.push(['', `Cartes à version unique (${plural(singles, 'carte', 'cartes')})`]);
+    const verSel = h('select', { class: 'field', 'aria-label': 'Version' }, options.map(([k, l]) => h('option', { value: k }, l)));
+    const modeSel = h('select', { class: 'field', 'aria-label': 'Action' }, h('option', { value: 'add' }, 'Ajouter'), h('option', { value: 'set' }, 'Définir à'), h('option', { value: 'del' }, 'Retirer (mettre à 0)'));
+    const qIn = h('input', { class: 'field', type: 'number', inputmode: 'numeric', min: '1', max: String(MAXQ), value: '1', 'aria-label': 'Nombre d’exemplaires' });
+    const qLabel = h('label', { class: 'lbl' }, 'Nombre d’exemplaires', qIn);
+    const info = h('div', { class: 'note' });
+    const applyBtn = h('button', { class: 'btn', type: 'button' }, 'Appliquer');
+    const targetsOf = () => vis.filter((t) => (verSel.value === '' ? !hasVersions(t.info) : hasVersions(t.info) && t.info.vars.some((v) => v.key === verSel.value)));
+    const refreshInfo = () => { const n = targetsOf().length; qLabel.hidden = modeSel.value === 'del'; info.textContent = `${plural(n, 'carte sera modifiée', 'cartes seront modifiées')}.`; applyBtn.disabled = n === 0; };
+    verSel.addEventListener('change', refreshInfo); modeSel.addEventListener('change', refreshInfo);
+    applyBtn.addEventListener('click', () => {
+      const key = verSel.value, mode = modeSel.value, q = Math.max(1, Math.min(MAXQ, parseInt(qIn.value, 10) || 1));
+      const targets = targetsOf(); if (!targets.length) return;
+      const before = targets.map((t) => [t, t.value === undefined ? undefined : isMulti(t.value) ? { ...t.value } : t.value]);
+      for (const t of targets) {
+        const cur = key === '' ? qtyTotal(t.value) : (isMulti(t.value) ? (t.value[key] || 0) : 0);
+        const n = mode === 'add' ? cur + q : mode === 'set' ? q : 0;
+        t.setQuiet(key === '' ? null : key, Math.max(0, Math.min(MAXQ, n)));
+      }
+      parts.forEach((pt) => persist(pt)());
+      closeSheet();
+      toast(`${plural(targets.length, 'carte mise à jour', 'cartes mises à jour')}.`, { label: 'Annuler', run: () => { for (const [t, v] of before) t.restore(v); parts.forEach((pt) => persist(pt)()); toast('Modification annulée.'); } });
+    });
+    openSheet(
+      h('h2', {}, 'Ajout groupé'),
+      h('p', {}, `S’applique aux ${plural(vis.length, 'carte affichée', 'cartes affichées')} (selon la recherche et les filtres en cours). Une carte qui n’a pas la version choisie n’est pas touchée.`),
+      h('label', { class: 'lbl' }, 'Version', verSel), h('label', { class: 'lbl' }, 'Action', modeSel), qLabel, info, applyBtn,
+      h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Annuler'));
+    refreshInfo();
+  }
+
+  if (allCards) top.append(
+    h('div', { class: 'tools' }, h('div', { class: 'seg small' }, filterBtns)),
+    h('div', { class: 'tools2' },
+      rarList.length ? rarSel : null,
+      rarList.length ? h('button', { type: 'button', class: 'tbtn', 'aria-label': 'Récapitulatif par rareté', title: 'Récapitulatif par rareté', onclick: openRarities }, '📊') : null,
+      h('button', { type: 'button', class: 'tbtn wide', 'aria-label': 'Ajout groupé', onclick: openBulk }, '➕ Ajout groupé')));
 
   function apply() {
     const n = norm(q.value.trim()); let shown = 0;
@@ -644,7 +707,8 @@ async function showSet(L, setId, my) {
       for (const t of sec.tiles) {
         const v = t.mine[t.card.id], qty = qtyTotal(v);
         const byFilter = filter === 'all' || (filter === 'own' && qty > 0) || (filter === 'miss' && qty === 0) || (filter === 'dbl' && qtyMax(v) >= 2);
-        const ok = byFilter && (!n || t.text.includes(n));
+        const byRar = !rarFilter || (t.info && t.info.rar === rarFilter);
+        const ok = byFilter && byRar && (!n || t.text.includes(n));
         t.el.hidden = !ok; if (ok) secShown++;
       }
       shown += secShown;
@@ -694,6 +758,18 @@ async function fetchCardInfo(L, cardId) { // repli en direct (carte absente de l
   }
   return { rar: d.rarity || null, vars: withKeys(vars) };
 }
+// Niveaux de rareté (pour les couleurs et l'ordre du filtre) : modifiable ici. Une rareté inconnue (nouvelle sortie) est classée d'après son nom.
+const RARITY_TIER = {
+  'Commune': 'commune', 'Peu Commune': 'peu', 'Rare': 'rare', 'Sans Rareté': 'aucune', 'Promo': 'promo', 'Collection Classique': 'promo',
+  'Holo Rare': 'holo', 'Rare Holo': 'holo', 'Rare Holo LV.X': 'holo', 'Rare Prime': 'holo', 'LÉGENDE': 'holo', 'HIGH-TECH rare': 'holo', 'Radieux Rare': 'holo',
+  'Pikachu Rare': 'holo', 'Magnifique rare': 'holo', 'Magnifique': 'holo', 'Rare Noir Blanc': 'holo', 'Futuristic Rare': 'holo',
+  'Ultra Rare': 'ultra', 'Holo Rare V': 'ultra', 'Holo Rare VMAX': 'ultra', 'Holo Rare VSTAR': 'ultra', 'Double rare': 'ultra', 'Dresseur Full Art': 'ultra',
+  'Shiny rare': 'ultra', 'Shiny rare V': 'ultra', 'Shiny rare VMAX': 'ultra', 'Chromatique ultra rare': 'ultra', 'Mega Attack Rare': 'ultra', 'RGB Rare': 'ultra',
+  'Illustration rare': 'secrete', 'Illustration spéciale rare': 'secrete', 'Hyper rare': 'secrete', 'Méga Hyper Rare': 'secrete',
+};
+const TIER_ORDER = ['commune', 'peu', 'rare', 'holo', 'ultra', 'secrete', 'promo', 'aucune'];
+const rarityTier = (r) => RARITY_TIER[r] || (/ultra|vmax|vstar|full art|hyper|illustration/i.test(r || '') ? 'ultra' : 'holo');
+const rarityRank = (r) => TIER_ORDER.indexOf(rarityTier(r));
 const hasVersions = (info) => !!(info && info.vars && info.vars.length >= 2);
 
 /* ---------- Cartes ---------- */
@@ -726,21 +802,26 @@ function makeTile(card, mine, onChange, ctx) {
     setInfo(i) { info = i; build(); sync(); },
     get value() { return mine[id]; },
     set(key, q) { setQty(mine, id, key, q); sync(); onChange(); },
+    setQuiet(key, q) { setQty(mine, id, key, q); sync(); },                       // sans enregistrer (actions groupées)
+    restore(v) { if (v === undefined) delete mine[id]; else mine[id] = isMulti(v) ? { ...v } : v; sync(); },
     clearUnassigned() { const v = mine[id]; if (isMulti(v)) setQty(mine, id, '_', 0); else delete mine[id]; sync(); onChange(); },
   };
 
   function build() {
     rar.textContent = info && info.rar ? info.rar : '';
+    rar.className = 'rar' + (info && info.rar ? ' rt-' + rarityTier(info.rar) : '');
     t.text = norm(`${name} ${card.localId} ${id} ${info && info.rar ? info.rar : ''}`);
     el.querySelector('.cb')?.remove(); ctl.replaceChildren(); chips = []; unChip = null;
     if (hasVersions(info)) {
       cb = null; qv = minus = plus = null;
       mark = h('span', { class: 'cb ind', 'aria-hidden': 'true' }); el.append(mark);
       const shown = info.vars.slice(0, MAXCHIPS);
-      shown.forEach((v) => {
-        const c = h('button', { type: 'button', class: 'chip', title: v.label, 'aria-pressed': 'false', 'aria-label': `${v.label} — ${name}` });
-        c.addEventListener('click', () => t.set(v.key, qtyOfKey(v.key) ? 0 : 1));
-        chips.push([v, c]); ctl.append(c);
+      shown.forEach((v) => {   // toucher la pastille ajoute un exemplaire ; « − » en retire un
+        const c = h('button', { type: 'button', class: 'chip', title: v.label + ' : un exemplaire de plus', 'aria-pressed': 'false', 'aria-label': `${v.label} — ${name} : un exemplaire de plus` });
+        c.addEventListener('click', () => t.set(v.key, Math.min(MAXQ, qtyOfKey(v.key) + 1)));
+        const m = h('button', { type: 'button', class: 'cm', hidden: true, 'aria-label': `${v.label} — ${name} : un exemplaire de moins` }, '−');
+        m.addEventListener('click', () => t.set(v.key, Math.max(0, qtyOfKey(v.key) - 1)));
+        chips.push([v, c, m]); ctl.append(h('div', { class: 'chiprow' }, c, m));
       });
       if (info.vars.length > MAXCHIPS) ctl.append(h('button', { type: 'button', class: 'chip more', onclick: () => ctx.zoom(t), title: 'Toutes les versions' }, `+${info.vars.length - MAXCHIPS}`));
       unChip = h('button', { type: 'button', class: 'chip unk', hidden: true, title: 'Ancienne coche sans version précisée : touchez pour la retirer, puis choisissez la bonne version.' });
@@ -769,7 +850,7 @@ function makeTile(card, mine, onChange, ctx) {
       minus.disabled = total <= 1; plus.disabled = total >= MAXQ;
     } else {
       mark.classList.toggle('on', total > 0);
-      for (const [vr, c] of chips) { const q = qtyOfKey(vr.key); c.setAttribute('aria-pressed', String(q > 0)); c.textContent = q >= 2 ? `${vr.label} ×${q}` : vr.label; }
+      for (const [vr, c, m] of chips) { const q = qtyOfKey(vr.key); c.setAttribute('aria-pressed', String(q > 0)); c.textContent = q >= 2 ? `${vr.label} ×${q}` : vr.label; m.hidden = q <= 0; }
       const un = isMulti(v) ? (v._ || 0) : (v | 0);
       unChip.hidden = un <= 0; unChip.textContent = `Version ? ×${un}`;
     }
@@ -815,7 +896,11 @@ function openLightbox(items, index, L) {
   function qtyRow(label, q, onSet, opts = {}) {
     const m = h('button', { type: 'button', class: 'qb', 'aria-label': `Un de moins : ${label}`, disabled: q <= 0, onclick: () => onSet(Math.max(0, q - 1)) }, '−');
     const p = h('button', { type: 'button', class: 'qb', 'aria-label': `Un de plus : ${label}`, disabled: q >= MAXQ || opts.noPlus, onclick: () => onSet(Math.min(MAXQ, q + 1)) }, '+');
-    return h('div', { class: 'vrow' + (q > 0 ? ' on' : '') }, h('span', { class: 'vl' }, label), h('div', { class: 'qty vq' }, m, h('span', { class: 'qv' }, String(q)), p));
+    const inp = h('input', { class: 'qin', type: 'number', inputmode: 'numeric', min: '0', max: String(MAXQ), value: String(q), 'aria-label': `Quantité : ${label}` });   // on peut taper directement un nombre
+    const commit = () => { let n = parseInt(inp.value, 10); if (!Number.isFinite(n)) n = q; n = Math.max(0, Math.min(MAXQ, n)); if (n !== q) onSet(n); else inp.value = String(q); };
+    inp.addEventListener('change', commit); inp.addEventListener('focus', () => inp.select());
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } e.stopPropagation(); });   // les flèches du clavier ne changent pas de carte pendant la saisie
+    return h('div', { class: 'vrow' + (q > 0 ? ' on' : '') }, h('span', { class: 'vl' }, label), h('div', { class: 'qty vq' }, m, inp, p));
   }
   function renderVars() {
     const it = items[i], info = infoOf(it);
@@ -845,6 +930,7 @@ function openLightbox(items, index, L) {
     nameEl.textContent = it.name;
     subEl.textContent = `#${c.localId} · ${it.setName || ''} · ${i + 1}/${items.length}`;
     rarEl.textContent = info && info.rar ? `Rareté : ${info.rar}` : '';
+    rarEl.className = 'lb-rar' + (info && info.rar ? ' rt-' + rarityTier(info.rar) : '');
     rarEl.hidden = !(info && info.rar);
     img.alt = it.name; img.classList.remove('ok'); img.removeAttribute('src'); stageBox.classList.remove('noimg');
     stageBox.querySelector('.lb-ph')?.remove();
@@ -857,7 +943,7 @@ function openLightbox(items, index, L) {
     prev.hidden = items.length < 2; next.hidden = items.length < 2;
     renderVars();
     if (!info && L === 'fr') {      // version / rareté absentes de l'instantané : demande en direct
-      fetchCardInfo(L, c.id).then((got) => { if (it.setInfo) it.setInfo(got); else it._info = got; if (items[i] === it && lb) { rarEl.textContent = got.rar ? `Rareté : ${got.rar}` : ''; rarEl.hidden = !got.rar; renderVars(); } }).catch(() => {});
+      fetchCardInfo(L, c.id).then((got) => { if (it.setInfo) it.setInfo(got); else it._info = got; if (items[i] === it && lb) { rarEl.textContent = got.rar ? `Rareté : ${got.rar}` : ''; rarEl.className = 'lb-rar' + (got.rar ? ' rt-' + rarityTier(got.rar) : ''); rarEl.hidden = !got.rar; renderVars(); } }).catch(() => {});
     }
   }
   const go2 = (d) => { if (items.length < 2) return; i = (i + d + items.length) % items.length; show(); };

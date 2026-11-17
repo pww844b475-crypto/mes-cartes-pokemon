@@ -54,3 +54,10 @@ Settings → Pages → *Deploy from a branch* → branche voulue, dossier `/ (ro
 - Appariement vérifié : séries PokéCardex trouvées par nom + alias, cartes appariées par numéro et nom, règle « position = numéro d'image » contrôlée sur 218 pages (1 exception : Kits Raichu, numérotés 31 à 60), 2 922 adresses testées (200), ~140 cartes contrôlées visuellement ; fidélité des fichiers AVIF contrôlée carte par carte (PSNR).
 - Reste sans scan : `2019sm-fr-33b` (une seule carte « Taupiqueur d'Alola » chez PokéCardex pour les n° 33 et 33b).
 - Régénération : voir `tools/` (collecte TCGdex des images manquantes, appariement par série) ; le téléchargement des scans et l'encodage AVIF (Pillow) se font avec la table `data/scans-remote.json`.
+
+## Raretés, quantités et ajout groupé
+
+- Page d’accueil : un seul bouton « Tout déplier » / « Tout replier ».
+- Dans une extension : filtre par rareté (avec effectifs), bouton 📊 (récapitulatif possédées/total par rareté, une ligne filtre), rareté colorée par palier. Les paliers sont dans `RARITY_TIER` (`app.js`).
+- Pastille de version : un appui = +1 exemplaire, bouton « − » pour en retirer ; dans l’agrandissement, la quantité se saisit directement (0 à 99).
+- « ➕ Ajout groupé » : ajoute, définit ou retire N exemplaires d’une version pour toutes les cartes affichées (selon recherche et filtres), avec bouton « Annuler ».
