@@ -360,7 +360,8 @@ function privacyNote(extra) {
 // enfant → extension parente (TCGdex fr). Ces cartes font partie de la même collection que leur parent.
 // Les cases cochées restent enregistrées sous l'identifiant d'origine de chaque carte : rien à migrer.
 const MERGE_INTO = {
-  'cel25cc': 'cel25', '30th-c': '30th', 'exu': 'ex10',      // exu : Collection Zarbi (A/28 … ?/28), cartes secrètes d'EX Forces Cachées
+  'cel25cc': 'cel25', '30th-c': '30th', 'exu': 'ex10',
+  'sma': 'sm115', 'swsh4.5sv': 'swsh4.5',      // Coffres Étincelants (Destinées Occultes, Destinées Radieuses) : cartes SV de leur extension      // exu : Collection Zarbi (A/28 … ?/28), cartes secrètes d'EX Forces Cachées
   'swsh9tg': 'swsh9', 'swsh10tg': 'swsh10', 'swsh11tg': 'swsh11', 'swsh12tg': 'swsh12', 'swsh12.5gg': 'swsh12.5',
 };
 const parentOf = (sid, idSet) => (MERGE_INTO[sid] && idSet.has(MERGE_INTO[sid]) ? MERGE_INTO[sid] : sid);
@@ -583,7 +584,7 @@ async function ensureCmSlug(id) {
   const sd = await api(`/en/sets/${encodeURIComponent(own)}`), grp = numGroup(d.localId);
   // adresse déduite d'une règle non confirmée pour cette extension ? (partie d'une autre, promo, numéros à lettres, série EX, signe dans le nom) → « ? » = à vérifier
   const serie = (setMeta(own) || [])[0] || '';
-  const doubt = !CM_VERIFIED.has(own) && (top !== own || grp !== '' || CM_PROMO_SERIES.has(serie) || /promo|black star/i.test(setName || '') || serie === 'ex' || /[&:]/.test(setName || '')) ? '?' : '';
+  const doubt = !CM_VERIFIED.has(own) && (top !== own || !!MERGE_INTO[own] || grp !== '' || CM_PROMO_SERIES.has(serie) || /promo|black star/i.test(setName || '') || serie === 'ex' || /[&:]/.test(setName || '')) ? '?' : '';
   if (grp === '*') {                                                   // Zarbi : « A/28 »
     const ch = slugCm(lidShow(d.localId)); if (!ch) return;            // « ? » et « ! » : pas d'adresse connue → recherche
     const total = (sd.cards || []).filter((x) => numGroup(x.localId) === '*').length;
