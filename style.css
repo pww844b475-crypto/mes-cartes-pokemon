@@ -524,3 +524,7 @@ html.lb-open body { overflow: hidden; }
 .rbkc .rn { flex-basis: 100%; }
 .lb-add { margin: 10px 0 0; }
 .lb-own { margin: 10px 0 0; font-weight: 700; color: var(--ok); }
+/* ---- logo de l'accueil ---- */
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.top h1.brand { flex: none; overflow: visible; }
+.brand img { display: block; height: 70px; width: auto; max-width: calc(100vw - 48px); border-radius: 12px; background: #fff; }

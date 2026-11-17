@@ -578,7 +578,7 @@ async function showList(my) {
   const L = lang;
   const q = h('input', { class: 'search', type: 'search', placeholder: 'Rechercher une extension…', 'aria-label': 'Rechercher une extension', enterkeyhint: 'search', autocomplete: 'off' });
   const top = h('header', { class: 'top' },
-    h('div', { class: 'row' }, h('h1', {}, 'Pijakollection')),
+    h('div', { class: 'row' }, h('h1', { class: 'brand' }, h('img', { src: 'icons/logo-banner.webp', alt: '', width: 1000, height: 251, decoding: 'async', draggable: 'false' }), h('span', { class: 'sr' }, 'Pijakollection'))),
     langSwitch(L, (id) => { listScroll = 0; go(id); }), q);
   const main = h('main', {}, spinner());
   $app.replaceChildren(top, main);
