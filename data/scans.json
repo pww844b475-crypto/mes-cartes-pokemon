@@ -1,6 +1,6 @@
 {
  "_source": "PokéCardex — https://www.pokecardex.com/series/30C",
- "_note": "Scans de la Collection Classique 30ᵉ Anniversaire, absents de TCGdex. p = dossier (low.webp / high.webp) ; n = numéro imprimé ; pk = identifiant de la carte sur PokéCardex.",
+ "_note": "Scans absents ou introuvables dans TCGdex : Collection Classique 30ᵉ Anniversaire (30th-c, 30 cartes) et Mew R/G/B RGB du 30ᵉ Anniversaire (30th-R/G/B, dont l'adresse d'image TCGdex répond 404). p = dossier (low.webp / high.webp) ; n = numéro imprimé ; pk = identifiant de la carte sur PokéCardex. Ces scans remplacent l'image TCGdex.",
  "cards": {
   "30th-c-001": {
    "p": "images/scans/30th-c/001",
@@ -151,6 +151,21 @@
    "p": "images/scans/30th-c/030",
    "n": "203/193",
    "pk": 26633
+  },
+  "30th-R": {
+   "p": "images/scans/30th/R",
+   "n": "R/RGB",
+   "pk": 26634
+  },
+  "30th-G": {
+   "p": "images/scans/30th/G",
+   "n": "G/RGB",
+   "pk": 26635
+  },
+  "30th-B": {
+   "p": "images/scans/30th/B",
+   "n": "B/RGB",
+   "pk": 26636
   }
  }
 }

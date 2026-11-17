@@ -206,12 +206,27 @@ function dataStatus(l, set, cov) {
 
 /* ---------- Scans de remplacement : cartes sans image dans TCGdex ---------- */
 // data/scans.json : { cartes: { idCarte: { p: dossier contenant low.webp et high.webp } } } — scans PokéCardex embarqués dans l'application.
+// Ne liste que des cartes dont TCGdex n'a pas d'image, ou dont l'adresse d'image ne répond pas (404) : le scan remplace alors l'image TCGdex.
 let scans = {};
 const scansReady = fetch('data/scans.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.cards) scans = j.cards; }).catch(() => {});
-function applyScans(cards) { // ne remplace jamais une image TCGdex : seulement les cartes qui n'en ont pas
+function applyScans(cards) {
   let n = 0;
-  for (const c of cards) if (!c.image && scans[c.id]) { c.image = scans[c.id].p; c._scan = true; n++; }
+  for (const c of cards) {
+    const sc = scans[c.id];
+    if (!sc || c._scan) continue;
+    c.image = sc.p; c._scan = true; n++;
+    if (sc.n) { c._lid = c.localId; c.localId = sc.n; }     // numéro imprimé sur la carte (« 4/102 », « R/RGB »)
+  }
   return n;
+}
+// data/order.json : vrai ordre des cartes (celui de PokéCardex) pour les extensions où TCGdex les range autrement.
+let orders = {};
+const orderReady = fetch('data/order.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j) orders = j; }).catch(() => {});
+function sortCards(L, setId, cards) {
+  const o = orders[L] && orders[L][setId];
+  if (!o) return cards;
+  const pos = new Map(o.map((id, i) => [id, i]));
+  return cards.map((c, i) => [c, i]).sort((a, b) => (pos.has(a[0].id) ? pos.get(a[0].id) : 1e6 + a[1]) - (pos.has(b[0].id) ? pos.get(b[0].id) : 1e6 + b[1])).map((x) => x[0]);
 }
 
 /* ---------- Réseau ---------- */
@@ -531,12 +546,11 @@ async function showSet(L, setId, my) {
   }
 
   const infos = await Promise.all(members.map((m) => loadCardInfo(L, m.id)));   // rareté + versions (instantané, petit fichier)
-  await scansReady;
+  await Promise.all([scansReady, orderReady]);
   if (my !== tok) return;
   const parts = members.map((m, i) => {
     const data = results[i].status === 'fulfilled' ? results[i].value : null;
-    const cards = Array.isArray(data?.cards) ? data.cards : [];
-    applyScans(cards);
+    const cards = sortCards(L, m.id, (() => { const l = Array.isArray(data?.cards) ? data.cards : []; applyScans(l); return l; })());
     if (data) rememberCoverage(L, m.id, cards.length, cards.filter((c) => c.image).length);
     return { id: m.id, name: data?.name || m.name || m.id, data, cards, info: infos[i], total: data?.cardCount?.total ?? m.cardCount?.total ?? cards.length, mine: owned[L][m.id] || nullObj() };
   });
@@ -1250,7 +1264,7 @@ async function showCompare(fid, L, my) {
   async function partBlock(p, myTab, titled) {
     let cards = [], failed = false;
     try { cards = (await api(`/${L}/sets/${encodeURIComponent(p.sid)}`)).cards || []; } catch { failed = true; }
-    await scansReady; applyScans(cards);
+    await Promise.all([scansReady, orderReady]); applyScans(cards); cards = sortCards(L, p.sid, cards);
     const byId = new Map(cards.map((c) => [c.id, c]));
     const metaOf = (id) => (f.meta[L]?.[p.sid]?.[id]) || null;
     const fallback = (id) => { const m = metaOf(id); return { id, localId: m ? m[0] : id.slice(p.sid.length + 1), name: m ? m[1] : '' }; };
