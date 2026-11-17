@@ -51,6 +51,45 @@ function h(tag, props, ...kids) {
   return e;
 }
 
+/* ---------- Écran de chargement animé (vidéo) : n'apparaît que si l'attente dure ---------- */
+const loader = (() => {
+  const SHOW_AFTER = 450, MIN_SHOW = 1000;      // ms : délai avant affichage (pas d'éclair), durée minimale une fois affiché
+  let box = null, vid = null, txt = null, timer = 0, hideT = 0, shownAt = 0;
+  const tasks = new Set(), skipped = new Set();
+  const live = () => [...tasks].filter((t) => !skipped.has(t));
+  const reduce = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  function build() {
+    if (box) return;
+    vid = h('video', { class: 'ld-vid', loop: true, playsinline: true, preload: 'none', poster: 'images/loading-poster.webp', 'aria-hidden': 'true', disablepictureinpicture: true, tabindex: '-1' }, h('source', { src: 'images/loading.mp4', type: 'video/mp4' }));
+    vid.muted = true; vid.defaultMuted = true; vid.setAttribute('muted', '');
+    txt = h('p', { class: 'ld-text' });
+    const skip = h('button', { type: 'button', class: 'ld-skip', onclick: () => { tasks.forEach((t) => skipped.add(t)); hide(true); } }, 'Continuer sans attendre');
+    box = h('div', { id: 'loader', class: 'loader', role: 'status', 'aria-live': 'polite', hidden: true }, h('div', { class: 'ld-box' }, vid, txt, skip));
+    document.body.append(box);
+  }
+  function show() {
+    build(); const t = live().slice(-1)[0]; if (!t) return;
+    txt.textContent = t.text || '';
+    if (box.hidden) { box.hidden = false; shownAt = Date.now(); if (!reduce()) { try { const p = vid.play(); if (p && p.catch) p.catch(() => {}); } catch { /* ignoré */ } } }
+  }
+  function hide(force) {
+    if (!box || box.hidden) return;
+    clearTimeout(hideT);
+    hideT = setTimeout(() => { if (live().length && !force) return; box.hidden = true; try { vid.pause(); } catch { /* ignoré */ } }, force ? 0 : Math.max(0, MIN_SHOW - (Date.now() - shownAt)));
+  }
+  return {
+    start(text) {
+      const t = { text }; tasks.add(t);
+      if (!timer && !(box && !box.hidden)) timer = setTimeout(() => { timer = 0; show(); }, SHOW_AFTER);
+      return {
+        set(x) { t.text = x; if (box && !box.hidden && live().slice(-1)[0] === t) txt.textContent = x; },
+        done() { tasks.delete(t); skipped.delete(t); if (!tasks.size) { clearTimeout(timer); timer = 0; hide(false); } },
+      };
+    },
+    preload() { build(); vid.preload = 'auto'; try { vid.load(); } catch { /* ignoré */ } },     // télécharge la vidéo en avance, quand l'application est au repos
+  };
+})();
+
 let toastTimer;
 function toast(msg, action) { // action : { label, run } → bouton dans le message (ex. « Annuler »)
   const t = document.getElementById('toast');
@@ -296,9 +335,11 @@ async function digitalIds(L) {
   }
   return (digital[L] = ids);
 }
+// Extensions listées par TCGdex mais sans aucune carte en français : « Radiant Collection » (rc, ses cartes RC sont dans Générations).
+const HIDDEN_SETS = new Set(['rc']);
 async function loadSets(L) {
   const [all, dig] = await Promise.all([api(`/${L}/sets`), digitalIds(L)]);
-  const sets = all.filter((s) => !dig.has(s.id));
+  const sets = all.filter((s) => !dig.has(s.id) && !HIDDEN_SETS.has(s.id));
   return { sets, hidden: all.length - sets.length };
 }
 const isDigital = (l, sid) => !!(digital[l] && digital[l].has(sid));
@@ -500,15 +541,17 @@ function summarize(rows) {
 async function ensurePrices(L, rows, refresh, onProgress) {
   const ids = [...new Set(rows.filter(isValued).map((r) => r.id))].filter((id) => refresh || !priceCache[id]);
   let done = 0, i = 0;
+  const ld = ids.length ? loader.start('Mise à jour des prix') : null;
   const worker = async () => {
     while (i < ids.length) {
       const id = ids[i++];
       try { await fetchPrice(L, id); } catch { /* hors ligne : réessayé plus tard */ }
       done++; if (done % 25 === 0) savePrices();
+      if (ld) ld.set(`Mise à jour des prix · ${done}/${ids.length}`);
       if (onProgress) onProgress(done, ids.length);
     }
   };
-  if (ids.length) await Promise.all(Array.from({ length: 5 }, worker));
+  try { if (ids.length) await Promise.all(Array.from({ length: 5 }, worker)); } finally { if (ld) ld.done(); }
   savePrices();
   return ids.length;
 }
@@ -615,7 +658,11 @@ async function ensureCmSlug(id) {
 }
 
 /* ---------- Vue : liste des extensions, par blocs ---------- */
-async function showList(my) {
+async function showList(my) {   // l'écran de chargement animé s'affiche si l'attente dure
+  const ld = loader.start('Liste des extensions');
+  try { await showListInner(my); } finally { ld.done(); }
+}
+async function showListInner(my) {
   const L = lang;
   const q = h('input', { class: 'search', type: 'search', placeholder: 'Rechercher une extension…', 'aria-label': 'Rechercher une extension', enterkeyhint: 'search', autocomplete: 'off' });
   const top = h('header', { class: 'top' },
@@ -794,6 +841,10 @@ async function showList(my) {
 
 /* ---------- Vue : cartes d'une extension (avec ses extensions liées) ---------- */
 async function showSet(L, setId, my) {
+  const ld = loader.start('Cartes de l’extension');
+  try { await showSetInner(L, setId, my); } finally { ld.done(); }
+}
+async function showSetInner(L, setId, my) {
   const back = h('button', { class: 'iconbtn', type: 'button', onclick: () => go(L), 'aria-label': 'Retour aux extensions' }, '‹ Extensions');
   const title = h('h1', {}, setId);
   const q = h('input', { class: 'search', type: 'search', placeholder: 'Nom ou numéro de carte…', 'aria-label': 'Rechercher une carte', enterkeyhint: 'search', autocomplete: 'off' });
@@ -1185,6 +1236,10 @@ function matchScan(idx, p) {
 }
 
 async function showSearch(L, my, preset = {}) {
+  const ld = loader.start('Préparation de la recherche');
+  try { await showSearchInner(L, my, preset); } finally { ld.done(); }
+}
+async function showSearchInner(L, my, preset = {}) {
   const back = h('button', { class: 'iconbtn', type: 'button', onclick: () => go(L), 'aria-label': 'Retour aux extensions' }, '‹ Extensions');
   const q = h('input', { class: 'search', type: 'search', placeholder: 'Nom ou numéro de carte…', 'aria-label': 'Rechercher une carte dans toute la collection', enterkeyhint: 'search', autocomplete: 'off' });
   const top = h('header', { class: 'top' }, h('div', { class: 'row' }, back, h('h1', {}, 'Rechercher des cartes')), q);
@@ -1305,6 +1360,7 @@ async function showSearch(L, my, preset = {}) {
   const scanBtn = h('button', { type: 'button', class: 'tbtn', 'aria-label': 'Scanner une carte avec l’appareil photo', title: 'Scanner une carte', onclick: () => scanIn.click() }, '📷 Scanner');
   async function runScan(file) {
     scanBtn.disabled = true; summary.textContent = 'Analyse de la photo… (la première fois, quelques secondes)';
+    const ldScan = loader.start('Analyse de la photo');
     try {
       const text = await ocrPhoto(file); if (my !== tok) return;
       const ids = matchScan(idx, parseCardText(text));
@@ -1314,7 +1370,7 @@ async function showSearch(L, my, preset = {}) {
         if (matches.length === 1 && tiles[0]) zoom(tiles[0]);          // une seule carte : on l'ouvre avec son prix
         else toast(plural(ids.length, 'carte trouvée', 'cartes trouvées') + ' : touchez la bonne, son prix s’affiche.');
       }
-    } catch (e) { run(); toast('Scan impossible : ' + (e && e.message ? e.message : 'erreur')); } finally { scanBtn.disabled = false; }
+    } catch (e) { run(); toast('Scan impossible : ' + (e && e.message ? e.message : 'erreur')); } finally { scanBtn.disabled = false; ldScan.done(); }
   }
   scanIn.addEventListener('change', () => { const file = scanIn.files[0]; scanIn.value = ''; if (file) runScan(file); });
   top.append(h('div', { class: 'tools2' }, filterBtn, scanBtn, scanIn), chips);
@@ -2149,3 +2205,4 @@ if (!location.hash) history.replaceState(null, '', '#' + lang);
 splashSetup();
 route();
 window.__appReady = true;
+setTimeout(() => { try { loader.preload(); } catch { /* ignoré */ } }, 2500);      // la vidéo de chargement se télécharge en arrière-plan
