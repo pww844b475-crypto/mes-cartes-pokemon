@@ -499,9 +499,9 @@ async function ensurePrices(L, rows, refresh, onProgress) {
   savePrices();
   return ids.length;
 }
-// Par défaut, seules les cartes de valeur sont estimées (Illustration rare, Illustration spéciale rare, Hyper rare…) : moins de requêtes, et les autres comptent peu.
+// Par défaut, toutes les raretés sont estimées ; l'option « seulement les cartes de valeur » (Illustration rare, Illustration spéciale rare, Hyper rare…) réduit le nombre de requêtes.
 const VALUE_TIERS = new Set(['secrete']);
-const valueOnly = () => store.get('cartes.valueOnly') !== '0';
+const valueOnly = () => store.get('cartes.valueOnly') === '1';     // par défaut : toutes les raretés
 const isValued = (r) => !valueOnly() || (r.rar != null && VALUE_TIERS.has(rarityTier(r.rar)));
 const NO_RAR = 'Rareté inconnue';
 function openOwned(L, rows, onToggle) {
