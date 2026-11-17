@@ -387,6 +387,19 @@ function route() {
   if (r.set) showSet(lang, r.set, tok); else showList(tok);
 }
 window.addEventListener('hashchange', route);
+// Écrans courts : l'en-tête se retire quand on fait défiler vers le bas et revient quand on remonte (ou quand on touche la recherche).
+{
+  const mq = window.matchMedia ? matchMedia('(max-height: 620px)') : { matches: false };
+  let last = 0;
+  window.addEventListener('scroll', () => {
+    const t = document.querySelector('.top'); if (!t) return;
+    const y = window.scrollY;
+    if (!mq.matches || y < 90) { t.classList.remove('hide'); last = y; return; }
+    if (y > last + 10) t.classList.add('hide'); else if (y < last - 10) t.classList.remove('hide');
+    last = y;
+  }, { passive: true });
+  document.addEventListener('focusin', (e) => { const t = document.querySelector('.top'); if (t && e.target.closest && e.target.closest('.top')) t.classList.remove('hide'); });
+}
 
 /* ---------- Éléments communs ---------- */
 function langSwitch(current, onPick) {
@@ -698,6 +711,45 @@ function buildCarousel(title, items, all, opts = {}) {
     ? h('div', { class: 'car-track auto', role: 'list', style: `--n:${items.length}` }, h('div', { class: 'car-belt' }, items.map((it) => cardEl(it, false)), items.map((it) => cardEl(it, true))))
     : h('div', { class: 'car-track', role: 'list' }, items.map((it) => cardEl(it, false)));
   return h('section', { class: 'carou', 'aria-label': title }, h('div', { class: 'car-head' }, h('h2', {}, title), all ? h('button', { type: 'button', class: 'car-all', onclick: all }, 'Voir tout') : null), track);
+}
+
+/* ---------- Carrousel « en éventail » (cartes possédées) : la carte du centre est grande, la précédente et la suivante se devinent de chaque côté ---------- */
+// items : [{ card, name, sub, price, onopen(index) }] ; défilement tactile avec accroche sur chaque carte
+function buildCoverflow(title, items, onOpen) {
+  const cap = h('p', { class: 'cf-cap', 'aria-live': 'polite' }, h('b', { class: 'cf-name' }), h('span', { class: 'cf-sub' }));
+  const count = h('p', { class: 'cf-count' });
+  const els = items.map((it, i) => {
+    const b = h('button', { type: 'button', class: 'cf-card', role: 'listitem', 'aria-label': `${it.name}${it.price != null ? ' : ' + eur(it.price) : ''}` });
+    const ph = () => { b.classList.add('noimg'); b.prepend(h('span', { class: 'car-ph' }, it.name)); };
+    if (it.card.image) b.append(lazyImg(imgLow(it.card), it.name, ph)); else ph();
+    if (it.price != null) b.append(h('span', { class: 'car-price' }, eur(it.price)));
+    b.addEventListener('click', () => { if (i === cur) onOpen(i); else go2(i); });
+    return b;
+  });
+  const track = h('div', { class: 'cf-track', role: 'list', tabindex: '0', 'aria-label': title }, els);
+  let cur = 0, raf = 0;
+  const pitch = () => (els.length > 1 ? els[1].offsetLeft - els[0].offsetLeft : els[0].offsetWidth || 1);
+  function paint() {
+    raf = 0; if (!track.isConnected) return;         // carrousel déjà remplacé : rien à dessiner
+    const p = pitch() || 1, pos = track.scrollLeft / p; cur = Math.max(0, Math.min(els.length - 1, Math.round(pos) || 0));
+    els.forEach((el, i) => {
+      const d = i - pos, a = Math.abs(d);
+      if (a > 3) { el.style.transform = 'perspective(900px) scale(.6)'; el.style.opacity = '0'; el.style.zIndex = '0'; return; }
+      const rot = Math.max(-46, Math.min(46, -d * 36)), sc = Math.max(0.58, 1 - 0.23 * Math.min(a, 1.8));
+      el.style.transform = `perspective(900px) rotateY(${rot.toFixed(1)}deg) scale(${sc.toFixed(3)})`;
+      el.style.opacity = String(Math.max(0.2, 1 - 0.4 * Math.min(a, 1.7)).toFixed(2));
+      el.style.zIndex = String(10 - Math.round(a * 2));
+    });
+    const it = items[cur]; cap.querySelector('.cf-name').textContent = it.name; cap.querySelector('.cf-sub').textContent = it.sub || '';
+    count.textContent = `${cur + 1} / ${items.length}`;
+  }
+  const go2 = (i) => track.scrollTo({ left: i * pitch(), behavior: 'smooth' });
+  track.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(paint); }, { passive: true });
+  track.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight') { e.preventDefault(); go2(Math.min(els.length - 1, cur + 1)); } else if (e.key === 'ArrowLeft') { e.preventDefault(); go2(Math.max(0, cur - 1)); } else if (e.key === 'Enter') onOpen(cur); });
+  const sec = h('section', { class: 'cflow', 'aria-label': title }, h('h2', { class: 'cf-title' }, title), track, cap, count);
+  requestAnimationFrame(() => requestAnimationFrame(paint)); window.addEventListener('resize', () => { if (sec.isConnected) paint(); });
+  sec.cfGo = go2; sec.cfPaint = paint;
+  return sec;
 }
 
 /* ---------- Historique de la valeur de la collection (un relevé par jour) ---------- */
@@ -1486,6 +1538,15 @@ async function showSearchInner(L, my, preset = {}) {
     const e = priceCache[r.card.id]; return blend(r.card.id, e ? (e[0] ?? e[1]) : null);
   }
   function paintCar() {
+    if (ownedMode()) {                  // « mes cartes » : éventail (la carte du centre, la précédente et la suivante visibles de chaque côté)
+      const list = matches.slice(0, 80);
+      if (!list.length) { carSlot.hidden = true; carSlot.replaceChildren(); return; }
+      const items = list.map((r) => ({ card: r.card, name: r.card.name, sub: `#${numLabelOf(r.card, idx.prefix.get(r.sid))} · ${r.setName}`, price: priceOfRec(r) }));
+      const keep = carSlot.querySelector('.cf-track') ? carSlot.querySelector('.cf-track').scrollLeft : 0;
+      carSlot.replaceChildren(buildCoverflow(`Mes cartes${matches.length > list.length ? ` (80 premières sur ${matches.length.toLocaleString('fr-FR')})` : ''}`, items, (i) => { const ts = list.map((r) => mkTile(r)); openLightbox(ts, i, L); }));
+      const tr = carSlot.querySelector('.cf-track'); if (tr && keep) requestAnimationFrame(() => { tr.scrollLeft = keep; });
+      carSlot.hidden = false; return;
+    }
     const top = matches.map((r) => [r, priceOfRec(r)]).filter(([, p]) => p != null).sort((a, b) => b[1] - a[1]).slice(0, 10);
     if (!top.length) { carSlot.hidden = true; carSlot.replaceChildren(); return; }
     const items = top.map(([r, p]) => ({ card: r.card, name: r.card.name, price: p, onclick: () => openLightbox([mkTile(r)], 0, L) }));
@@ -1811,11 +1872,11 @@ function openLightbox(items, index, L) {
   }
   function paintLinks(it) {
     const c = it.card, term = [it.name, lidShow(c.localId).replace(/[^A-Za-z0-9]/g, '')].filter(Boolean).join(' ');
-    linksEl.replaceChildren(
+    linksEl.replaceChildren(...[
       h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term) + '&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1', target: '_blank', rel: 'noopener noreferrer' }, 'Ventes terminées sur eBay.fr ↗'),
       ' · ',
       h('a', { href: cmUrl(it), target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket (carte française, vendeurs France, NM) ↗'),
-      /\?$/.test(cmSlugs[it.card.id] || '') && !cmStatic[it.card.id] ? h('span', { class: 'lb-help' }, ' Adresse déduite, non vérifiée : si la page est introuvable, signalez-le.') : null);
+      /\?$/.test(cmSlugs[it.card.id] || '') && !cmStatic[it.card.id] ? h('span', { class: 'lb-help' }, ' Adresse déduite, non vérifiée : si la page est introuvable, signalez-le.') : null].filter(Boolean));
   }
   function show() {
     const it = items[i], c = it.card, info = infoOf(it);
