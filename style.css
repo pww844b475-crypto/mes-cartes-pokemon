@@ -444,3 +444,9 @@ html.lb-open body { overflow: hidden; }
 .pickrow .pt { flex: 1; min-width: 0; font-weight: 600; }
 .pickrow .po { font-size: 12px; color: #1f8a4c; white-space: nowrap; }
 .orow-l .dim, .rc .dim { color: var(--muted); font-weight: 600; }
+.price { display: block; font-size: 12.5px; font-weight: 700; color: #1f7a45; line-height: 1.2; }
+.price[hidden] { display: none; }
+@media (prefers-color-scheme: dark) { .price { color: #5fd08b; } }
+.lb-price { margin: 4px 0 0; font-size: 15px; }
+.lb-links { margin: 6px 0 0; font-size: 14px; }
+.lb-links a { color: inherit; font-weight: 650; }

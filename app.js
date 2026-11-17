@@ -521,6 +521,22 @@ function openOwned(L, rows, onToggle) {
   upd();
 }
 
+// Affiche le prix sur les tuiles (celui déjà connu) et relève, en arrière-plan, celui des cartes de valeur (AR, SAR, hyper rares…)
+function priceTiles(L, tiles, my) {
+  tiles.forEach((t) => t.paintPrice());
+  const todo = tiles.filter((t) => !priceCache[t.id] && t.info && t.info.rar && VALUE_TIERS.has(rarityTier(t.info.rar)));
+  if (!todo.length) return;
+  let i = 0, n = 0;
+  const worker = async () => {
+    while (i < todo.length && my === tok) {
+      const t = todo[i++];
+      try { await fetchPrice(L, t.id); t.paintPrice(); } catch { /* hors ligne */ }
+      if (++n % 20 === 0) savePrices();
+    }
+  };
+  Promise.all(Array.from({ length: 4 }, worker)).then(savePrices);
+}
+
 /* ---------- Vue : liste des extensions, par blocs ---------- */
 async function showList(my) {
   const L = lang;
@@ -921,6 +937,7 @@ async function showSet(L, setId, my) {
   q.addEventListener('input', apply);
   apply();
   main.replaceChildren(...notes, progress, ...sections.map((x) => x.el), none);
+  priceTiles(L, tiles, my);
 }
 
 /* ---------- Vue : recherche dans toute la collection (nom, extension, rareté, version, possession) ---------- */
@@ -1011,7 +1028,7 @@ async function showSearch(L, my, preset = {}) {
   };
   const more = () => {
     const next = matches.slice(shown, shown + PAGE); shown += next.length;
-    grid.append(...next.map((r) => mk(r).el));
+    const made = next.map((r) => mk(r)); grid.append(...made.map((t) => t.el)); priceTiles(L, made, my);
     moreBtn.hidden = shown >= matches.length;
     moreBtn.textContent = `Afficher plus de cartes (${(matches.length - shown).toLocaleString('fr-FR')} restantes)`;
   };
@@ -1145,8 +1162,9 @@ function makeTile(card, mine, onChange, ctx) {
   const dbl = h('span', { class: 'dbl', hidden: true });
   const num = h('span', { class: 'num' }, '#' + card.localId);
   const rar = h('span', { class: 'rar' });
+  const price = h('span', { class: 'price', hidden: true });
   const ctl = h('div', { class: 'ctl' });
-  const el = h('div', { class: 'card' }, media, dbl, num, h('span', { class: 'nm' }, name), rar, ctl);
+  const el = h('div', { class: 'card' }, media, dbl, num, h('span', { class: 'nm' }, name), rar, price, ctl);
   let cb = null, mark = null, qv = null, minus = null, plus = null, chips = [], unChip = null;
 
   const t = {
@@ -1154,6 +1172,7 @@ function makeTile(card, mine, onChange, ctx) {
     get info() { return info; },
     setInfo(i) { info = i; build(); sync(); },
     get value() { return mine[id]; },
+    paintPrice() { const e = priceCache[id], u = e ? (e[0] ?? e[1]) : null; price.hidden = u == null; if (u != null) price.textContent = '≈ ' + eur(u); },
     set(key, q) { setQty(mine, id, key, q); sync(); onChange(); },
     setQuiet(key, q) { setQty(mine, id, key, q); sync(); },                       // sans enregistrer (actions groupées)
     restore(v) { if (v === undefined) delete mine[id]; else mine[id] = isMulti(v) ? { ...v } : v; sync(); },
@@ -1208,7 +1227,7 @@ function makeTile(card, mine, onChange, ctx) {
       unChip.hidden = un <= 0; unChip.textContent = `Version ? ×${un}`;
     }
   }
-  build(); sync();
+  build(); sync(); t.paintPrice();
   return t;
 }
 
@@ -1237,11 +1256,12 @@ function openLightbox(items, index, L) {
   const img = h('img', { class: 'lb-img', alt: '', draggable: 'false' });
   const stageBox = h('div', { class: 'lb-stage' });
   const nameEl = h('h2', { class: 'lb-name' }), subEl = h('p', { class: 'lb-sub' }), rarEl = h('p', { class: 'lb-rar' }), varsEl = h('div', { class: 'lb-vars' });
+  const priceEl = h('p', { class: 'lb-price' }), linksEl = h('p', { class: 'lb-links' });
   const prev = h('button', { type: 'button', class: 'lb-nav prev', 'aria-label': 'Carte précédente' }, '‹');
   const next = h('button', { type: 'button', class: 'lb-nav next', 'aria-label': 'Carte suivante' }, '›');
   const close = h('button', { type: 'button', class: 'lb-close', 'aria-label': 'Fermer l’agrandissement' }, '✕');
   const el = h('div', { class: 'lb', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Carte agrandie' },
-    close, stageBox, h('div', { class: 'lb-info' }, nameEl, subEl, rarEl, varsEl));
+    close, stageBox, h('div', { class: 'lb-info' }, nameEl, subEl, rarEl, priceEl, linksEl, varsEl));
   stageBox.append(prev, img, next);
   const opener = document.activeElement;
 
@@ -1278,8 +1298,26 @@ function openLightbox(items, index, L) {
       varsEl.append(qtyRow('Exemplaires', qtyTotal(v), (n) => { it.set(null, n); renderVars(); }));
     }
   }
+  function paintPrice(it) {
+    const e = priceCache[it.card.id];
+    if (!e) { priceEl.textContent = 'Prix : relevé en cours…'; return; }
+    const parts = [];
+    if (e[0] != null) parts.push(`Normal ${eur(e[0])}`);
+    if (e[1] != null && e[1] !== e[0]) parts.push(`Reverse / Holo ${eur(e[1])}`);
+    priceEl.replaceChildren(parts.length ? h('b', {}, 'Prix Cardmarket (tendance) : ') : 'Prix indisponible pour cette carte.', parts.join(' · '),
+      parts.length ? h('span', { class: 'lb-help' }, ' Tous vendeurs et toutes langues (pas seulement la France).') : '');
+  }
+  function paintLinks(it) {
+    const c = it.card, term = [it.name, c.localId, it.setName].filter(Boolean).join(' ');
+    linksEl.replaceChildren(
+      h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term + ' français') + '&LH_Sold=1&LH_Complete=1', target: '_blank', rel: 'noopener noreferrer' }, 'Ventes terminées sur eBay.fr ↗'),
+      ' · ',
+      h('a', { href: 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, c.localId].filter(Boolean).join(' ')), target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket ↗'));
+  }
   function show() {
     const it = items[i], c = it.card, info = infoOf(it);
+    paintPrice(it); paintLinks(it);
+    if (!priceCache[c.id] && L === 'fr') fetchPrice(L, c.id).then(() => { savePrices(); if (items[i] === it && lb) paintPrice(it); }).catch(() => { if (items[i] === it && lb) priceEl.textContent = 'Prix indisponible pour le moment.'; });
     nameEl.textContent = it.name;
     subEl.textContent = `#${c.localId} · ${it.setName || ''} · ${i + 1}/${items.length}`;
     rarEl.textContent = info && info.rar ? `Rareté : ${info.rar}` : '';
