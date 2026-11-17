@@ -17,7 +17,7 @@ const K = {
   lang: 'cartes.lang', cov: 'cartes.cov', exp: 'cartes.lastExport', tip: 'cartes.tipHidden', order: 'cartes.order',
   friends: 'cartes.friends.v1', pseudo: 'cartes.pseudo',
   splash: 'cartes.splash', // 'off' = écran d'ouverture désactivé
-  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay', cmslug: 'cartes.cmslug5', view: 'cartes.view', setview: 'cartes.setview',
+  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay', cmslug: 'cartes.cmslug5', view: 'cartes.view', setview: 'cartes.setview', boosters: 'cartes.boosters',
 };
 const BACKUP_VERSION = 3;   // sauvegarde personnelle (3 : quantités par version de carte)
 const SHARE_VERSION = 2;    // fichier de partage entre amis (2 : quantités par version de carte)
@@ -735,7 +735,8 @@ function buildCoverflow(title, items, onOpen) {
     els.forEach((el, i) => {
       const d = i - pos, a = Math.abs(d);
       if (a > 3) { el.style.transform = 'perspective(900px) scale(.6)'; el.style.opacity = '0'; el.style.zIndex = '0'; return; }
-      const rot = Math.max(-46, Math.min(46, -d * 36)), sc = Math.max(0.58, 1 - 0.23 * Math.min(a, 1.8));
+      const e = a < 0.12 ? 0 : (a - 0.12) / 0.88, sg = d < 0 ? 1 : -1;      // zone morte : la carte du centre est parfaitement droite
+      const rot = a < 0.12 ? 0 : Math.max(-46, Math.min(46, sg * e * 36)), sc = a < 0.12 ? 1 : Math.max(0.58, 1 - 0.23 * Math.min(a, 1.8));
       el.style.transform = `perspective(900px) rotateY(${rot.toFixed(1)}deg) scale(${sc.toFixed(3)})`;
       el.style.opacity = String(Math.max(0.2, 1 - 0.4 * Math.min(a, 1.7)).toFixed(2));
       el.style.zIndex = String(10 - Math.round(a * 2));
@@ -906,7 +907,7 @@ async function showListInner(my) {
   syncToggle();
   // raccourci vers mes cartes possédées (par rareté) + estimation de leur valeur
   let valRows = [], busy = false;
-  const mineBtn = h('button', { type: 'button', class: 'mine mtile', 'aria-label': 'Mes cartes possédées', onclick: () => openOwned(L, valRows, () => recalc(false)) }, h('span', { class: 'mi' }, '🃏'), h('span', { class: 'ml' }, 'Mes cartes'), h('b', { class: 'mn' }, '0'));
+  const mineBtn = h('button', { type: 'button', class: 'mine mtile', 'aria-label': 'Mes cartes possédées', onclick: () => { listScroll = scrollY; location.hash = '#chercher/own'; } }, h('span', { class: 'mi' }, '🃏'), h('span', { class: 'ml' }, 'Mes cartes'), h('b', { class: 'mn' }, '0'));
   const valNum = h('b', { class: 'vv' }, '…'), valSub = h('span', { class: 'vs' });
   const refreshBtn = h('button', { type: 'button', class: 'tbtn2', 'aria-label': 'Actualiser les prix', title: 'Actualiser les prix', onclick: () => recalc(true) }, '⟳');
   const valbox = h('div', { class: 'valbox' }, h('button', { type: 'button', class: 'vt', 'aria-label': 'Détail de la valeur par rareté', onclick: () => openOwned(L, valRows, () => recalc(false)) }, h('span', { class: 'vl' }, 'Valeur estimée'), valNum, valSub), refreshBtn);
@@ -965,6 +966,8 @@ async function showListInner(my) {
         h('li', {}, `${plural(dbl, 'carte en double', 'cartes en double')} (2 exemplaires ou plus d’une version)`),
         h('li', {}, `${plural(done, 'extension complète', 'extensions complètes')}`),
         h('li', {}, `Valeur estimée : ${eur(sm.total)}`)),
+      h('button', { class: 'btn', type: 'button', onclick: () => openBoosters(blocks, L) }, '🎁 Ouverture de booster'),
+      h('button', { class: 'btn sec', type: 'button', onclick: () => openOwned(L, valRows, () => recalc(false)) }, '🃏 Mes cartes par rareté et estimation'),
       h('h2', {}, 'Par bloc'),
       h('div', { class: 'orows' }, secs.map((x) => h('div', { class: 'orow' }, h('div', { class: 'orow-l' }, h('span', { class: 'rn' }, x.b.name), h('span', { class: 'rc' }, h('b', {}, String(x.have)), `/${x.total.toLocaleString('fr-FR')} · ${pctOf(x.have, x.total)} %`)))).concat([])),
       h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
@@ -1515,6 +1518,7 @@ async function showSearchInner(L, my, preset = {}) {
     if (f.ver) items.push([idx.vers.get(f.ver)?.label || f.ver, () => { f.ver = ''; }]);
     chips.replaceChildren(...items.map(([label, clear]) => h('button', { type: 'button', class: 'fchip', 'aria-label': `Retirer le filtre : ${label}`, onclick: () => { clear(); run(); } }, label, h('span', { 'aria-hidden': 'true' }, ' ✕'))));
     chips.hidden = !items.length;
+    filterBtn.hidden = f.own === 'own';      // « mes cartes » : on choisit directement les raretés, sans bouton filtre
     const n = activeCount(); filterBtn.querySelector('.nb').textContent = String(n); filterBtn.querySelector('.nb').hidden = !n;
   }
   function run() {
@@ -1527,10 +1531,27 @@ async function showSearchInner(L, my, preset = {}) {
     tiles.length = 0; grid.replaceChildren(); shown = 0; more();
     none.hidden = idle || matches.length > 0; none.textContent = 'Aucune carte ne correspond.';
     updateChips(); updateSummary(); if (sheetSync) sheetSync();
-    paintCar(); fetchTopPrices();
+    paintRarPick(); paintCar(); fetchTopPrices();
   }
 
   // carrousel des cartes les plus chères parmi les résultats (prix Cardmarket estimés ; ceux déjà connus, les autres sont relevés en arrière-plan)
+  // boutons de rareté, directement sur la page « mes cartes » (un toucher = afficher seulement cette rareté ; retoucher = toutes)
+  const rarPick = h('div', { class: 'rpick', role: 'group', 'aria-label': 'Raretés', hidden: true });
+  function paintRarPick() {
+    if (f.own !== 'own') { rarPick.hidden = true; rarPick.replaceChildren(); return; }
+    const cnt = new Map();
+    for (const r of idx.recs) {
+      const info = r.info; if (!info || !info.rar) continue;
+      if (f.gid && r.gid !== f.gid) continue;
+      if (qtyTotal(mines.get(r.sid)[r.card.id]) > 0) cnt.set(info.rar, (cnt.get(info.rar) || 0) + 1);
+    }
+    const list = [...cnt.keys()].sort((a, b) => rarityRank(a) - rarityRank(b) || a.localeCompare(b, 'fr'));
+    const total = [...cnt.values()].reduce((n, c) => n + c, 0);
+    const btn = (label, sym, tier, n, on, set) => h('button', { type: 'button', class: 'rpb' + (on ? ' on' : ''), 'aria-pressed': String(on), title: `${label} : ${n}`, onclick: () => { f.rar = set; run(); } },
+      h('span', { class: 'rps rt-' + tier, 'aria-hidden': 'true' }, sym), h('span', { class: 'rpn' }, label), h('b', {}, String(n)));
+    rarPick.replaceChildren(btn('Toutes', '✦', 'aucune', total, !f.rar, ''), ...list.map((r) => btn(r, raritySymbol(r), rarityTier(r), cnt.get(r), f.rar === r, r)));
+    rarPick.hidden = !list.length;
+  }
   const carSlot = h('div', { class: 'carslot', hidden: true });
   const ownedMode = () => f.own === 'own' || f.own === 'dbl';
   function priceOfRec(r) {
@@ -1538,20 +1559,15 @@ async function showSearchInner(L, my, preset = {}) {
     const e = priceCache[r.card.id]; return blend(r.card.id, e ? (e[0] ?? e[1]) : null);
   }
   function paintCar() {
-    if (ownedMode()) {                  // « mes cartes » : éventail (la carte du centre, la précédente et la suivante visibles de chaque côté)
+    {                                   // éventail pour toute liste de cartes (la carte du centre, la précédente et la suivante visibles de chaque côté)
       const list = matches.slice(0, 80);
       if (!list.length) { carSlot.hidden = true; carSlot.replaceChildren(); return; }
       const items = list.map((r) => ({ card: r.card, name: r.card.name, sub: `#${numLabelOf(r.card, idx.prefix.get(r.sid))} · ${r.setName}`, price: priceOfRec(r) }));
       const keep = carSlot.querySelector('.cf-track') ? carSlot.querySelector('.cf-track').scrollLeft : 0;
-      carSlot.replaceChildren(buildCoverflow(`Mes cartes${matches.length > list.length ? ` (80 premières sur ${matches.length.toLocaleString('fr-FR')})` : ''}`, items, (i) => { const ts = list.map((r) => mkTile(r)); openLightbox(ts, i, L); }));
+      carSlot.replaceChildren(buildCoverflow(`${ownedMode() ? 'Mes cartes' : 'Résultats'}${matches.length > list.length ? ` (80 premières sur ${matches.length.toLocaleString('fr-FR')})` : ''}`, items, (i) => { const ts = list.map((r) => mkTile(r)); openLightbox(ts, i, L); }));
       const tr = carSlot.querySelector('.cf-track'); if (tr && keep) requestAnimationFrame(() => { tr.scrollLeft = keep; });
-      carSlot.hidden = false; return;
+      carSlot.hidden = false;
     }
-    const top = matches.map((r) => [r, priceOfRec(r)]).filter(([, p]) => p != null).sort((a, b) => b[1] - a[1]).slice(0, 10);
-    if (!top.length) { carSlot.hidden = true; carSlot.replaceChildren(); return; }
-    const items = top.map(([r, p]) => ({ card: r.card, name: r.card.name, price: p, onclick: () => openLightbox([mkTile(r)], 0, L) }));
-    carSlot.replaceChildren(buildCarousel(ownedMode() ? 'Mes cartes les plus chères' : 'Les plus chères', items, () => { f.sort = 'price'; run(); grid.scrollIntoView({ block: 'start' }); }));
-    carSlot.hidden = false;
   }
   let carFetch = 0;
   function fetchTopPrices() {
@@ -1610,7 +1626,7 @@ async function showSearchInner(L, my, preset = {}) {
   let timer = null;
   q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 120); });
   moreBtn.addEventListener('click', more);
-  main.replaceChildren(summary, carSlot, grid, moreBtn, none);
+  main.replaceChildren(summary, rarPick, carSlot, grid, moreBtn, none);
   run();
   if (pendingScan) { const file = pendingScan; pendingScan = null; history.replaceState(null, '', '#chercher'); runScan(file); }
 }
@@ -1664,6 +1680,16 @@ const RARITY_TIER = {
 const TIER_ORDER = ['commune', 'peu', 'rare', 'holo', 'ultra', 'secrete', 'promo', 'aucune'];
 const rarityTier = (r) => RARITY_TIER[r] || (/ultra|vmax|vstar|full art|hyper|illustration/i.test(r || '') ? 'ultra' : 'holo');
 const rarityRank = (r) => TIER_ORDER.indexOf(rarityTier(r));
+// Pictogramme d'une rareté (comme sur les cartes) : ● commune, ◆ peu commune, ★ rare, étoiles dorées pour les illustrations, argentées pour les ultra rares
+function raritySymbol(r) {
+  if (r === 'Commune') return '●'; if (r === 'Peu Commune') return '◆'; if (r === 'Rare') return '★';
+  if (r === 'Illustration rare') return '★'; if (r === 'Illustration spéciale rare') return '★★';
+  if (r === 'Hyper rare' || r === 'Méga Hyper Rare') return '★★★';
+  if (r === 'Double rare' || r === 'Ultra Rare') return '★★';
+  const t = rarityTier(r);
+  return t === 'holo' ? '★' : t === 'ultra' ? '★★' : t === 'secrete' ? '★' : t === 'promo' ? 'P' : '●';
+}
+
 const hasVersions = (info) => !!(info && info.vars && info.vars.length >= 2);
 
 /* ---------- Cartes ---------- */
@@ -1909,6 +1935,7 @@ function openLightbox(items, index, L) {
   const onKey = (e) => { if (e.key === 'Escape') closeLightbox(); else if (e.key === 'ArrowLeft') go2(-1); else if (e.key === 'ArrowRight') go2(1); };
   document.addEventListener('keydown', onKey);
   let x0 = null;
+  img.addEventListener('click', () => closeLightbox());     // retoucher la carte l'ouvre puis la referme, sans bouton
   stageBox.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
   stageBox.addEventListener('touchend', (e) => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 55) go2(dx < 0 ? 1 : -1); }, { passive: true });
   lb = { el, onKey, opener };
@@ -1918,6 +1945,70 @@ function openLightbox(items, index, L) {
 
 /* ---------- Fenêtres ---------- */
 function closeSheet() { document.querySelector('.overlay')?.remove(); }
+/* ---------- Ouverture de booster : taux d'obtention (« pull rate ») par extension, uniquement depuis Statistiques ---------- */
+// cartes.boosters : [{ id, set, name, n (boosters ouverts), hits:{rareté:nombre}, t }]
+function loadBoosters() {
+  try { const a = JSON.parse(store.get(K.boosters) || '[]'); return Array.isArray(a) ? a.filter((x) => x && typeof x.set === 'string' && x.n > 0 && x.hits && typeof x.hits === 'object') : []; } catch { return []; }
+}
+const saveBoosters = (a) => store.set(K.boosters, JSON.stringify(a));
+const pullPct = (hits, n) => (n > 0 ? Math.round((hits / n) * 1000) / 10 : 0);
+function openBoosters(blocks, L) {
+  const groups = blocks.flatMap((b) => b.items.map((g) => ({ g, block: b.name })));
+  const sel = h('select', { class: 'bo-set', 'aria-label': 'Extension ouverte' }, h('option', { value: '' }, 'Choisir l’extension…'),
+    ...blocks.map((b) => h('optgroup', { label: b.name }, b.items.map((g) => h('option', { value: g.id }, g.set.name || g.id)))));
+  const nIn = h('input', { class: 'qin bo-n', type: 'number', inputmode: 'numeric', min: '1', max: '9999', value: '1', 'aria-label': 'Nombre de boosters ouverts' });
+  const form = h('div', { class: 'bo-form' });
+  const stats = h('div', { class: 'bo-stats' });
+  let cur = null, rars = [];
+  const hitIn = new Map();
+  const nameOf = (id) => { const x = groups.find((y) => y.g.id === id); return x ? (x.g.set.name || id) : id; };
+  function paintStats() {
+    const all = loadBoosters().filter((x) => cur && x.set === cur);
+    if (!cur) { stats.replaceChildren(); return; }
+    if (!all.length) { stats.replaceChildren(h('p', { class: 'lb-help' }, 'Aucune ouverture enregistrée pour cette extension.')); return; }
+    const n = all.reduce((a, x) => a + x.n, 0), tot = {};
+    for (const x of all) for (const [r, c] of Object.entries(x.hits)) tot[r] = (tot[r] || 0) + (Number(c) || 0);
+    const rows = Object.entries(tot).filter(([, c]) => c > 0).sort((a, b) => rarityRank(a[0]) - rarityRank(b[0]));
+    stats.replaceChildren(
+      h('h3', {}, `Pull rate · ${nameOf(cur)}`),
+      h('p', { class: 'owned-total' }, h('b', {}, plural(n, 'booster ouvert', 'boosters ouverts')), ` · ${plural(rows.reduce((a, [, c]) => a + c, 0), 'hit', 'hits')} au total`),
+      rows.length ? h('div', { class: 'orows' }, rows.map(([r, c]) => h('div', { class: 'orow' }, h('div', { class: 'orow-l' }, h('span', { class: 'rn' }, r),
+        h('span', { class: 'rc' }, h('b', {}, `${pullPct(c, n).toLocaleString('fr-FR')} %`), ` · ${c}/${n}${c ? ` · 1 tous les ${(n / c).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} boosters` : ''}`))))) : h('p', { class: 'lb-help' }, 'Aucun hit noté pour le moment.'),
+      h('h3', {}, 'Ouvertures enregistrées'),
+      h('div', { class: 'orows' }, all.slice().reverse().map((x) => h('div', { class: 'orow' }, h('div', { class: 'orow-l' },
+        h('span', { class: 'rn' }, `${new Date(x.t).toLocaleDateString('fr-FR')} · ${plural(x.n, 'booster', 'boosters')}`),
+        h('span', { class: 'rc' }, Object.entries(x.hits).filter(([, c]) => c > 0).map(([r, c]) => `${c} ${r}`).join(', ') || 'aucun hit')),
+        h('button', { type: 'button', class: 'orow-go', 'aria-label': 'Supprimer cette ouverture', onclick: () => { saveBoosters(loadBoosters().filter((y) => y.id !== x.id)); paintStats(); } }, '✕')))));
+  }
+  async function pick() {
+    cur = sel.value || null; hitIn.clear(); form.replaceChildren(); stats.replaceChildren();
+    if (!cur) return;
+    form.replaceChildren(h('p', { class: 'lb-help' }, 'Chargement des raretés…'));
+    const x = groups.find((y) => y.g.id === cur);
+    const maps = await Promise.all(x.g.members.map((m) => loadCardInfo(L, m.id)));
+    if (sel.value !== cur) return;
+    rars = [...new Set(maps.flatMap((m) => [...m.values()].map((i) => i.rar).filter(Boolean)))].sort((a, b) => rarityRank(a) - rarityRank(b) || a.localeCompare(b, 'fr'));
+    form.replaceChildren(
+      h('label', { class: 'bo-line' }, h('span', {}, 'Boosters ouverts'), nIn),
+      h('p', { class: 'lb-help' }, 'Hits obtenus, par rareté (laisser 0 si aucun) :'),
+      ...rars.map((r) => { const i = h('input', { class: 'qin', type: 'number', inputmode: 'numeric', min: '0', max: '9999', value: '0', 'aria-label': `Hits : ${r}` }); i.addEventListener('focus', () => i.select()); hitIn.set(r, i); return h('label', { class: 'bo-line' }, h('span', {}, r), i); }),
+      h('button', { class: 'btn', type: 'button', onclick: save }, 'Enregistrer cette ouverture'));
+    paintStats();
+  }
+  function save() {
+    const n = Math.max(0, Math.min(9999, parseInt(nIn.value, 10) || 0));
+    if (n < 1) { toast('Indiquez le nombre de boosters ouverts.'); return; }
+    const hits = {};
+    for (const [r, i] of hitIn) { const c = Math.max(0, Math.min(9999, parseInt(i.value, 10) || 0)); if (c) hits[r] = c; }
+    const a = loadBoosters(); a.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), set: cur, name: nameOf(cur), n, hits, t: Date.now() });
+    saveBoosters(a); nIn.value = '1'; for (const i of hitIn.values()) i.value = '0';
+    toast('Ouverture enregistrée.'); paintStats();
+  }
+  sel.addEventListener('change', pick);
+  openSheet(h('h2', {}, 'Ouverture de booster'), h('p', { class: 'lb-help' }, 'Choisissez l’extension, le nombre de boosters ouverts et les hits obtenus : le taux d’obtention par rareté se calcule tout seul et se cumule pour chaque extension.'),
+    sel, form, stats, h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
+}
+
 function openSheet(...content) {
   closeSheet();
   const ov = h('div', { class: 'overlay', role: 'dialog', 'aria-modal': 'true', onclick: (e) => { if (e.target === ov) closeSheet(); } }, h('div', { class: 'sheet' }, ...content));

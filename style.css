@@ -223,6 +223,7 @@ textarea.field { resize: vertical; font-family: ui-monospace, Menlo, monospace; 
   position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; overflow: hidden;
   padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
   background:
+    linear-gradient(90deg, #0f1b2d 0, rgba(15, 27, 45, 0) 14%, rgba(15, 27, 45, 0) 86%, #0f1b2d 100%),   /* les bords se fondent avec la bande d'état système (écran intérieur du Duo) */
     radial-gradient(120% 70% at 50% 28%, rgba(86, 128, 214, .38), rgba(86, 128, 214, 0) 62%),
     radial-gradient(90% 60% at 50% 110%, rgba(230, 170, 60, .16), rgba(230, 170, 60, 0) 70%),
     linear-gradient(165deg, #0b1424 0%, #14284a 42%, #1d3557 72%, #26407a 118%);
@@ -456,7 +457,7 @@ html.lb-open body { overflow: hidden; }
 
 /* ---- accueil en tuiles ---- */
 .menu { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); margin: 0 0 12px; }
-@media (min-width: 560px) { .menu { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 480px) { .menu { grid-template-columns: repeat(4, 1fr); } }
 @media (min-width: 900px) { .menu { grid-template-columns: repeat(7, 1fr); } }
 .mtile { position: relative; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 6px; min-height: 84px; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--line); text-align: left; color: var(--text);
   background: linear-gradient(160deg, var(--surface), var(--surface-2)); }
@@ -652,3 +653,21 @@ html { background: var(--bg); min-height: 100%; }
   .top > .search { margin-top: 0; }
   .top > .tools2 { margin-top: 0; }
 }
+
+/* ---------- Ouverture de booster (Statistiques) ---------- */
+.bo-set { width: 100%; min-height: 44px; border-radius: 12px; border: 1px solid var(--line, rgba(128,128,128,.35)); background: var(--surface-2); color: var(--text); font-size: 16px; padding: 0 10px; margin: 6px 0 10px; }
+.bo-form { display: grid; gap: 8px; margin-bottom: 10px; }
+.bo-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 12px; background: var(--surface-2); }
+.bo-line .qin { width: 84px; }
+.bo-stats h3 { margin: 14px 0 6px; font-size: 16px; }
+
+/* ---------- Boutons de rareté (page « Mes cartes ») ---------- */
+.rpick { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 10px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.rpick::-webkit-scrollbar { display: none; }
+.rpb { flex: none; display: grid; grid-template-columns: auto auto; grid-template-areas: "s c" "n n"; align-items: center; justify-content: center; gap: 0 8px; min-width: 84px; max-width: 150px; padding: 8px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--text); }
+.rpb .rps { grid-area: s; font-size: 17px; line-height: 1.2; letter-spacing: -1px; font-weight: 800; }
+.rpb b { grid-area: c; font-size: 16px; text-align: right; }
+.rpb .rpn { grid-area: n; font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rpb.on { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand) inset; }
+.rpb .rt-secrete { color: #e0a800; }
+@media (max-height: 620px) { .rpb { padding: 5px 10px; } }
