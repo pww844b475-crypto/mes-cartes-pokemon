@@ -17,7 +17,7 @@ const K = {
   lang: 'cartes.lang', cov: 'cartes.cov', exp: 'cartes.lastExport', tip: 'cartes.tipHidden', order: 'cartes.order',
   friends: 'cartes.friends.v1', pseudo: 'cartes.pseudo',
   splash: 'cartes.splash', // 'off' = écran d'ouverture désactivé
-  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay', cmslug: 'cartes.cmslug5', view: 'cartes.view', setview: 'cartes.setview', boosters: 'cartes.boosters',
+  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay', cmslug: 'cartes.cmslug6', view: 'cartes.view', setview: 'cartes.setview', boosters: 'cartes.boosters',
 };
 const BACKUP_VERSION = 3;   // sauvegarde personnelle (3 : quantités par version de carte)
 const SHARE_VERSION = 2;    // fichier de partage entre amis (2 : quantités par version de carte)
@@ -650,8 +650,17 @@ const CM_PARENT = { exu: 'ex10' };      // la collection Zarbi est une partie de
 // Règles déduites d'adresses réelles :
 //  · …/Singles/Aquapolis/Umbreon-V1-AQH29 : cartes du même nom dans l'extension = V1, V2… ; les cartes « H » passent avant les cartes numérotées ;
 //  · …/Singles/EX-Unseen-Forces/Unown-A-UFA-28 : Zarbi = nom-lettre-ABRÉVIATION+lettre-total, dans l'extension principale ; les extensions de la série EX sont préfixées « EX ».
+// Adresses Cardmarket EXACTES (data/cm/<extension>.json, relevées avec tools/fetch-cm-slugs.py : { s: extension, n: { numéro: fin d'adresse } })
+const cmSetFiles = new Map();
+const cmSetFile = (sid) => { if (!cmSetFiles.has(sid)) cmSetFiles.set(sid, fetch(`data/cm/${encodeURIComponent(sid)}.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null)); return cmSetFiles.get(sid); };
+function setIdOfCard(id) { let best = ''; for (const k of [...Object.keys(setsMeta.sets), ...Object.keys(liveMeta)]) if (id.startsWith(k + '-') && k.length > best.length) best = k; return best; }
 async function ensureCmSlug(id) {
   if (cmSlugs[id] || cmStatic[id]) return;
+  const sid0 = setIdOfCard(id);
+  if (sid0) {
+    const j = await cmSetFile(sid0), v = j && j.n && j.n[id.slice(sid0.length + 1)];
+    if (v) { const slug = v.includes('/') ? v : `${j.s}/${v}`; if (/^[A-Za-z0-9-]+\/[A-Za-z0-9-]+$/.test(slug)) { cmSlugs[id] = slug; store.set(K.cmslug, JSON.stringify(cmSlugs)); return; } }
+  }
   const d = await api(`/en/cards/${encodeURIComponent(id)}`);
   const own = d.set && d.set.id; if (!own) return;
   const top = CM_PARENT[own] || own;                                  // extension affichée par Cardmarket
