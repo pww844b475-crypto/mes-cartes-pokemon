@@ -435,3 +435,5 @@ html.lb-open body { overflow: hidden; }
 .selbar[hidden], .valbox [hidden], .homebar [hidden] { display: none; }
 .tools2 { flex-wrap: wrap; }
 @media (max-width: 460px) { .tools2 .sel { flex: 1 1 100%; } .tools2 .tbtn.wide { flex: 1; } }
+.note.ask .acts { display: flex; gap: 8px; margin-top: 8px; }
+.note.ask .acts button { margin-top: 0; flex: 1; }

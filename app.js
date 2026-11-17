@@ -613,10 +613,22 @@ async function showList(my) {
     valNum.textContent = eur(sm.total);
     valSub.textContent = prog ? `Calcul des prix… ${prog}` : sm.pending ? 'Prix indisponibles pour le moment (connexion ?)' : `Cardmarket · tendance · tous vendeurs${sm.oldest ? ' · relevé le ' + new Date(sm.oldest).toLocaleDateString('fr-FR') : ''}`;
   };
+  // à chaque ouverture de l'application (une fois par lancement) : proposer d'actualiser les prix
+  const askSlot = h('div', { class: 'askslot' });
+  const askPrices = () => {
+    let asked = false; try { asked = sessionStorage.getItem('cartes.askPrices') === '1'; sessionStorage.setItem('cartes.askPrices', '1'); } catch { /* ignoré */ }
+    if (asked || !valRows.length) return;
+    const last = summarize(valRows).oldest;
+    askSlot.replaceChildren(h('div', { class: 'note ask', role: 'alert' },
+      h('b', {}, 'Mettre à jour les prix ? '), last ? `Dernier relevé : ${new Date(last).toLocaleDateString('fr-FR')}.` : 'Aucun prix relevé pour le moment.',
+      h('div', { class: 'acts' },
+        h('button', { type: 'button', onclick: () => { askSlot.replaceChildren(); recalc(true); } }, 'Mettre à jour'),
+        h('button', { type: 'button', onclick: () => askSlot.replaceChildren() }, 'Plus tard'))));
+  };
   async function recalc(refresh) {
     if (busy) return; busy = true;
     try {
-      valRows = await ownedRows(L); if (my !== tok) return; paint();
+      valRows = await ownedRows(L); if (my !== tok) return; paint(); askPrices();
       await ensurePrices(L, valRows, refresh, (d, n) => { if (my === tok) paint(`${d}/${n}`); });
     } finally { busy = false; if (my === tok) paint(); }
   }
@@ -627,7 +639,7 @@ async function showList(my) {
       h('b', {}, 'Astuce iPhone / iPad : '), 'touchez Partager ⬆︎ puis « Sur l’écran d’accueil ». Cochez vos cartes depuis l’icône installée : ses données sont séparées de celles de Safari (utilisez Sauvegarde pour les transférer).',
       h('button', { type: 'button', onclick: (e) => { store.set(K.tip, '1'); e.target.closest('.note').remove(); } }, 'Compris')));
   }
-  main.replaceChildren(...notes, homebar, valbox, ...secs.map((x) => x.el), none);
+  main.replaceChildren(...notes, askSlot, homebar, valbox, ...secs.map((x) => x.el), none);
   recalc(false);
 
   q.addEventListener('input', () => {
