@@ -247,9 +247,20 @@ const imgHigh = (c) => (c._emb ? c.image : c._remote ? c.image + '?class=hd' : c
 // data/order.json : vrai ordre des cartes (celui de PokéCardex) pour les extensions où TCGdex les range autrement.
 let orders = {};
 const orderReady = fetch('data/order.json').then((r) => (r.ok ? r.json() : null)).then((j) => { if (j) orders = j; }).catch(() => {});
+// Groupes de cartes à lettres (RC, TG, SV, H…) : ordre naturel RC1, RC2… RC10 (TCGdex les range RC1, RC10, RC11…). Les cartes à numéro simple gardent l'ordre de TCGdex, chaque groupe reste à sa place.
+function natGroups(cards) {
+  const first = new Map(); cards.forEach((c, i) => { const g = numGroup(c.localId); if (!first.has(g)) first.set(g, i); });
+  const num = (c) => { const m = lidShow(c.localId).match(/\d+/); return m ? parseInt(m[0], 10) : 0; };
+  return cards.map((c, i) => [c, i]).sort((a, b) => {
+    const ga = numGroup(a[0].localId), gb = numGroup(b[0].localId);
+    if (ga !== gb) return first.get(ga) - first.get(gb);
+    if (ga === '' || ga === '*') return a[1] - b[1];
+    return num(a[0]) - num(b[0]) || a[1] - b[1];
+  }).map((x) => x[0]);
+}
 function sortCards(L, setId, cards) {
   const o = orders[L] && orders[L][setId];
-  if (!o) return cards;
+  if (!o) return natGroups(cards);
   const pos = new Map(o.map((id, i) => [id, i]));
   return cards.map((c, i) => [c, i]).sort((a, b) => (pos.has(a[0].id) ? pos.get(a[0].id) : 1e6 + a[1]) - (pos.has(b[0].id) ? pos.get(b[0].id) : 1e6 + b[1])).map((x) => x[0]);
 }
@@ -360,7 +371,8 @@ function privacyNote(extra) {
 // enfant → extension parente (TCGdex fr). Ces cartes font partie de la même collection que leur parent.
 // Les cases cochées restent enregistrées sous l'identifiant d'origine de chaque carte : rien à migrer.
 const MERGE_INTO = {
-  'cel25cc': 'cel25', '30th-c': '30th', 'exu': 'ex10',      // exu : Collection Zarbi (A/28 … ?/28), cartes secrètes d'EX Forces Cachées
+  'cel25cc': 'cel25', '30th-c': '30th', 'exu': 'ex10',
+  'sma': 'sm115', 'swsh4.5sv': 'swsh4.5',      // Coffres Étincelants (Destinées Occultes, Destinées Radieuses) : cartes SV de leur extension      // exu : Collection Zarbi (A/28 … ?/28), cartes secrètes d'EX Forces Cachées
   'swsh9tg': 'swsh9', 'swsh10tg': 'swsh10', 'swsh11tg': 'swsh11', 'swsh12tg': 'swsh12', 'swsh12.5gg': 'swsh12.5',
 };
 const parentOf = (sid, idSet) => (MERGE_INTO[sid] && idSet.has(MERGE_INTO[sid]) ? MERGE_INTO[sid] : sid);
@@ -583,7 +595,7 @@ async function ensureCmSlug(id) {
   const sd = await api(`/en/sets/${encodeURIComponent(own)}`), grp = numGroup(d.localId);
   // adresse déduite d'une règle non confirmée pour cette extension ? (partie d'une autre, promo, numéros à lettres, série EX, signe dans le nom) → « ? » = à vérifier
   const serie = (setMeta(own) || [])[0] || '';
-  const doubt = !CM_VERIFIED.has(own) && (top !== own || grp !== '' || CM_PROMO_SERIES.has(serie) || /promo|black star/i.test(setName || '') || serie === 'ex' || /[&:]/.test(setName || '')) ? '?' : '';
+  const doubt = !CM_VERIFIED.has(own) && (top !== own || !!MERGE_INTO[own] || grp !== '' || CM_PROMO_SERIES.has(serie) || /promo|black star/i.test(setName || '') || serie === 'ex' || /[&:]/.test(setName || '')) ? '?' : '';
   if (grp === '*') {                                                   // Zarbi : « A/28 »
     const ch = slugCm(lidShow(d.localId)); if (!ch) return;            // « ? » et « ! » : pas d'adresse connue → recherche
     const total = (sd.cards || []).filter((x) => numGroup(x.localId) === '*').length;
