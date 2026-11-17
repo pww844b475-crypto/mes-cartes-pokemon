@@ -369,7 +369,7 @@ function parseHash() {
   let parts;
   try { parts = decodeURIComponent(location.hash.slice(1)).split('/'); } catch { parts = []; }
   if (parts[0] === 'amis') return { view: 'friends' };
-  if (parts[0] === 'chercher') return { view: 'search', own: parts[1] === 'own', rar: parts[1] === 'own' ? parts[2] || '' : '', q: parts[1] === 'q' ? parts.slice(2).join('/') : '' };
+  if (parts[0] === 'chercher') return { view: 'search', own: parts[1] === 'own' || parts[1] === 'top', sort: parts[1] === 'top' ? 'price' : '', rar: parts[1] === 'own' ? parts[2] || '' : '', q: parts[1] === 'q' ? parts.slice(2).join('/') : '' };
   if (parts[0] === 'comparer') return { view: 'compare', fid: parts[1] || '', lang: LANG_IDS.includes(parts[2]) ? parts[2] : lang };
   if (!LANG_IDS.includes(parts[0])) return { view: 'sets', lang: null, set: null }; // ancien lien (#ja, #zh-cn…) → liste française
   return { view: 'sets', lang: parts[0], set: parts[1] || null };
@@ -667,11 +667,97 @@ async function loadHomeCards(sets, blocks) {
   const recs = [];
   for (const sid of order) for (const row of names[sid]) {
     const odd = typeof row[2] === 'string', lid = lidShow(odd ? row[1] : row[0]), nm = odd ? row[2] : row[1], id = odd ? row[0] : sid + '-' + (odd ? row[1] : row[0]);
-    recs.push({ sid, id, nm, lid, setName: setName.get(sid) || sid, text: norm(`${nm} ${lid} ${id} ${setName.get(sid) || ''}`) });
+    recs.push({ sid, id, nm, lid, lidRaw: odd ? row[1] : row[0], noImg: odd ? row[3] === 0 : row[2] === 0, setName: setName.get(sid) || sid, text: norm(`${nm} ${lid} ${id} ${setName.get(sid) || ''}`) });
   }
   return (homeCards = recs);
 }
 const matchTokens = (text, needle) => needle.split(' ').every((t) => !t || text.includes(t));
+
+/* ---------- Carrousel des cartes les plus chères ---------- */
+const tcgImage = (L, sid, lidRaw, noImg) => { const serie = (setMeta(sid) || [])[0]; return !noImg && serie ? `https://assets.tcgdex.net/${L}/${serie}/${sid}/${lidRaw}` : null; };
+// prix unitaire le plus élevé parmi les versions possédées (null : prix inconnu)
+function rowUnitMax(r) {
+  const e = priceCache[r.id]; if (!e && ebayAvg(r.id) == null) return null;
+  const keys = isMulti(r.v) ? Object.keys(r.v).filter((k) => r.v[k] > 0) : [null];
+  let best = null;
+  for (const k of keys) { const u = unitPrice(e, k === '_' ? null : k, r.id); if (u != null && (best == null || u > best)) best = u; }
+  return best;
+}
+// items : [{ card, name, price, onclick }] ; all : action du bouton « Voir tout »
+function buildCarousel(title, items, all) {
+  const track = h('div', { class: 'car-track', role: 'list' }, items.map((it) => {
+    const holder = h('button', { type: 'button', class: 'car-card', role: 'listitem', 'aria-label': `${it.name} : ${eur(it.price)}`, onclick: it.onclick });
+    const ph = () => { holder.classList.add('noimg'); holder.prepend(h('span', { class: 'car-ph' }, it.name)); };
+    if (it.card.image) holder.append(lazyImg(imgLow(it.card), it.name, ph)); else ph();
+    holder.append(h('span', { class: 'car-price' }, eur(it.price)));
+    return holder;
+  }));
+  return h('section', { class: 'carou', 'aria-label': title }, h('div', { class: 'car-head' }, h('h2', {}, title), all ? h('button', { type: 'button', class: 'car-all', onclick: all }, 'Voir tout') : null), track);
+}
+
+/* ---------- Historique de la valeur de la collection (un relevé par jour) ---------- */
+const HIST_KEY = 'cartes.valuehist';
+function loadHist() {
+  const out = {};
+  try { const o = JSON.parse(store.get(HIST_KEY) || '{}'); for (const [d, v] of Object.entries(o || {})) if (/^\d{4}-\d\d-\d\d$/.test(d) && typeof v === 'number' && isFinite(v) && v >= 0) out[d] = v; } catch { /* ignoré */ }
+  return out;
+}
+const dayKey = (t = new Date()) => `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+function recordValue(total) {
+  const hs = loadHist(); hs[dayKey()] = Math.round(total * 100) / 100;
+  const days = Object.keys(hs).sort(); for (const d of days.slice(0, Math.max(0, days.length - 1200))) delete hs[d];
+  store.set(HIST_KEY, JSON.stringify(hs));
+}
+const SVGNS = 'http://www.w3.org/2000/svg';
+const svgEl = (tag, attrs, ...kids) => { const e = document.createElementNS(SVGNS, tag); for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v); kids.forEach((c) => e.append(c)); return e; };
+const PERIODS = [['1S', 7], ['1M', 30], ['3M', 90], ['1A', 365], ['Max', 0]];
+// → { points:[[date, valeur]…], change:% ou null } pour la période
+function histSeries(days) {
+  const hs = loadHist(), all = Object.keys(hs).sort().map((d) => [d, hs[d]]);
+  if (!days) return { points: all, change: all.length > 1 && all[0][1] > 0 ? (all[all.length - 1][1] / all[0][1] - 1) * 100 : null };
+  const from = new Date(); from.setDate(from.getDate() - days); const fk = dayKey(from);
+  let pts = all.filter(([d]) => d >= fk);
+  const before = all.filter(([d]) => d < fk).slice(-1)[0];          // dernier relevé avant la période : le trait part de là
+  if (before) pts = [before, ...pts];
+  return { points: pts, change: pts.length > 1 && pts[0][1] > 0 ? (pts[pts.length - 1][1] / pts[0][1] - 1) * 100 : null };
+}
+function drawValueChart(points) {
+  const W = 340, H = 190, ml = 56, mr = 14, mt = 12, mb = 26;
+  const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, class: 'vc-svg', role: 'img', 'aria-label': 'Évolution de la valeur de la collection' });
+  if (!points.length) return svg;
+  const vals = points.map((p) => p[1]); let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (hi - lo < 0.01) { lo = hi * 0.99; hi = hi * 1.01 + 0.01; }
+  const pad = (hi - lo) * 0.12; lo = Math.max(0, lo - pad); hi += pad;
+  const X = (i) => ml + (points.length === 1 ? (W - ml - mr) : (i / (points.length - 1)) * (W - ml - mr)), Y = (v) => mt + (1 - (v - lo) / (hi - lo)) * (H - mt - mb);
+  for (let i = 0; i < 5; i++) {
+    const v = lo + ((hi - lo) * i) / 4, y = Y(v);
+    svg.append(svgEl('line', { x1: ml, x2: W - mr, y1: y, y2: y, class: 'vc-grid' }));
+    const t = svgEl('text', { x: ml - 6, y: y + 4, class: 'vc-lab', 'text-anchor': 'end' }); t.textContent = Math.round(v).toLocaleString('fr-FR') + ' €'; svg.append(t);
+  }
+  const pts = points.length === 1 ? [[ml, Y(vals[0])], [W - mr, Y(vals[0])]] : points.map((p, i) => [X(i), Y(p[1])]);
+  const line = pts.map(([x, y], i) => (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1)).join(' ');
+  svg.append(svgEl('path', { d: `${line} L${pts[pts.length - 1][0].toFixed(1)} ${H - mb} L${pts[0][0].toFixed(1)} ${H - mb} Z`, class: 'vc-area' }));
+  svg.append(svgEl('path', { d: line, class: 'vc-line', fill: 'none' }));
+  const last = pts[pts.length - 1]; svg.append(svgEl('circle', { cx: last[0], cy: last[1], r: 5, class: 'vc-dot' }));
+  const fmt = (d) => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  const a = svgEl('text', { x: ml, y: H - 6, class: 'vc-lab' }); a.textContent = fmt(points[0][0]); svg.append(a);
+  const b = svgEl('text', { x: W - mr, y: H - 6, class: 'vc-lab', 'text-anchor': 'end' }); b.textContent = fmt(points[points.length - 1][0]); svg.append(b);
+  return svg;
+}
+function valuePanel(totalNow) {       // « VALEUR TOTALE » : montant, variation, période, courbe
+  let period = 'Max'; const box = h('div', { class: 'vpanel' });
+  const draw = () => {
+    const days = PERIODS.find((x) => x[0] === period)[1], { points, change } = histSeries(days);
+    const badge = change == null ? null : h('span', { class: 'vp-badge ' + (change >= 0 ? 'up' : 'down'), 'aria-label': 'Variation sur la période' }, `${change >= 0 ? '▲' : '▼'} ${change >= 0 ? '+' : '−'}${Math.abs(change).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`);
+    box.replaceChildren(...[
+      h('p', { class: 'vp-t' }, 'VALEUR TOTALE'),
+      h('div', { class: 'vp-row' }, h('b', { class: 'vp-v' }, eur(totalNow)), badge),
+      h('div', { class: 'vp-seg', role: 'group', 'aria-label': 'Période' }, PERIODS.map(([k]) => h('button', { type: 'button', 'aria-pressed': String(k === period), onclick: () => { period = k; draw(); } }, k))),
+      drawValueChart(points),
+      points.length < 2 ? h('p', { class: 'vp-note' }, 'Un relevé par jour : la courbe se construit au fil des jours, à chaque mise à jour des prix.') : null].filter(Boolean));
+  };
+  draw(); return box;
+}
 
 /* ---------- Vue : liste des extensions, par blocs ---------- */
 async function showList(my) {   // l'écran de chargement animé s'affiche si l'attente dure
@@ -767,7 +853,21 @@ async function showListInner(my) {
   const valNum = h('b', { class: 'vv' }, '…'), valSub = h('span', { class: 'vs' });
   const refreshBtn = h('button', { type: 'button', class: 'tbtn2', 'aria-label': 'Actualiser les prix', title: 'Actualiser les prix', onclick: () => recalc(true) }, '⟳');
   const valbox = h('div', { class: 'valbox' }, h('button', { type: 'button', class: 'vt', 'aria-label': 'Détail de la valeur par rareté', onclick: () => openOwned(L, valRows, () => recalc(false)) }, h('span', { class: 'vl' }, 'Valeur estimée'), valNum, valSub), refreshBtn);
+  const carSlot = h('div', { class: 'carslot', hidden: true });
+  let carTimer = 0;
+  async function paintCarousel() {
+    const rows = valRows.map((r) => [r, rowUnitMax(r)]).filter(([, u]) => u != null).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    if (!rows.length) { carSlot.hidden = true; carSlot.replaceChildren(); return; }
+    let recs; try { recs = await loadHomeCards(sets, blocks); } catch { return; }
+    if (my !== tok) return;
+    const byId = new Map(recs.map((r) => [r.id, r]));
+    const items = rows.map(([r, u]) => { const rec = byId.get(r.id); return rec ? { card: { id: r.id, localId: rec.lidRaw, name: rec.nm, image: tcgImage(L, rec.sid, rec.lidRaw, rec.noImg) }, name: rec.nm, price: u, onclick: () => go(L, r.sid) } : null; }).filter(Boolean);
+    applyScans(items.map((i) => i.card));
+    carSlot.replaceChildren(buildCarousel('Mes cartes les plus chères', items, () => { listScroll = scrollY; location.hash = '#chercher/top'; }));
+    carSlot.hidden = !items.length;
+  }
   const paint = (prog) => {
+    clearTimeout(carTimer); carTimer = setTimeout(paintCarousel, 250);
     const sm = summarize(valRows);
     mineBtn.querySelector('.mn').textContent = String(sm.cards);
     valNum.textContent = eur(sm.total);
@@ -790,7 +890,7 @@ async function showListInner(my) {
     try {
       valRows = await ownedRows(L); if (my !== tok) return; paint(); askPrices();
       await ensurePrices(L, valRows, refresh, (d, n) => { if (my === tok) paint(`${d}/${n}`); });
-    } finally { busy = false; if (my === tok) paint(); }
+    } finally { busy = false; if (my === tok) { paint(); const sm = summarize(valRows); if (valRows.length && !sm.pending) recordValue(sm.total); } }
   }
   // statistiques de la collection
   function openStats() {
@@ -800,6 +900,7 @@ async function showListInner(my) {
     const dbl = blocks.flatMap((b) => b.items).reduce((n, g) => n + g.members.reduce((k, m) => k + doublesCount(owned[L][m.id]), 0), 0);
     openSheet(
       h('h2', {}, 'Statistiques'),
+      valuePanel(sm.total),
       h('p', { class: 'owned-total' }, h('b', {}, plural(haveAll, 'carte possédée', 'cartes possédées')), ` sur ${totAll.toLocaleString('fr-FR')} · ${pctOf(haveAll, totAll)} %`),
       h('div', { class: 'bar', 'aria-hidden': 'true' }, h('i', { style: `width:${pctOf(haveAll, totAll)}%` })),
       h('ul', { class: 'stats' },
@@ -835,7 +936,7 @@ async function showListInner(my) {
       h('b', {}, 'Astuce iPhone / iPad : '), 'touchez Partager ⬆︎ puis « Sur l’écran d’accueil ». Cochez vos cartes depuis l’icône installée : ses données sont séparées de celles de Safari (utilisez Sauvegarde pour les transférer).',
       h('button', { type: 'button', onclick: (e) => { store.set(K.tip, '1'); e.target.closest('.note').remove(); } }, 'Compris')));
   }
-  main.replaceChildren(...notes, askSlot, menu, valbox, colhead, ...secs.map((x) => x.el), none);
+  main.replaceChildren(...notes, askSlot, menu, carSlot, valbox, colhead, ...secs.map((x) => x.el), none);
   main.classList.toggle('setgrid', setView === 'grille');
   recalc(false);
 
@@ -1299,7 +1400,7 @@ async function showSearchInner(L, my, preset = {}) {
   const mines = new Map();
   for (const r of idx.recs) if (!mines.has(r.sid)) mines.set(r.sid, owned[L][r.sid] || nullObj());
   if (preset.q) q.value = preset.q;                  // requête venue de l'accueil
-  const f = { own: preset.own ? 'own' : 'all', gid: '', rar: preset.rar && idx.rars.has(preset.rar) ? preset.rar : '', ver: '', ids: null, rank: null };
+  const f = { own: preset.own ? 'own' : 'all', gid: '', rar: preset.rar && idx.rars.has(preset.rar) ? preset.rar : '', ver: '', ids: null, rank: null, sort: preset.sort || '' };
   const POSS = [['all', 'Toutes'], ['own', 'Possédées'], ['miss', 'Manquantes'], ['dbl', 'Doubles']];
   const gname = new Map(); for (const b of idx.blocks) for (const g of b.items) gname.set(g.id, g.set.name || g.id);
   const rarList = [...idx.rars.keys()].sort((a, b) => rarityRank(a) - rarityRank(b) || a.localeCompare(b, 'fr'));
@@ -1330,11 +1431,12 @@ async function showSearchInner(L, my, preset = {}) {
   const none = h('p', { class: 'empty', hidden: true });
   const persist = (sid) => { const m = mines.get(sid); if (countKeys(m)) owned[L][sid] = m; else delete owned[L][sid]; saveOwned(); };
   const zoom = (t) => { const vis = tiles.filter((x) => !x.el.hidden); openLightbox(vis, Math.max(0, vis.indexOf(t)), L); };
-  const mk = (r) => {
+  const mkTile = (r) => {
     const t = makeTile(r.card, mines.get(r.sid), () => { persist(r.sid); t.el.hidden = !match(r, needle); updateSummary(); }, { info: idx.infos.get(r.sid), setName: r.setName, zoom, prefixTotals: idx.prefix.get(r.sid) });
     t.el.querySelector('.nm').after(h('span', { class: 'setlbl' }, r.setName));
-    tiles.push(t); return t;
+    return t;
   };
+  const mk = (r) => { const t = mkTile(r); tiles.push(t); return t; };
   const more = () => {
     const next = matches.slice(shown, shown + PAGE); shown += next.length;
     const made = next.map((r) => mk(r)); grid.append(...made.map((t) => t.el)); priceTiles(L, made, my, !!f.ids);
@@ -1363,10 +1465,37 @@ async function showSearchInner(L, my, preset = {}) {
     const idle = !needle && !activeCount();
     matches = idle ? [] : idx.recs.filter((r) => match(r, needle));
     if (f.rank) matches.sort((a, b) => f.rank.get(a.card.id) - f.rank.get(b.card.id));
+    if (f.sort === 'price') matches.sort((a, b) => (priceOfRec(b) ?? -1) - (priceOfRec(a) ?? -1));
+    sortBtn.setAttribute('aria-pressed', String(f.sort === 'price'));
     tiles.length = 0; grid.replaceChildren(); shown = 0; more();
     none.hidden = idle || matches.length > 0; none.textContent = 'Aucune carte ne correspond.';
     updateChips(); updateSummary(); if (sheetSync) sheetSync();
+    paintCar(); fetchTopPrices();
   }
+
+  // carrousel des cartes les plus chères parmi les résultats (prix Cardmarket estimés ; ceux déjà connus, les autres sont relevés en arrière-plan)
+  const carSlot = h('div', { class: 'carslot', hidden: true });
+  const ownedMode = () => f.own === 'own' || f.own === 'dbl';
+  function priceOfRec(r) {
+    if (ownedMode()) { const u = rowUnitMax({ id: r.card.id, v: mines.get(r.sid)[r.card.id] }); if (u != null) return u; }
+    const e = priceCache[r.card.id]; return blend(r.card.id, e ? (e[0] ?? e[1]) : null);
+  }
+  function paintCar() {
+    const top = matches.map((r) => [r, priceOfRec(r)]).filter(([, p]) => p != null).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    if (!top.length) { carSlot.hidden = true; carSlot.replaceChildren(); return; }
+    const items = top.map(([r, p]) => ({ card: r.card, name: r.card.name, price: p, onclick: () => openLightbox([mkTile(r)], 0, L) }));
+    carSlot.replaceChildren(buildCarousel(ownedMode() ? 'Mes cartes les plus chères' : 'Les plus chères', items, () => { f.sort = 'price'; run(); grid.scrollIntoView({ block: 'start' }); }));
+    carSlot.hidden = false;
+  }
+  let carFetch = 0;
+  function fetchTopPrices() {
+    const cand = matches.filter((r) => !priceCache[r.card.id] && (ownedMode() || f.ids || (r.info && r.info.rar && VALUE_TIERS.has(rarityTier(r.info.rar))))).slice(0, 60);
+    if (!cand.length) return;
+    const stamp = ++carFetch; let i = 0;
+    const worker = async () => { while (i < cand.length && stamp === carFetch && my === tok) { const r = cand[i++]; try { await fetchPrice(L, r.card.id); } catch { /* hors ligne */ } if (stamp === carFetch && my === tok && (i % 5 === 0 || i === cand.length)) { paintCar(); } } };
+    Promise.all(Array.from({ length: 4 }, worker)).then(() => { savePrices(); if (stamp === carFetch && my === tok) paintCar(); });
+  }
+  const sortBtn = h('button', { type: 'button', class: 'tbtn', 'aria-pressed': 'false', 'aria-label': 'Trier par prix décroissant', title: 'Trier par prix décroissant', onclick: () => { f.sort = f.sort === 'price' ? '' : 'price'; run(); } }, '↓ Prix');
 
   let sheetSync = null;
   function openFilters() {
@@ -1410,12 +1539,12 @@ async function showSearchInner(L, my, preset = {}) {
     } catch (e) { run(); toast('Scan impossible : ' + (e && e.message ? e.message : 'erreur')); } finally { scanBtn.disabled = false; ldScan.done(); }
   }
   scanIn.addEventListener('change', () => { const file = scanIn.files[0]; scanIn.value = ''; if (file) runScan(file); });
-  top.append(h('div', { class: 'tools2' }, filterBtn, scanBtn, scanIn), chips);
+  top.append(h('div', { class: 'tools2' }, filterBtn, sortBtn, scanBtn, scanIn), chips);
 
   let timer = null;
   q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 120); });
   moreBtn.addEventListener('click', more);
-  main.replaceChildren(summary, grid, moreBtn, none);
+  main.replaceChildren(summary, carSlot, grid, moreBtn, none);
   run();
   if (pendingScan) { const file = pendingScan; pendingScan = null; history.replaceState(null, '', '#chercher'); runScan(file); }
 }
