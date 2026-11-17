@@ -528,3 +528,11 @@ html.lb-open body { overflow: hidden; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .top h1.brand { flex: none; overflow: visible; }
 .brand img { display: block; height: 70px; width: auto; max-width: calc(100vw - 48px); border-radius: 12px; background: #fff; }
+
+/* ---- écran de chargement animé ---- */
+.loader { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: #fff; color: #1d3557; }
+.loader[hidden] { display: none; }
+.ld-box { width: min(86vw, 520px); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ld-vid { display: block; width: 100%; height: auto; max-height: 56vh; object-fit: contain; background: #fff; pointer-events: none; }
+.ld-text { margin: 0; min-height: 1.4em; font-size: 15px; font-weight: 650; color: #1d3557; text-align: center; }
+.ld-skip { margin-top: 10px; min-height: 46px; padding: 0 20px; border-radius: 12px; border: 1px solid #c9d3e3; background: #f3f5f9; color: #1d3557; font-weight: 650; }
