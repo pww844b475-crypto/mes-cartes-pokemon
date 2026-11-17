@@ -981,7 +981,62 @@ async function buildSearchIndex(L, sets) {
       if (i) for (const v of i.vars) { const e = vers.get(v.key) || { label: v.label, n: 0 }; e.n++; vers.set(v.key, e); }
     }
   }
-  return { L, recs, infos, blocks, rars, vers };
+  return { L, recs, infos, blocks, rars, vers, official: new Map(sets.map((x) => [x.id, x.cardCount && x.cardCount.official])) };
+}
+
+/* ---------- Scan d'une carte : reconnaissance du texte dans l'appareil (la photo n'est envoyée nulle part) ---------- */
+// Tesseract.js (dossier vendor/), chargé seulement à la première utilisation. On lit le nom et le numéro imprimé (« 001/131 »),
+// puis on cherche dans data/names.json les cartes qui correspondent.
+let ocrWorker = null;
+const loadScript = (src) => new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = () => rej(new Error('Chargement du lecteur impossible')); document.head.append(el); });
+async function getOcr() {
+  if (ocrWorker) return ocrWorker;
+  if (!window.Tesseract) await loadScript('vendor/tesseract/tesseract.min.js');
+  const abs = (p) => new URL(p, location.href).href;
+  ocrWorker = await Tesseract.createWorker('fra', 1, { workerPath: abs('vendor/tesseract/worker.min.js'), corePath: abs('vendor/tesseract/core'), langPath: abs('vendor/tesseract/lang') });
+  return ocrWorker;
+}
+async function photoCanvases(file) { // photo entière (réduite) + bande du bas (où se trouve le numéro), agrandie
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, 1800 / Math.max(bmp.width, bmp.height));
+  const full = document.createElement('canvas'); full.width = Math.round(bmp.width * k); full.height = Math.round(bmp.height * k);
+  full.getContext('2d').drawImage(bmp, 0, 0, full.width, full.height);
+  const sh = Math.round(bmp.height * 0.2), sy = bmp.height - sh, ks = Math.min(2, 1800 / bmp.width);
+  const strip = document.createElement('canvas'); strip.width = Math.round(bmp.width * ks); strip.height = Math.round(sh * ks);
+  strip.getContext('2d').drawImage(bmp, 0, sy, bmp.width, sh, 0, 0, strip.width, strip.height);
+  if (bmp.close) bmp.close();
+  return [full, strip];
+}
+async function ocrPhoto(file) {
+  const w = await getOcr(), [full, strip] = await photoCanvases(file);
+  await w.setParameters({ tessedit_pageseg_mode: '6' });
+  let text = (await w.recognize(full)).data.text;
+  await w.setParameters({ tessedit_pageseg_mode: '6' });
+  text += '\n' + (await w.recognize(strip)).data.text;
+  return text;
+}
+function parseCardText(text) {
+  const nums = [...text.replace(/[Il|]/g, '1').matchAll(/(\d{1,3})\s*[\/\\]\s*(\d{2,3})/g)].map((m) => [parseInt(m[1], 10), parseInt(m[2], 10)]);
+  const pick = nums.find(([a, b]) => a > 0 && b >= 10 && a <= b + 40) || null;
+  return { n: pick ? pick[0] : null, total: pick ? pick[1] : null, norm: ' ' + norm(text).replace(/[^a-z0-9]+/g, ' ') + ' ' };
+}
+// → liste d'identifiants de cartes, de la plus probable à la moins probable
+function matchScan(idx, p) {
+  const out = [];
+  for (const r of idx.recs) {
+    const full = norm(r.card.name).replace(/[^a-z0-9]+/g, ' ').trim();
+    const base = full.split(' ').filter((w) => w !== 'mega')[0] || '';       // « Mentali-GX » → « mentali » (le suffixe est souvent mal lu)
+    let sc = -1;
+    if (full.length >= 5 && p.norm.includes(' ' + full + ' ')) sc = 100 + full.length;
+    else if (base.length >= 5 && p.norm.includes(' ' + base + ' ')) sc = base.length;
+    if (sc < 0) continue;
+    const digits = String(r.card.localId).replace(/\D/g, '');
+    const numHit = p.n != null && digits !== '' && parseInt(digits, 10) === p.n;
+    const totHit = p.total != null && idx.official.get(r.sid) === p.total;
+    out.push({ id: r.card.id, score: sc + (numHit ? 200 : 0) + (totHit ? 40 : 0), numHit });
+  }
+  const best = out.some((x) => x.numHit) ? out.filter((x) => x.numHit) : out;
+  return best.map((x, i) => [x, i]).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 40).map(([x]) => x.id);   // à score égal : extension la plus récente d'abord
 }
 
 async function showSearch(L, my, preset = {}) {
@@ -1007,14 +1062,15 @@ async function showSearch(L, my, preset = {}) {
 
   const mines = new Map();
   for (const r of idx.recs) if (!mines.has(r.sid)) mines.set(r.sid, owned[L][r.sid] || nullObj());
-  const f = { own: preset.own ? 'own' : 'all', gid: '', rar: preset.rar && idx.rars.has(preset.rar) ? preset.rar : '', ver: '' };
+  const f = { own: preset.own ? 'own' : 'all', gid: '', rar: preset.rar && idx.rars.has(preset.rar) ? preset.rar : '', ver: '', ids: null, rank: null };
   const POSS = [['all', 'Toutes'], ['own', 'Possédées'], ['miss', 'Manquantes'], ['dbl', 'Doubles']];
   const gname = new Map(); for (const b of idx.blocks) for (const g of b.items) gname.set(g.id, g.set.name || g.id);
   const rarList = [...idx.rars.keys()].sort((a, b) => rarityRank(a) - rarityRank(b) || a.localeCompare(b, 'fr'));
   const verList = [...idx.vers.entries()].sort((a, b) => b[1].n - a[1].n);
-  const activeCount = () => (f.own !== 'all') + !!f.gid + !!f.rar + !!f.ver;
+  const activeCount = () => (f.own !== 'all') + !!f.gid + !!f.rar + !!f.ver + !!f.ids;
 
   const match = (r, n) => {
+    if (f.ids && !f.ids.has(r.card.id)) return false;
     if (f.gid && r.gid !== f.gid) return false;
     if (n && !r.text.includes(n)) return false;
     const info = r.info;
@@ -1056,6 +1112,7 @@ async function showSearch(L, my, preset = {}) {
   }
   function updateChips() {
     const items = [];
+    if (f.ids) items.push(['Résultat du scan', () => { f.ids = f.rank = null; }]);
     if (f.own !== 'all') items.push([POSS.find((x) => x[0] === f.own)[1], () => { f.own = 'all'; }]);
     if (f.gid) items.push([gname.get(f.gid) || f.gid, () => { f.gid = ''; }]);
     if (f.rar) items.push([f.rar, () => { f.rar = ''; }]);
@@ -1068,6 +1125,7 @@ async function showSearch(L, my, preset = {}) {
     needle = norm(q.value.trim());
     const idle = !needle && !activeCount();
     matches = idle ? [] : idx.recs.filter((r) => match(r, needle));
+    if (f.rank) matches.sort((a, b) => f.rank.get(a.card.id) - f.rank.get(b.card.id));
     tiles.length = 0; grid.replaceChildren(); shown = 0; more();
     none.hidden = idle || matches.length > 0; none.textContent = 'Aucune carte ne correspond.';
     updateChips(); updateSummary(); if (sheetSync) sheetSync();
@@ -1093,12 +1151,24 @@ async function showSearch(L, my, preset = {}) {
       h('label', { class: 'lbl' }, 'Extension', gSel), h('label', { class: 'lbl' }, 'Rareté', rSel), h('label', { class: 'lbl' }, 'Version', vSel),
       h('p', { class: 'lb-help' }, 'Avec une version choisie, « Possédées » et « Manquantes » portent sur cette version précise.'),
       seeBtn,
-      h('button', { class: 'btn sec', type: 'button', onclick: () => { f.own = 'all'; f.gid = f.rar = f.ver = ''; run(); } }, 'Réinitialiser les filtres'));
+      h('button', { class: 'btn sec', type: 'button', onclick: () => { f.own = 'all'; f.gid = f.rar = f.ver = ''; f.ids = f.rank = null; run(); } }, 'Réinitialiser les filtres'));
     new MutationObserver((_, ob) => { if (!ov.isConnected) { sheetSync = null; ob.disconnect(); } }).observe(document.body, { childList: true });
     sheetSync();
   }
   const filterBtn = h('button', { type: 'button', class: 'tbtn', 'aria-label': 'Filtres', title: 'Filtres', onclick: openFilters }, '⚙︎ Filtres ', h('span', { class: 'nb', hidden: true }, '0'));
-  top.append(h('div', { class: 'tools2' }, filterBtn), chips);
+  const scanIn = h('input', { type: 'file', accept: 'image/*', capture: 'environment', hidden: true, 'aria-label': 'Photo de la carte' });
+  const scanBtn = h('button', { type: 'button', class: 'tbtn', 'aria-label': 'Scanner une carte avec l’appareil photo', title: 'Scanner une carte', onclick: () => scanIn.click() }, '📷 Scanner');
+  scanIn.addEventListener('change', async () => {
+    const file = scanIn.files[0]; scanIn.value = ''; if (!file) return;
+    scanBtn.disabled = true; summary.textContent = 'Analyse de la photo… (la première fois, quelques secondes)';
+    try {
+      const text = await ocrPhoto(file); if (my !== tok) return;
+      const ids = matchScan(idx, parseCardText(text));
+      if (!ids.length) { f.ids = f.rank = null; run(); toast('Carte non reconnue. Photo de face, bien éclairée, nom et numéro lisibles ; ou tapez son nom.'); }
+      else { q.value = ''; f.ids = new Set(ids); f.rank = new Map(ids.map((id, i) => [id, i])); run(); toast(plural(ids.length, 'carte trouvée', 'cartes trouvées') + ' : vérifiez le nom et le numéro.'); }
+    } catch (e) { run(); toast('Scan impossible : ' + (e && e.message ? e.message : 'erreur')); } finally { scanBtn.disabled = false; }
+  });
+  top.append(h('div', { class: 'tools2' }, filterBtn, scanBtn, scanIn), chips);
 
   let timer = null;
   q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 120); });
@@ -1345,9 +1415,9 @@ function openLightbox(items, index, L) {
   function paintLinks(it) {
     const c = it.card, term = [it.name, c.localId].filter(Boolean).join(' ');
     linksEl.replaceChildren(
-      h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term) + '&LH_Sold=1&LH_Complete=1', target: '_blank', rel: 'noopener noreferrer' }, 'Ventes terminées sur eBay.fr ↗'),
+      h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term) + '&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1', target: '_blank', rel: 'noopener noreferrer' }, 'Ventes terminées sur eBay.fr ↗'),
       ' · ',
-      h('a', { href: 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, c.localId].filter(Boolean).join(' ')), target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket ↗'));
+      h('a', { href: 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, c.localId].filter(Boolean).join(' ')) + '&sellerCountry=12&language=2&minCondition=2', target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket ↗'));
   }
   function show() {
     const it = items[i], c = it.card, info = infoOf(it);
