@@ -1689,7 +1689,7 @@ function rarityKind(r) {
     'Commune': 'circle', 'Peu Commune': 'diamond', 'Rare': 'star', 'Promo': 'promo', 'Collection Classique': 'promo', 'Sans Rareté': 'dash',
     'Double rare': 'two-black', 'Ultra Rare': 'two-silver', 'Illustration rare': 'one-gold', 'Illustration spéciale rare': 'two-gold',
     'Hyper rare': 'three-gold', 'Méga Hyper Rare': 'three-gold', 'Shiny rare': 'sparkle', 'Shiny rare V': 'sparkle', 'Shiny rare VMAX': 'sparkle',
-    'Chromatique ultra rare': 'two-color', 'Magnifique rare': 'rainbow', 'Magnifique': 'rainbow',
+    'Mega Attack Rare': 'two-color', 'Futuristic Rare': 'rainbow', 'RGB Rare': 'rgb',
   };
   if (m[r]) return m[r];
   const t = rarityTier(r);
@@ -1711,6 +1711,7 @@ function rarityIcon(r, size = 22) {
   else if (k === 'sparkle') { svg.append(svgEl('path', { d: 'M12 2 L14.6 9.4 L22 12 L14.6 14.6 L12 22 L9.4 14.6 L2 12 L9.4 9.4 Z', fill: GOLD, stroke: BLACK, 'stroke-width': '1.2', 'stroke-linejoin': 'round' })); svg.append(svgEl('path', { d: 'M12 6.5 L13.3 10.7 L17.5 12 L13.3 13.3 L12 17.5 L10.7 13.3 L6.5 12 L10.7 10.7 Z', fill: BLACK })); }
   else if (k === 'two-color') { star(8, 10, 6, '#e98bc0'); star(16, 15, 6, '#7ccf9b'); }
   else if (k === 'rainbow') { const id = 'rg' + Math.random().toString(36).slice(2, 7); const g = svgEl('linearGradient', { id, x1: 0, y1: 0, x2: 1, y2: 1 }, svgEl('stop', { offset: '0', 'stop-color': '#2bb3a3' }), svgEl('stop', { offset: '1', 'stop-color': '#8e2f8f' })); svg.append(svgEl('defs', {}, g)); star(12, 12.5, 9, `url(#${id})`); }
+  else if (k === 'rgb') { for (const [x, y, c] of [[12, 8.2, '#e24a3b'], [8.4, 14.4, '#3aa65a'], [15.6, 14.4, '#2f5db3']]) svg.append(svgEl('circle', { cx: x, cy: y, r: 5.2, fill: c, 'fill-opacity': '.88', stroke: '#fff', 'stroke-width': '.8' })); }
   else if (k === 'promo') { star(12, 12.5, 9, BLACK, 'none'); svg.append(svgEl('text', { x: 12, y: 14.6, 'text-anchor': 'middle', 'font-size': '5.2', 'font-weight': '900', fill: '#fff', 'font-family': 'system-ui, sans-serif' }, 'PROMO')); }
   else svg.append(svgEl('line', { x1: 7, y1: 17, x2: 17, y2: 7, stroke: '#7a7f8a', 'stroke-width': '2.6', 'stroke-linecap': 'round' }));
   return svg;
