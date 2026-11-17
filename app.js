@@ -17,7 +17,7 @@ const K = {
   lang: 'cartes.lang', cov: 'cartes.cov', exp: 'cartes.lastExport', tip: 'cartes.tipHidden', order: 'cartes.order',
   friends: 'cartes.friends.v1', pseudo: 'cartes.pseudo',
   splash: 'cartes.splash', // 'off' = écran d'ouverture désactivé
-  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay', cmslug: 'cartes.cmslug',
+  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay', cmslug: 'cartes.cmslug2',
 };
 const BACKUP_VERSION = 3;   // sauvegarde personnelle (3 : quantités par version de carte)
 const SHARE_VERSION = 2;    // fichier de partage entre amis (2 : quantités par version de carte)
@@ -441,7 +441,7 @@ async function fetchPrice(L, id) {
 }
 // version « Normal » → prix normal ; Reverse / Holo… → prix holo s'il existe
 const cmUnit = (e, key) => ((key && !/^normal(\/|$)/.test(key)) ? (e[1] ?? e[0]) : (e[0] ?? e[1]));
-// Ventes eBay.fr relevées à la main (3 dernières ventes réussies) : { idCarte: [prix, prix, prix] } ; la moyenne est combinée à celle de Cardmarket
+// Vente eBay.fr relevée à la main (dernière vente réussie) : { idCarte: [prix] } (d'anciennes saisies de 1 à 3 prix sont lues : leur moyenne compte) ; combinée à celle de Cardmarket
 function sanitizeEbay(o) {
   const out = {};
   if (o && typeof o === 'object') for (const [id, a] of Object.entries(o)) {
@@ -563,8 +563,12 @@ async function ensureCmSlug(id) {
   const d = await api(`/en/cards/${encodeURIComponent(id)}`);
   const sid = d.set && d.set.id; let abbr = (sid && (setMeta(sid) || [])[2]) || '';
   if (!abbr && sid) { try { const sd = await api(`/en/sets/${encodeURIComponent(sid)}`); abbr = (sd.abbreviation && sd.abbreviation.official) || ''; } catch { /* repli : recherche */ } }
-  const setS = slugCm(d.set && d.set.name), nameS = slugCm(d.name), abbrS = slugCm(abbr), numS = slugCm(d.localId);
+  const setS = slugCm(d.set && d.set.name); let nameS = slugCm(d.name); const abbrS = slugCm(abbr), numS = slugCm(d.localId);
   if (!setS || !nameS || !abbrS || !numS) return;
+  // deux cartes du même nom dans l'extension (ex. « Saquedeneu d'Erika » n° 7 et n° 218) : Cardmarket ajoute V1, V2… dans l'ordre des numéros
+  const sd = await api(`/en/sets/${encodeURIComponent(sid)}`);
+  const same = (sd.cards || []).filter((x) => slugCm(x.name) === nameS);
+  if (same.length > 1) { const k = same.findIndex((x) => x.id === id); if (k >= 0) nameS += `-V${k + 1}`; }
   cmSlugs[id] = `${setS}/${nameS}-${abbrS}${numS}`;
   store.set(K.cmslug, JSON.stringify(cmSlugs));
 }
@@ -1410,22 +1414,19 @@ function openLightbox(items, index, L) {
       parts.length ? h('span', { class: 'lb-help' }, ' Tous vendeurs et toutes langues (pas seulement la France).') : '');
   }
   function paintEbay(it) {
-    const id = it.card.id, cur = ebayPrices[id] || [];
-    const inputs = [0, 1, 2].map((k) => {
-      const inp = h('input', { class: 'field ebin', type: 'text', inputmode: 'decimal', placeholder: '€', value: cur[k] != null ? String(cur[k]).replace('.', ',') : '', 'aria-label': `Vente eBay.fr n° ${k + 1} (en euros)` });
-      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } e.stopPropagation(); });
-      inp.addEventListener('focus', () => inp.select());
-      return inp;
-    });
+    const id = it.card.id, avg0 = ebayAvg(id);
+    const inp = h('input', { class: 'field ebin', type: 'text', inputmode: 'decimal', placeholder: '€', value: avg0 != null ? String(Math.round(avg0 * 100) / 100).replace('.', ',') : '', 'aria-label': 'Dernière vente réussie sur eBay.fr (en euros)' });
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } e.stopPropagation(); });
+    inp.addEventListener('focus', () => inp.select());
     const res = h('p', { class: 'lb-help' });
     const upd = () => { const eb = ebayAvg(id); const e = priceCache[id]; const cm = e ? (e[0] ?? e[1]) : null;
-      res.textContent = eb == null ? 'Saisissez les prix des dernières ventes réussies : la moyenne est combinée à celle de Cardmarket.' : `Moyenne eBay.fr : ${eur(eb)}${cm != null ? ` · avec Cardmarket (${eur(cm)}) : ${eur((eb + cm) / 2)}` : ''}`; };
-    inputs.forEach((inp) => inp.addEventListener('change', () => {
-      const vals = inputs.map((x) => parseFloat(x.value.replace(',', '.'))).filter((x) => Number.isFinite(x) && x > 0);
-      if (vals.length) ebayPrices[id] = sanitizeEbay({ [id]: vals })[id]; else delete ebayPrices[id];
+      res.textContent = eb == null ? 'Notez le prix de la dernière vente réussie : il est combiné à celui de Cardmarket.' : `Dernière vente eBay.fr : ${eur(eb)}${cm != null ? ` · avec Cardmarket (${eur(cm)}) : ${eur((eb + cm) / 2)}` : ''}`; };
+    inp.addEventListener('change', () => {
+      const v = parseFloat(inp.value.replace(',', '.'));
+      if (Number.isFinite(v) && v > 0) ebayPrices[id] = sanitizeEbay({ [id]: [v] })[id]; else delete ebayPrices[id];
       saveEbay(); upd(); if (it.paintPrice) it.paintPrice();
-    }));
-    ebayEl.replaceChildren(h('p', { class: 'lb-help' }, 'Mes 3 dernières ventes réussies sur eBay.fr (en €) :'), h('div', { class: 'ebrow' }, inputs), res);
+    });
+    ebayEl.replaceChildren(h('p', { class: 'lb-help' }, 'Dernière vente réussie sur eBay.fr (en €) :'), h('div', { class: 'ebrow' }, inp), res);
     upd();
   }
   // fiche exacte de la carte avec les filtres : carte française, vendeur en France, Near Mint ou mieux
