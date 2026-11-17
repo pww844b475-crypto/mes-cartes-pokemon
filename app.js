@@ -387,6 +387,19 @@ function route() {
   if (r.set) showSet(lang, r.set, tok); else showList(tok);
 }
 window.addEventListener('hashchange', route);
+// Écrans courts : l'en-tête se retire quand on fait défiler vers le bas et revient quand on remonte (ou quand on touche la recherche).
+{
+  const mq = window.matchMedia ? matchMedia('(max-height: 620px)') : { matches: false };
+  let last = 0;
+  window.addEventListener('scroll', () => {
+    const t = document.querySelector('.top'); if (!t) return;
+    const y = window.scrollY;
+    if (!mq.matches || y < 90) { t.classList.remove('hide'); last = y; return; }
+    if (y > last + 10) t.classList.add('hide'); else if (y < last - 10) t.classList.remove('hide');
+    last = y;
+  }, { passive: true });
+  document.addEventListener('focusin', (e) => { const t = document.querySelector('.top'); if (t && e.target.closest && e.target.closest('.top')) t.classList.remove('hide'); });
+}
 
 /* ---------- Éléments communs ---------- */
 function langSwitch(current, onPick) {
@@ -1859,11 +1872,11 @@ function openLightbox(items, index, L) {
   }
   function paintLinks(it) {
     const c = it.card, term = [it.name, lidShow(c.localId).replace(/[^A-Za-z0-9]/g, '')].filter(Boolean).join(' ');
-    linksEl.replaceChildren(
+    linksEl.replaceChildren(...[
       h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term) + '&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1', target: '_blank', rel: 'noopener noreferrer' }, 'Ventes terminées sur eBay.fr ↗'),
       ' · ',
       h('a', { href: cmUrl(it), target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket (carte française, vendeurs France, NM) ↗'),
-      /\?$/.test(cmSlugs[it.card.id] || '') && !cmStatic[it.card.id] ? h('span', { class: 'lb-help' }, ' Adresse déduite, non vérifiée : si la page est introuvable, signalez-le.') : null);
+      /\?$/.test(cmSlugs[it.card.id] || '') && !cmStatic[it.card.id] ? h('span', { class: 'lb-help' }, ' Adresse déduite, non vérifiée : si la page est introuvable, signalez-le.') : null].filter(Boolean));
   }
   function show() {
     const it = items[i], c = it.card, info = infoOf(it);

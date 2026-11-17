@@ -613,3 +613,42 @@ html { background: var(--bg); min-height: 100%; }
 #toast { max-width: calc(100vw - var(--safe-l) - var(--safe-r) - 24px); }
 .loader { padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l); }
 .cflow { margin-left: 0; margin-right: 0; }
+
+/* ---- écrans courts (écran extérieur du pliable : 382×580 portrait, 594×368 paysage ; intérieur paysage 951×585 ; fenêtres côte à côte) ---- */
+@media (max-height: 620px) {
+  .top { padding-top: calc(var(--safe-t) + 8px); padding-bottom: 6px; transition: transform .22s ease; }
+  .top.hide { transform: translateY(-115%); }                       /* l'en-tête se retire quand on descend, revient quand on remonte */
+  .top .search { height: 38px; margin-top: 6px; }
+  .brandrow .search { margin-top: 0; }
+  .iconbtn { min-width: 40px; height: 38px; }
+  .seg { margin-top: 6px; } .seg button, .seg:not(.small) button { min-height: 34px; }
+  .tools, .tools2, .fchips, .selbar { margin-top: 6px; }
+  .tools2 .sel, .tbtn { height: 38px; }
+  .fchip { min-height: 30px; }
+  .brand img { height: 48px; }
+  .cf-track { --cw: min(58vw, 260px, 34vh); padding-top: 12px; padding-bottom: 14px; }
+  .car-card { flex-basis: min(40vw, 190px, 32vh); }
+  .mtile { min-height: 70px; }
+  .valbox .vv { font-size: 22px; }
+  .setcard { padding: 10px; } .sc-logo { height: 60px; width: 110px; }
+  .ld-vid { max-height: 44vh; }
+  .vpanel .vc-svg { max-height: 190px; }
+}
+@media (max-height: 460px) and (orientation: landscape) {
+  .lb { flex-direction: row; overflow: hidden; padding-bottom: var(--safe-b); }
+  .lb-stage { flex: 1 1 50%; min-height: 0; padding: 10px 52px 10px 10px; }
+  .lb-img { max-height: calc(100vh - 20px - var(--safe-t) - var(--safe-b)); max-width: 100%; }
+  .lb-ph { width: auto; height: calc(100vh - 40px); }
+  .lb-info { flex: 0 0 min(48%, 400px); max-height: 100%; overflow-y: auto; border-radius: 20px 0 0 20px; padding: 14px 16px calc(var(--safe-b) + 14px); }
+  .lb-close { top: calc(var(--safe-t) + 6px); width: 40px; height: 40px; }
+  .cflow .cf-title { margin-bottom: 0; }
+}
+@media (max-height: 460px) and (orientation: landscape) {      /* écran extérieur du pliable en paysage (594×368) : titre et recherche sur la même ligne */
+  .top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+  .top > * { flex: 1 1 100%; margin-top: 0; }
+  .top > .row:not(.brandrow) { flex: 0 0 auto; }
+  .top > .row:not(.brandrow) h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }   /* le nom figure déjà dans la fiche : on garde le titre pour les lecteurs d'écran */
+  .top > .row:not(.brandrow) + .search { flex: 1 1 220px; }
+  .top > .search { margin-top: 0; }
+  .top > .tools2 { margin-top: 0; }
+}
