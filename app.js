@@ -369,7 +369,7 @@ function parseHash() {
   let parts;
   try { parts = decodeURIComponent(location.hash.slice(1)).split('/'); } catch { parts = []; }
   if (parts[0] === 'amis') return { view: 'friends' };
-  if (parts[0] === 'chercher') return { view: 'search', own: parts[1] === 'own', rar: parts[2] || '' };
+  if (parts[0] === 'chercher') return { view: 'search', own: parts[1] === 'own', rar: parts[1] === 'own' ? parts[2] || '' : '', q: parts[1] === 'q' ? parts.slice(2).join('/') : '' };
   if (parts[0] === 'comparer') return { view: 'compare', fid: parts[1] || '', lang: LANG_IDS.includes(parts[2]) ? parts[2] : lang };
   if (!LANG_IDS.includes(parts[0])) return { view: 'sets', lang: null, set: null }; // ancien lien (#ja, #zh-cn…) → liste française
   return { view: 'sets', lang: parts[0], set: parts[1] || null };
@@ -657,6 +657,22 @@ async function ensureCmSlug(id) {
   store.set(K.cmslug, JSON.stringify(cmSlugs));
 }
 
+/* ---------- Recherche d'une carte depuis l'accueil (nom, Pokémon, numéro) : index léger de data/names.json ---------- */
+let homeCards = null;
+async function loadHomeCards(sets, blocks) {
+  if (homeCards) return homeCards;
+  const names = await fetch('data/names.json').then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+  const setName = new Map(sets.map((x) => [x.id, x.name || x.id]));
+  const order = blocks.flatMap((b) => b.items.flatMap((g) => g.members.map((m) => m.id))).filter((id) => names[id]);
+  const recs = [];
+  for (const sid of order) for (const row of names[sid]) {
+    const odd = typeof row[2] === 'string', lid = lidShow(odd ? row[1] : row[0]), nm = odd ? row[2] : row[1], id = odd ? row[0] : sid + '-' + (odd ? row[1] : row[0]);
+    recs.push({ sid, id, nm, lid, setName: setName.get(sid) || sid, text: norm(`${nm} ${lid} ${id} ${setName.get(sid) || ''}`) });
+  }
+  return (homeCards = recs);
+}
+const matchTokens = (text, needle) => needle.split(' ').every((t) => !t || text.includes(t));
+
 /* ---------- Vue : liste des extensions, par blocs ---------- */
 async function showList(my) {   // l'écran de chargement animé s'affiche si l'attente dure
   const ld = loader.start('Liste des extensions');
@@ -664,10 +680,10 @@ async function showList(my) {   // l'écran de chargement animé s'affiche si l'
 }
 async function showListInner(my) {
   const L = lang;
-  const q = h('input', { class: 'search', type: 'search', placeholder: 'Rechercher une extension…', 'aria-label': 'Rechercher une extension', enterkeyhint: 'search', autocomplete: 'off' });
+  const q = h('input', { class: 'search', type: 'search', placeholder: 'Extension, Pokémon, carte, numéro…', 'aria-label': 'Rechercher une extension, un Pokémon ou une carte', enterkeyhint: 'search', autocomplete: 'off' });
   const top = h('header', { class: 'top' },
-    h('div', { class: 'row' }, h('h1', { class: 'brand' }, h('img', { src: 'icons/logo-banner.webp', alt: '', width: 1000, height: 251, decoding: 'async', draggable: 'false' }), h('span', { class: 'sr' }, 'Pijakollection'))),
-    langSwitch(L, (id) => { listScroll = 0; go(id); }), q);
+    h('div', { class: 'row brandrow' }, h('h1', { class: 'brand' }, h('img', { src: 'icons/logo-banner.webp', alt: '', width: 1000, height: 251, decoding: 'async', draggable: 'false' }), h('span', { class: 'sr' }, 'Pijakollection')), q),   // la recherche est à côté du logo (dessous sur un petit écran)
+    langSwitch(L, (id) => { listScroll = 0; go(id); }));
   const main = h('main', {}, spinner());
   $app.replaceChildren(top, main);
 
@@ -823,18 +839,38 @@ async function showListInner(my) {
   main.classList.toggle('setgrid', setView === 'grille');
   recalc(false);
 
+  // résultats « cartes » : sous la recherche, avec accès à la page de recherche complète (images, prix, ajout)
+  const hitsBox = h('section', { class: 'cardhits', hidden: true, 'aria-label': 'Cartes trouvées' });
+  main.prepend(hitsBox);
+  let hitsTimer = 0;
+  const updateHits = async () => {
+    const n = norm(q.value.trim());
+    if (n.length < 2) { hitsBox.hidden = true; hitsBox.replaceChildren(); return; }
+    let recs; try { recs = await loadHomeCards(sets, blocks); } catch { hitsBox.hidden = true; return; }
+    if (my !== tok || norm(q.value.trim()) !== n) return;
+    const found = recs.filter((r) => matchTokens(r.text, n));
+    if (!found.length) { hitsBox.hidden = true; hitsBox.replaceChildren(); return; }
+    const shownHits = found.slice(0, 8);
+    hitsBox.replaceChildren(
+      h('h2', {}, `Cartes : ${found.length.toLocaleString('fr-FR')} trouvée${found.length > 1 ? 's' : ''} en français`),
+      h('ul', { class: 'hitlist' }, shownHits.map((r) => h('li', {}, h('button', { type: 'button', class: 'hit', onclick: () => { listScroll = scrollY; location.hash = '#chercher/q/' + encodeURIComponent(q.value.trim()); } },
+        h('span', { class: 'hn' }, r.nm), h('span', { class: 'hl' }, `#${r.lid} · ${r.setName}`))))),
+      h('button', { type: 'button', class: 'btn hits-all', onclick: () => { listScroll = scrollY; location.hash = '#chercher/q/' + encodeURIComponent(q.value.trim()); } }, `Voir ${found.length > 1 ? `les ${found.length.toLocaleString('fr-FR')} cartes` : 'la carte'} avec images et prix`));
+    hitsBox.hidden = false;
+  };
   q.addEventListener('input', () => {
     const n = norm(q.value.trim()); let shown = 0;
     for (const x of secs) {
       let m = 0;
-      for (const li of x.rows) { const ok = !n || li._name.includes(n); li.hidden = !ok; if (ok) m++; }
+      for (const li of x.rows) { const ok = !n || matchTokens(li._name, n); li.hidden = !ok; if (ok) m++; }
       if (x.subEls) for (const sub of x.subEls) { const any = [...sub.list.children].some((li) => !li.hidden); sub.head.hidden = sub.list.hidden = !any; }
       x.el.hidden = !!n && !m;
       x.body.hidden = n ? !m : !openState[x.b.id];                 // pendant une recherche : les blocs concernés s'ouvrent
       x.head.setAttribute('aria-expanded', String(!x.body.hidden));
       shown += m;
     }
-    none.hidden = shown > 0;
+    none.hidden = shown > 0 || !n || !hitsBox.hidden;
+    clearTimeout(hitsTimer); hitsTimer = setTimeout(async () => { await updateHits(); none.hidden = shown > 0 || !n || !hitsBox.hidden; }, 150);
   });
   if (listScroll) requestAnimationFrame(() => scrollTo(0, listScroll));
 }
@@ -1262,6 +1298,7 @@ async function showSearchInner(L, my, preset = {}) {
 
   const mines = new Map();
   for (const r of idx.recs) if (!mines.has(r.sid)) mines.set(r.sid, owned[L][r.sid] || nullObj());
+  if (preset.q) q.value = preset.q;                  // requête venue de l'accueil
   const f = { own: preset.own ? 'own' : 'all', gid: '', rar: preset.rar && idx.rars.has(preset.rar) ? preset.rar : '', ver: '', ids: null, rank: null };
   const POSS = [['all', 'Toutes'], ['own', 'Possédées'], ['miss', 'Manquantes'], ['dbl', 'Doubles']];
   const gname = new Map(); for (const b of idx.blocks) for (const g of b.items) gname.set(g.id, g.set.name || g.id);
@@ -1272,7 +1309,7 @@ async function showSearchInner(L, my, preset = {}) {
   const match = (r, n) => {
     if (f.ids && !f.ids.has(r.card.id)) return false;
     if (f.gid && r.gid !== f.gid) return false;
-    if (n && !r.text.includes(n)) return false;
+    if (n && !matchTokens(r.text, n)) return false;      // plusieurs mots : « pikachu 25 »
     const info = r.info;
     if (f.rar && !(info && info.rar === f.rar)) return false;
     if (f.ver && !(info && info.vars.some((v) => v.key === f.ver))) return false;

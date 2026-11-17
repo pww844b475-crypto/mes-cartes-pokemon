@@ -536,3 +536,16 @@ html.lb-open body { overflow: hidden; }
 .ld-vid { display: block; width: 100%; height: auto; max-height: 56vh; object-fit: contain; background: #fff; pointer-events: none; }
 .ld-text { margin: 0; min-height: 1.4em; font-size: 15px; font-weight: 650; color: #1d3557; text-align: center; }
 .ld-skip { margin-top: 10px; min-height: 46px; padding: 0 20px; border-radius: 12px; border: 1px solid #c9d3e3; background: #f3f5f9; color: #1d3557; font-weight: 650; }
+.ld-vid { filter: brightness(1.04); }   /* écrase les très légers gris du fond (bruit de compression) en blanc pur */
+
+/* ---- recherche universelle de l'accueil ---- */
+.brandrow { flex-wrap: wrap; gap: 10px; align-items: center; }
+.brandrow .search { flex: 1 1 240px; width: auto; min-width: 0; margin-top: 0; }
+.cardhits { margin: 0 0 14px; padding: 12px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); }
+.cardhits[hidden] { display: none; }
+.cardhits h2 { margin: 0 0 8px; font-size: 16px; }
+.hitlist { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 6px; }
+.hit { width: 100%; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-height: 44px; padding: 8px 12px; border: 0; border-radius: 10px; background: var(--surface-2); color: var(--text); text-align: left; }
+.hit .hn { font-weight: 650; }
+.hit .hl { color: var(--muted); font-size: 13.5px; text-align: right; }
+.hits-all { margin-top: 8px; }
