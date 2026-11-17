@@ -684,14 +684,19 @@ function rowUnitMax(r) {
   return best;
 }
 // items : [{ card, name, price, onclick }] ; all : action du bouton « Voir tout »
-function buildCarousel(title, items, all) {
-  const track = h('div', { class: 'car-track', role: 'list' }, items.map((it) => {
-    const holder = h('button', { type: 'button', class: 'car-card', role: 'listitem', 'aria-label': `${it.name} : ${eur(it.price)}`, onclick: it.onclick });
+function buildCarousel(title, items, all, opts = {}) {
+  const cardEl = (it, dup) => {
+    const holder = h('button', { type: 'button', class: 'car-card' + (dup ? ' car-dup' : ''), role: 'listitem', 'aria-label': `${it.name} : ${eur(it.price)}`, onclick: it.onclick, ...(dup ? { 'aria-hidden': 'true', tabindex: '-1' } : {}) });
     const ph = () => { holder.classList.add('noimg'); holder.prepend(h('span', { class: 'car-ph' }, it.name)); };
     if (it.card.image) holder.append(lazyImg(imgLow(it.card), it.name, ph)); else ph();
     holder.append(h('span', { class: 'car-price' }, eur(it.price)));
     return holder;
-  }));
+  };
+  // opts.auto : défilement continu en boucle (accueil) : les cartes sont répétées une fois et la bande glisse de la moitié de sa largeur
+  const auto = !!opts.auto && items.length >= 5;
+  const track = auto
+    ? h('div', { class: 'car-track auto', role: 'list', style: `--n:${items.length}` }, h('div', { class: 'car-belt' }, items.map((it) => cardEl(it, false)), items.map((it) => cardEl(it, true))))
+    : h('div', { class: 'car-track', role: 'list' }, items.map((it) => cardEl(it, false)));
   return h('section', { class: 'carou', 'aria-label': title }, h('div', { class: 'car-head' }, h('h2', {}, title), all ? h('button', { type: 'button', class: 'car-all', onclick: all }, 'Voir tout') : null), track);
 }
 
@@ -856,14 +861,14 @@ async function showListInner(my) {
   const carSlot = h('div', { class: 'carslot', hidden: true });
   let carTimer = 0;
   async function paintCarousel() {
-    const rows = valRows.map((r) => [r, rowUnitMax(r)]).filter(([, u]) => u != null).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const rows = valRows.map((r) => [r, rowUnitMax(r)]).filter(([, u]) => u != null).sort((a, b) => b[1] - a[1]).slice(0, 20);
     if (!rows.length) { carSlot.hidden = true; carSlot.replaceChildren(); return; }
     let recs; try { recs = await loadHomeCards(sets, blocks); } catch { return; }
     if (my !== tok) return;
     const byId = new Map(recs.map((r) => [r.id, r]));
     const items = rows.map(([r, u]) => { const rec = byId.get(r.id); return rec ? { card: { id: r.id, localId: rec.lidRaw, name: rec.nm, image: tcgImage(L, rec.sid, rec.lidRaw, rec.noImg) }, name: rec.nm, price: u, onclick: () => go(L, r.sid) } : null; }).filter(Boolean);
     applyScans(items.map((i) => i.card));
-    carSlot.replaceChildren(buildCarousel('Mes cartes les plus chères', items, () => { listScroll = scrollY; location.hash = '#chercher/top'; }));
+    carSlot.replaceChildren(buildCarousel('Mes cartes les plus chères', items, () => { listScroll = scrollY; location.hash = '#chercher/top'; }, { auto: true }));
     carSlot.hidden = !items.length;
   }
   const paint = (prog) => {

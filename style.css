@@ -582,3 +582,14 @@ html.lb-open body { overflow: hidden; }
 .vc-area { fill: rgba(95, 208, 139, .16); }
 .vc-dot { fill: #5fd08b; stroke: #0b1626; stroke-width: 2.5; }
 .vp-note { margin: 6px 0 0; font-size: 13px; color: #a7b4c6; }
+/* défilement continu en boucle (accueil) : la bande contient les cartes deux fois et glisse de la moitié de sa largeur */
+.car-track.auto { overflow: hidden; display: block; padding: 2px 0 12px; scroll-snap-type: none; }
+.car-belt { display: flex; width: max-content; animation: carMove calc(var(--n, 20) * 3.4s) linear infinite; will-change: transform; }
+.car-belt .car-card { margin-right: 12px; }
+@keyframes carMove { to { transform: translateX(-50%); } }
+.car-track.auto:active .car-belt, .car-track.auto:hover .car-belt { animation-play-state: paused; }       /* un doigt posé (ou la souris) met le défilement en pause */
+@media (prefers-reduced-motion: reduce) {
+  .car-track.auto { overflow-x: auto; }
+  .car-belt { animation: none; }
+  .car-dup { display: none; }
+}
