@@ -825,6 +825,7 @@ async function showSet(L, setId, my) {
     });
     openSheet(
       h('h2', {}, 'Ajout groupé'),
+      rarList.length ? h('button', { class: 'btn sec', type: 'button', onclick: () => { closeSheet(); openRarityPick(); } }, '🎯 Choisir les cartes d’une rareté…') : null,
       h('p', {}, selMode ? `S’applique aux ${plural(vis.length, 'carte sélectionnée', 'cartes sélectionnées')}.` : `S’applique aux ${plural(vis.length, 'carte affichée', 'cartes affichées')} (selon la recherche et les filtres en cours, ex. une seule rareté).`, ' Une carte qui n’a pas la version choisie n’est pas touchée.'),
       h('label', { class: 'lbl' }, 'Version', verSel), h('label', { class: 'lbl' }, 'Cartes concernées', limSel, limIn), h('label', { class: 'lbl' }, 'Action', modeSel), qLabel, info, applyBtn,
       h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Annuler'));
@@ -838,11 +839,52 @@ async function showSet(L, setId, my) {
     h('button', { type: 'button', class: 'tbtn', onclick: () => { visible().forEach((t) => { picked.add(t); t.el.classList.add('picked'); }); updateSel(); } }, 'Tout (affichées)'),
     h('button', { type: 'button', class: 'tbtn', onclick: () => { picked.forEach((t) => t.el.classList.remove('picked')); picked.clear(); updateSel(); } }, 'Aucune'),
     h('button', { type: 'button', class: 'tbtn', onclick: openBulk }, '➕ Ajouter'));
-  const selBtn = h('button', { type: 'button', class: 'tbtn', 'aria-pressed': 'false', 'aria-label': 'Mode sélection de cartes', title: 'Sélectionner des cartes', onclick: () => {
-    selMode = !selMode; selBtn.setAttribute('aria-pressed', String(selMode)); selBar.hidden = !selMode; main.classList.toggle('selecting', selMode);
+  function setSelMode(on) {
+    selMode = on; selBtn.setAttribute('aria-pressed', String(selMode)); selBar.hidden = !selMode; main.classList.toggle('selecting', selMode);
     if (!selMode) { picked.forEach((t) => t.el.classList.remove('picked')); picked.clear(); }
     updateSel();
-  } }, '☑︎');
+  }
+  const selBtn = h('button', { type: 'button', class: 'tbtn', 'aria-pressed': 'false', 'aria-label': 'Mode sélection de cartes', title: 'Sélectionner des cartes', onclick: () => setSelMode(!selMode) }, '☑︎');
+  // --- ajout par rareté : on choisit une rareté, on coche soi-même les cartes voulues, puis on valide ---
+  function openRarityPick(startRar) {
+    let rar = startRar || (rarList.includes(rarFilter) ? rarFilter : rarList[0]);
+    const sel = h('select', { class: 'field', 'aria-label': 'Rareté à choisir' }, rarList.map((r) => h('option', { value: r }, `${r} (${rarTotals.get(r)})`)));
+    sel.value = rar;
+    const list = h('div', { class: 'pickrows', role: 'group', 'aria-label': 'Cartes de cette rareté' });
+    const count = h('p', { class: 'owned-total' });
+    const goBtn = h('button', { class: 'btn', type: 'button' }, 'Continuer');
+    let rows = [];
+    const upd = () => { const n = rows.filter((x) => x.cb.checked).length; count.replaceChildren(h('b', {}, plural(n, 'carte choisie', 'cartes choisies')), ` sur ${rows.length}`); goBtn.disabled = n === 0; };
+    const fill = () => {
+      rar = sel.value;
+      rows = tiles.filter((t) => t.info && t.info.rar === rar).map((t) => {
+        const cb = h('input', { type: 'checkbox', 'aria-label': `Choisir ${t.name} (n° ${t.card.localId})` }); cb.addEventListener('change', upd);
+        return { t, cb, el: h('label', { class: 'pickrow' }, cb, h('span', { class: 'pn' }, '#' + t.card.localId), h('span', { class: 'pt' }, t.name), qtyTotal(t.value) > 0 ? h('span', { class: 'po' }, '✓ possédée') : null) };
+      });
+      list.replaceChildren(...rows.map((x) => x.el)); upd();
+    };
+    sel.addEventListener('change', fill);
+    goBtn.addEventListener('click', () => {
+      const chosen = rows.filter((x) => x.cb.checked).map((x) => x.t); if (!chosen.length) return;
+      closeSheet();
+      q.value = ''; filter = 'all'; filterBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(FILTERS[i][0] === 'all')));
+      rarFilter = rar; rarSel.value = rar; apply();          // les cartes choisies sont toutes affichées
+      setSelMode(false); setSelMode(true);
+      chosen.forEach((t) => { picked.add(t); t.el.classList.add('picked'); }); updateSel();
+      openBulk();                                              // version, action et quantité : ne s'applique qu'aux cartes choisies
+    });
+    openSheet(
+      h('h2', {}, 'Ajout par rareté'),
+      h('p', {}, 'Choisissez une rareté, cochez les cartes voulues (par exemple 25 « Illustration spéciale rare »), puis continuez : vous indiquerez la version et la quantité.'),
+      h('label', { class: 'lbl' }, 'Rareté', sel),
+      h('div', { class: 'acts' },
+        h('button', { class: 'btn sec', type: 'button', onclick: () => { rows.forEach((x) => { x.cb.checked = true; }); upd(); } }, 'Tout cocher'),
+        h('button', { class: 'btn sec', type: 'button', onclick: () => { rows.forEach((x) => { x.cb.checked = false; }); upd(); } }, 'Aucune')),
+      list, count, goBtn,
+      h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Annuler'));
+    fill();
+  }
+
   if (allCards) top.append(
     h('div', { class: 'tools' }, h('div', { class: 'seg small' }, filterBtns)),
     h('div', { class: 'tools2' },

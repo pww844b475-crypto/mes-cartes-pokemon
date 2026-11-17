@@ -437,3 +437,9 @@ html.lb-open body { overflow: hidden; }
 @media (max-width: 460px) { .tools2 .sel { flex: 1 1 100%; } .tools2 .tbtn.wide { flex: 1; } }
 .note.ask .acts { display: flex; gap: 8px; margin-top: 8px; }
 .note.ask .acts button { margin-top: 0; flex: 1; }
+.pickrows { display: grid; gap: 4px; margin: 8px 0; max-height: 42vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.pickrow { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); min-height: 44px; }
+.pickrow input { width: 20px; height: 20px; flex: none; }
+.pickrow .pn { color: var(--muted); font-size: 13px; min-width: 38px; }
+.pickrow .pt { flex: 1; min-width: 0; font-weight: 600; }
+.pickrow .po { font-size: 12px; color: #1f8a4c; white-space: nowrap; }
