@@ -1,6 +1,6 @@
 'use strict';
 // Service worker : l'application s'ouvre hors ligne ; les données TCGdex déjà consultées aussi.
-const SHELL = 'shell-v48';
+const SHELL = 'shell-v49';
 const API = 'api-v1';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'coverage.json', 'data/sets-meta.json', 'data/scans.json', 'data/scans-remote.json', 'data/scans-embedded.json', 'data/order.json', 'data/cm-links.json', 'data/names.json', 'manifest.webmanifest',
   'icons/logo-transparent.png', 'icons/logo-banner.webp', 'images/loading-poster.webp', 'icons/icon-192.png', 'icons/icon-512.png',

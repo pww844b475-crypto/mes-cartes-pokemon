@@ -1518,6 +1518,7 @@ async function showSearchInner(L, my, preset = {}) {
     if (f.ver) items.push([idx.vers.get(f.ver)?.label || f.ver, () => { f.ver = ''; }]);
     chips.replaceChildren(...items.map(([label, clear]) => h('button', { type: 'button', class: 'fchip', 'aria-label': `Retirer le filtre : ${label}`, onclick: () => { clear(); run(); } }, label, h('span', { 'aria-hidden': 'true' }, ' ✕'))));
     chips.hidden = !items.length;
+    filterBtn.hidden = f.own === 'own';      // « mes cartes » : on choisit directement les raretés, sans bouton filtre
     const n = activeCount(); filterBtn.querySelector('.nb').textContent = String(n); filterBtn.querySelector('.nb').hidden = !n;
   }
   function run() {
@@ -1530,10 +1531,27 @@ async function showSearchInner(L, my, preset = {}) {
     tiles.length = 0; grid.replaceChildren(); shown = 0; more();
     none.hidden = idle || matches.length > 0; none.textContent = 'Aucune carte ne correspond.';
     updateChips(); updateSummary(); if (sheetSync) sheetSync();
-    paintCar(); fetchTopPrices();
+    paintRarPick(); paintCar(); fetchTopPrices();
   }
 
   // carrousel des cartes les plus chères parmi les résultats (prix Cardmarket estimés ; ceux déjà connus, les autres sont relevés en arrière-plan)
+  // boutons de rareté, directement sur la page « mes cartes » (un toucher = afficher seulement cette rareté ; retoucher = toutes)
+  const rarPick = h('div', { class: 'rpick', role: 'group', 'aria-label': 'Raretés', hidden: true });
+  function paintRarPick() {
+    if (f.own !== 'own') { rarPick.hidden = true; rarPick.replaceChildren(); return; }
+    const cnt = new Map();
+    for (const r of idx.recs) {
+      const info = r.info; if (!info || !info.rar) continue;
+      if (f.gid && r.gid !== f.gid) continue;
+      if (qtyTotal(mines.get(r.sid)[r.card.id]) > 0) cnt.set(info.rar, (cnt.get(info.rar) || 0) + 1);
+    }
+    const list = [...cnt.keys()].sort((a, b) => rarityRank(a) - rarityRank(b) || a.localeCompare(b, 'fr'));
+    const total = [...cnt.values()].reduce((n, c) => n + c, 0);
+    const btn = (label, sym, tier, n, on, set) => h('button', { type: 'button', class: 'rpb' + (on ? ' on' : ''), 'aria-pressed': String(on), title: `${label} : ${n}`, onclick: () => { f.rar = set; run(); } },
+      h('span', { class: 'rps rt-' + tier, 'aria-hidden': 'true' }, sym), h('span', { class: 'rpn' }, label), h('b', {}, String(n)));
+    rarPick.replaceChildren(btn('Toutes', '✦', 'aucune', total, !f.rar, ''), ...list.map((r) => btn(r, raritySymbol(r), rarityTier(r), cnt.get(r), f.rar === r, r)));
+    rarPick.hidden = !list.length;
+  }
   const carSlot = h('div', { class: 'carslot', hidden: true });
   const ownedMode = () => f.own === 'own' || f.own === 'dbl';
   function priceOfRec(r) {
@@ -1608,7 +1626,7 @@ async function showSearchInner(L, my, preset = {}) {
   let timer = null;
   q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 120); });
   moreBtn.addEventListener('click', more);
-  main.replaceChildren(summary, carSlot, grid, moreBtn, none);
+  main.replaceChildren(summary, rarPick, carSlot, grid, moreBtn, none);
   run();
   if (pendingScan) { const file = pendingScan; pendingScan = null; history.replaceState(null, '', '#chercher'); runScan(file); }
 }
@@ -1662,6 +1680,16 @@ const RARITY_TIER = {
 const TIER_ORDER = ['commune', 'peu', 'rare', 'holo', 'ultra', 'secrete', 'promo', 'aucune'];
 const rarityTier = (r) => RARITY_TIER[r] || (/ultra|vmax|vstar|full art|hyper|illustration/i.test(r || '') ? 'ultra' : 'holo');
 const rarityRank = (r) => TIER_ORDER.indexOf(rarityTier(r));
+// Pictogramme d'une rareté (comme sur les cartes) : ● commune, ◆ peu commune, ★ rare, étoiles dorées pour les illustrations, argentées pour les ultra rares
+function raritySymbol(r) {
+  if (r === 'Commune') return '●'; if (r === 'Peu Commune') return '◆'; if (r === 'Rare') return '★';
+  if (r === 'Illustration rare') return '★'; if (r === 'Illustration spéciale rare') return '★★';
+  if (r === 'Hyper rare' || r === 'Méga Hyper Rare') return '★★★';
+  if (r === 'Double rare' || r === 'Ultra Rare') return '★★';
+  const t = rarityTier(r);
+  return t === 'holo' ? '★' : t === 'ultra' ? '★★' : t === 'secrete' ? '★' : t === 'promo' ? 'P' : '●';
+}
+
 const hasVersions = (info) => !!(info && info.vars && info.vars.length >= 2);
 
 /* ---------- Cartes ---------- */
