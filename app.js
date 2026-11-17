@@ -502,7 +502,18 @@ try { priceCache = JSON.parse(store.get(K.prices) || '{}') || {}; } catch { pric
 const savePrices = () => store.set(K.prices, JSON.stringify(priceCache));
 const eur = (n) => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 const numOrNull = (x) => (typeof x === 'number' && isFinite(x) ? x : null);
+// Prix corrigés (data/price-fix.json, outil tools/fetch-cm-prices.py) : extensions où TCGdex rattache plusieurs versions d'une carte au même produit Cardmarket (Règne Delta…)
+let priceFix = null;
+const priceFixReady = fetch('data/price-fix.json').then((r) => (r.ok ? r.json() : null)).then((j) => {
+  if (!j || !j.cards) return;
+  priceFix = j; let ch = false;           // d'anciens prix erronés déjà mémorisés sont remplacés tout de suite
+  for (const [id, fx] of Object.entries(j.cards)) { const e = priceCache[id]; if (e && e[3] !== fx[2]) { priceCache[id] = [numOrNull(fx[0]), numOrNull(fx[1]), Date.parse(j.updated + 'T12:00:00') || Date.now(), numOrNull(fx[2])]; ch = true; } }
+  if (ch) savePrices();
+}).catch(() => {});
 async function fetchPrice(L, id) {
+  await priceFixReady;
+  const fx = priceFix && priceFix.cards[id];
+  if (fx && L === 'fr') { priceCache[id] = [numOrNull(fx[0]), numOrNull(fx[1]), Date.parse(priceFix.updated + 'T12:00:00') || Date.now(), numOrNull(fx[2])]; return; }
   const path = `/${L}/cards/${encodeURIComponent(id)}`;
   let c = null;
   try { const d = await api(path); mem.delete(path); c = d.pricing && d.pricing.cardmarket; } catch (e) { if (!/HTTP 404/.test(e.message || '')) throw e; }
