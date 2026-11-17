@@ -17,7 +17,7 @@ const K = {
   lang: 'cartes.lang', cov: 'cartes.cov', exp: 'cartes.lastExport', tip: 'cartes.tipHidden', order: 'cartes.order',
   friends: 'cartes.friends.v1', pseudo: 'cartes.pseudo',
   splash: 'cartes.splash', // 'off' = écran d'ouverture désactivé
-  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices',
+  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay',
 };
 const BACKUP_VERSION = 3;   // sauvegarde personnelle (3 : quantités par version de carte)
 const SHARE_VERSION = 2;    // fichier de partage entre amis (2 : quantités par version de carte)
@@ -440,7 +440,23 @@ async function fetchPrice(L, id) {
   priceCache[id] = c ? [numOrNull(c.trend) ?? numOrNull(c.avg) ?? numOrNull(c.low), numOrNull(c['trend-holo']) ?? numOrNull(c['avg-holo']) ?? numOrNull(c['low-holo']), Date.now()] : [null, null, Date.now()];
 }
 // version « Normal » → prix normal ; Reverse / Holo… → prix holo s'il existe
-const unitPrice = (e, key) => ((key && !/^normal(\/|$)/.test(key)) ? (e[1] ?? e[0]) : (e[0] ?? e[1]));
+const cmUnit = (e, key) => ((key && !/^normal(\/|$)/.test(key)) ? (e[1] ?? e[0]) : (e[0] ?? e[1]));
+// Ventes eBay.fr relevées à la main (3 dernières ventes réussies) : { idCarte: [prix, prix, prix] } ; la moyenne est combinée à celle de Cardmarket
+function sanitizeEbay(o) {
+  const out = {};
+  if (o && typeof o === 'object') for (const [id, a] of Object.entries(o)) {
+    if (!Array.isArray(a)) continue;
+    const v = a.map(Number).filter((x) => Number.isFinite(x) && x > 0 && x < 1e6).slice(0, 3).map((x) => Math.round(x * 100) / 100);
+    if (v.length) out[String(id).slice(0, 60)] = v;
+  }
+  return out;
+}
+let ebayPrices = {};
+try { ebayPrices = sanitizeEbay(JSON.parse(store.get(K.ebay) || '{}')); } catch { ebayPrices = {}; }
+const saveEbay = () => store.set(K.ebay, JSON.stringify(ebayPrices));
+const ebayAvg = (id) => { const a = ebayPrices[id]; return a && a.length ? a.reduce((x, y) => x + y, 0) / a.length : null; };
+const blend = (id, cm) => { const eb = ebayAvg(id); return eb == null ? cm : cm == null ? eb : (cm + eb) / 2; };
+const unitPrice = (e, key, id) => blend(id, e ? cmUnit(e, key) : null);
 async function ownedRows(L) {
   const rows = [];
   for (const [sid, m] of Object.entries(owned[L])) {
@@ -451,9 +467,9 @@ async function ownedRows(L) {
   return rows;
 }
 function rowValue(r) { // undefined : prix pas encore demandé · null : pas de prix connu
-  const e = priceCache[r.id]; if (!e) return undefined;
+  const e = priceCache[r.id]; if (!e && ebayAvg(r.id) == null) return undefined;
   let t = 0, any = false;
-  const add = (q, key) => { const u = unitPrice(e, key); if (u != null) { t += q * u; any = true; } };
+  const add = (q, key) => { const u = unitPrice(e, key, r.id); if (u != null) { t += q * u; any = true; } };
   if (isMulti(r.v)) for (const [k, q] of Object.entries(r.v)) add(q, k === '_' ? null : k); else add(r.v | 0, null);
   return any ? t : null;
 }
@@ -1172,7 +1188,7 @@ function makeTile(card, mine, onChange, ctx) {
     get info() { return info; },
     setInfo(i) { info = i; build(); sync(); },
     get value() { return mine[id]; },
-    paintPrice() { const e = priceCache[id], u = e ? (e[0] ?? e[1]) : null; price.hidden = u == null; if (u != null) price.textContent = '≈ ' + eur(u); },
+    paintPrice() { const e = priceCache[id], u = blend(id, e ? (e[0] ?? e[1]) : null); price.hidden = u == null; if (u != null) price.textContent = '≈ ' + eur(u); },
     set(key, q) { setQty(mine, id, key, q); sync(); onChange(); },
     setQuiet(key, q) { setQty(mine, id, key, q); sync(); },                       // sans enregistrer (actions groupées)
     restore(v) { if (v === undefined) delete mine[id]; else mine[id] = isMulti(v) ? { ...v } : v; sync(); },
@@ -1256,12 +1272,12 @@ function openLightbox(items, index, L) {
   const img = h('img', { class: 'lb-img', alt: '', draggable: 'false' });
   const stageBox = h('div', { class: 'lb-stage' });
   const nameEl = h('h2', { class: 'lb-name' }), subEl = h('p', { class: 'lb-sub' }), rarEl = h('p', { class: 'lb-rar' }), varsEl = h('div', { class: 'lb-vars' });
-  const priceEl = h('p', { class: 'lb-price' }), linksEl = h('p', { class: 'lb-links' });
+  const priceEl = h('p', { class: 'lb-price' }), linksEl = h('p', { class: 'lb-links' }), ebayEl = h('div', { class: 'lb-ebay' });
   const prev = h('button', { type: 'button', class: 'lb-nav prev', 'aria-label': 'Carte précédente' }, '‹');
   const next = h('button', { type: 'button', class: 'lb-nav next', 'aria-label': 'Carte suivante' }, '›');
   const close = h('button', { type: 'button', class: 'lb-close', 'aria-label': 'Fermer l’agrandissement' }, '✕');
   const el = h('div', { class: 'lb', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Carte agrandie' },
-    close, stageBox, h('div', { class: 'lb-info' }, nameEl, subEl, rarEl, priceEl, linksEl, varsEl));
+    close, stageBox, h('div', { class: 'lb-info' }, nameEl, subEl, rarEl, priceEl, linksEl, ebayEl, varsEl));
   stageBox.append(prev, img, next);
   const opener = document.activeElement;
 
@@ -1307,16 +1323,35 @@ function openLightbox(items, index, L) {
     priceEl.replaceChildren(parts.length ? h('b', {}, 'Prix Cardmarket (tendance) : ') : 'Prix indisponible pour cette carte.', parts.join(' · '),
       parts.length ? h('span', { class: 'lb-help' }, ' Tous vendeurs et toutes langues (pas seulement la France).') : '');
   }
+  function paintEbay(it) {
+    const id = it.card.id, cur = ebayPrices[id] || [];
+    const inputs = [0, 1, 2].map((k) => {
+      const inp = h('input', { class: 'field ebin', type: 'text', inputmode: 'decimal', placeholder: '€', value: cur[k] != null ? String(cur[k]).replace('.', ',') : '', 'aria-label': `Vente eBay.fr n° ${k + 1} (en euros)` });
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } e.stopPropagation(); });
+      inp.addEventListener('focus', () => inp.select());
+      return inp;
+    });
+    const res = h('p', { class: 'lb-help' });
+    const upd = () => { const eb = ebayAvg(id); const e = priceCache[id]; const cm = e ? (e[0] ?? e[1]) : null;
+      res.textContent = eb == null ? 'Saisissez les prix des dernières ventes réussies : la moyenne est combinée à celle de Cardmarket.' : `Moyenne eBay.fr : ${eur(eb)}${cm != null ? ` · avec Cardmarket (${eur(cm)}) : ${eur((eb + cm) / 2)}` : ''}`; };
+    inputs.forEach((inp) => inp.addEventListener('change', () => {
+      const vals = inputs.map((x) => parseFloat(x.value.replace(',', '.'))).filter((x) => Number.isFinite(x) && x > 0);
+      if (vals.length) ebayPrices[id] = sanitizeEbay({ [id]: vals })[id]; else delete ebayPrices[id];
+      saveEbay(); upd(); if (it.paintPrice) it.paintPrice();
+    }));
+    ebayEl.replaceChildren(h('p', { class: 'lb-help' }, 'Mes 3 dernières ventes réussies sur eBay.fr (en €) :'), h('div', { class: 'ebrow' }, inputs), res);
+    upd();
+  }
   function paintLinks(it) {
-    const c = it.card, term = [it.name, c.localId, it.setName].filter(Boolean).join(' ');
+    const c = it.card, term = [it.name, c.localId].filter(Boolean).join(' ');
     linksEl.replaceChildren(
-      h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term + ' français') + '&LH_Sold=1&LH_Complete=1', target: '_blank', rel: 'noopener noreferrer' }, 'Ventes terminées sur eBay.fr ↗'),
+      h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term) + '&LH_Sold=1&LH_Complete=1', target: '_blank', rel: 'noopener noreferrer' }, 'Ventes terminées sur eBay.fr ↗'),
       ' · ',
       h('a', { href: 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, c.localId].filter(Boolean).join(' ')), target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket ↗'));
   }
   function show() {
     const it = items[i], c = it.card, info = infoOf(it);
-    paintPrice(it); paintLinks(it);
+    paintPrice(it); paintLinks(it); paintEbay(it);
     if (!priceCache[c.id] && L === 'fr') fetchPrice(L, c.id).then(() => { savePrices(); if (items[i] === it && lb) paintPrice(it); }).catch(() => { if (items[i] === it && lb) priceEl.textContent = 'Prix indisponible pour le moment.'; });
     nameEl.textContent = it.name;
     subEl.textContent = `#${c.localId} · ${it.setName || ''} · ${i + 1}/${items.length}`;
@@ -1389,7 +1424,7 @@ async function sendFile(file) {
 }
 
 async function doExport() {
-  const payload = JSON.stringify({ app: 'mes-cartes-pokemon', type: 'sauvegarde', version: BACKUP_VERSION, exportedAt: new Date().toISOString(), owned }, null, 1);
+  const payload = JSON.stringify({ app: 'mes-cartes-pokemon', type: 'sauvegarde', version: BACKUP_VERSION, exportedAt: new Date().toISOString(), owned, ...(Object.keys(ebayPrices).length ? { ebay: ebayPrices } : {}) }, null, 1);
   const name = `cartes-pokemon-${new Date().toISOString().slice(0, 10)}.json`;
   if (await sendFile(new File([payload], name, { type: 'application/json' }))) {
     store.set(K.exp, new Date().toISOString()); toast('Sauvegarde exportée ✔︎'); closeSheet();
@@ -1408,22 +1443,23 @@ function readImport(file) {
     const v = data.version === undefined ? 1 : data.version;
     if (!Number.isInteger(v) || v < 1) return openBackup('Version de sauvegarde invalide : fichier ignoré.');
     if (v > BACKUP_VERSION) return openBackup(`Cette sauvegarde a été créée par une version plus récente de l’application (format ${v}, celle-ci comprend jusqu’au format ${BACKUP_VERSION}). Mettez l’application à jour, puis réessayez.`);
-    const incoming = sanitizeOwned(data.owned);
+    const incoming = sanitizeOwned(data.owned), incEbay = sanitizeEbay(data.ebay);
     const sum = STORAGE_LANGS.reduce((s, l) => s + ownedIn(incoming, l), 0);
     if (!sum) return openBackup('La sauvegarde ne contient aucune carte.');
     openSheet(
       h('h2', {}, 'Importer cette sauvegarde ?'),
       h('ul', {}, LANGS.map((l) => h('li', {}, `${l.name} : ${plural(ownedIn(incoming, l.id), 'carte', 'cartes')} (actuellement ${ownedTotal(l.id)})`))),
       data.exportedAt ? h('p', {}, `Sauvegarde du ${fmtDate(data.exportedAt)}.`) : null,
-      h('button', { class: 'btn', type: 'button', onclick: () => applyImport(incoming, 'merge') }, 'Fusionner (garde la plus grande quantité)'),
-      h('button', { class: 'btn danger', type: 'button', onclick: () => applyImport(incoming, 'replace') }, 'Remplacer ma collection actuelle'),
+      h('button', { class: 'btn', type: 'button', onclick: () => applyImport(incoming, 'merge', incEbay) }, 'Fusionner (garde la plus grande quantité)'),
+      h('button', { class: 'btn danger', type: 'button', onclick: () => applyImport(incoming, 'replace', incEbay) }, 'Remplacer ma collection actuelle'),
       h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Annuler'));
   };
   rd.readAsText(file);
 }
 const ownedIn = (o, l) => Object.entries(o[l]).reduce((s, [sid, m]) => s + (isDigital(l, sid) ? 0 : countKeys(m)), 0);
 
-function applyImport(incoming, mode) {
+function applyImport(incoming, mode, incEbay = {}) {
+  if (Object.keys(incEbay).length) { ebayPrices = mode === 'replace' ? incEbay : { ...ebayPrices, ...incEbay }; saveEbay(); }
   if (mode === 'replace') owned = incoming;
   else {
     for (const l of STORAGE_LANGS) for (const [sid, m] of Object.entries(incoming[l])) {

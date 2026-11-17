@@ -450,3 +450,6 @@ html.lb-open body { overflow: hidden; }
 .lb-price { margin: 4px 0 0; font-size: 15px; }
 .lb-links { margin: 6px 0 0; font-size: 14px; }
 .lb-links a { color: inherit; font-weight: 650; }
+.ebrow { display: flex; gap: 8px; }
+.ebin { min-height: 44px; padding: 6px 10px; text-align: center; }
+.lb-ebay .lb-help { margin: 8px 0 4px; }
