@@ -144,3 +144,9 @@ L'application ne cherche pas à reconnaître le modèle d'iPhone (une page web n
 - `max-height: 460px` en paysage (extérieur du Duo tourné, 594×368) : fiche carte en deux colonnes, titre et recherche sur une ligne.
 - Test : `e2e31` balaie 11 fenêtres (iPhone SE → Pro Max, iPad mini, Duo extérieur/intérieur, portrait et paysage) sur 4 pages : pas de débordement horizontal, en-tête ≤ 60 % de la hauteur, aucun « null/undefined/NaN » affiché.
 - Ces vérifications sont faites en fenêtres simulées, pas sur un vrai appareil pliable.
+
+## Mes cartes direct, éventail partout, ouverture de booster
+
+- La tuile **Mes cartes** ouvre directement toutes les cartes possédées (`#chercher/own`). L'ancienne fenêtre « par rareté » et l'option « estimer seulement les cartes de valeur » restent accessibles depuis **Statistiques › Mes cartes par rareté et estimation**.
+- Toute liste de cartes de la page de recherche s'affiche en **éventail** (80 premières). La carte du centre est parfaitement droite (zone morte de l'inclinaison) ; la toucher l'agrandit, **retoucher l'image referme** l'agrandissement. Le carrousel de l'accueil est inchangé.
+- **Statistiques › Ouverture de booster** : choix de l'extension, nombre de boosters, hits par rareté (raretés de l'extension). Le pull rate (hits ÷ boosters, en % et « 1 tous les X boosters ») se cumule par extension ; chaque ouverture est listée et supprimable. Données dans `cartes.boosters` (appareil seulement, pas encore incluses dans la sauvegarde/export).

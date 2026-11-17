@@ -653,3 +653,10 @@ html { background: var(--bg); min-height: 100%; }
   .top > .search { margin-top: 0; }
   .top > .tools2 { margin-top: 0; }
 }
+
+/* ---------- Ouverture de booster (Statistiques) ---------- */
+.bo-set { width: 100%; min-height: 44px; border-radius: 12px; border: 1px solid var(--line, rgba(128,128,128,.35)); background: var(--surface-2); color: var(--text); font-size: 16px; padding: 0 10px; margin: 6px 0 10px; }
+.bo-form { display: grid; gap: 8px; margin-bottom: 10px; }
+.bo-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 12px; background: var(--surface-2); }
+.bo-line .qin { width: 84px; }
+.bo-stats h3 { margin: 14px 0 6px; font-size: 16px; }
