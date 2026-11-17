@@ -106,7 +106,7 @@ Bouton « 📷 Scanner » de la page de recherche : on prend la carte en photo, 
 
 - `data/cm-links.json` : adresses calculées des 27 cartes de la Collection Classique des 30 ans (`30th-Celebration/Mew-VMAX-30CFST-114` : code `30C` + abréviation de l'extension d'origine + numéro d'origine, retrouvés grâce au numéro imprimé dans `data/scans.json`). 3 cartes sans correspondance unique n'ont pas d'adresse (recherche).
 - Extensions confirmées par des liens réels (`CM_VERIFIED` dans `app.js`) : 30th, Aquapolis, EX Forces Cachées (+ Zarbi). Pour les autres cas sensibles (partie d'une autre extension, promos, numéros à lettres, série EX, signe dans le nom), l'adresse est construite mais marquée « Adresse déduite, non vérifiée » dans l'agrandissement.
-- `docs/liens-cardmarket-a-verifier.md` : liste des 92 extensions concernées, avec une carte d'exemple et l'adresse construite, pour vérification par clic.
+- `docs/liens-cardmarket-a-verifier.md` : liste des 87 extensions concernées, avec une carte d'exemple et l'adresse construite, pour vérification par clic.
 - Quand un lien est confirmé : ajouter l'identifiant de l'extension à `CM_VERIFIED`.
 
 ## Scan : améliorations
