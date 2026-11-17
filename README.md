@@ -92,3 +92,8 @@ Bouton « 📷 Scanner » de la page de recherche : on prend la carte en photo, 
 - Scan depuis la première page : la tuile « Scanner » ouvre directement l'appareil photo ; la photo est analysée à l'ouverture de la recherche. Résultat : le prix de chaque carte candidate s'affiche tout seul (une requête par candidate, 40 au plus) ; si une seule carte est reconnue, elle s'ouvre directement avec son prix et ses liens.
 - Dans l'agrandissement de toute carte (donc après un scan) : bouton « ➕ Ajouter à ma collection » (un exemplaire ; première version si la carte en a plusieurs, ajustable juste dessous), remplacé par « ✓ Dans ma collection : N exemplaires » une fois ajoutée.
 - Logo de l'accueil : `icons/logo-banner.webp` (bandeau « Pijakollection » fourni par l'utilisateur, 1000 px, 24 Ko) à la place du titre en texte ; le texte reste présent pour les lecteurs d'écran.
+
+## Prix par version, numéros par groupe (H01/H32, TG07/TG30…)
+
+- Prix Cardmarket (TCGdex) : « tendance » = tirage normal de la carte (y compris une carte **Holo**) ; « tendance holo » = tirage **Reverse**. Une version Reverse est donc valorisée au prix reverse, toute autre version (Normal, Holo…) au prix normal. (Avant, les versions Holo étaient à tort valorisées au prix reverse.)
+- Numérotation par groupe : une carte « H01 » fait partie des « H » (affichée `#H01/H32`), pas des 147 cartes numérotées d'Aquapolis ; idem TG, GG, SV… Le scan lit « H01/H32 » et ne le confond plus avec « 01/147 » ; les « V1 / V2 » des adresses Cardmarket ne comptent que les cartes du même groupe de numéros.

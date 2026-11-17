@@ -439,8 +439,9 @@ async function fetchPrice(L, id) {
   try { const d = await api(path); mem.delete(path); c = d.pricing && d.pricing.cardmarket; } catch (e) { if (!/HTTP 404/.test(e.message || '')) throw e; }
   priceCache[id] = c ? [numOrNull(c.trend) ?? numOrNull(c.avg) ?? numOrNull(c.low), numOrNull(c['trend-holo']) ?? numOrNull(c['avg-holo']) ?? numOrNull(c['low-holo']), Date.now(), numOrNull(c.idProduct)] : [null, null, Date.now(), null];   // [prix, prix holo, date, identifiant produit Cardmarket]
 }
-// version « Normal » → prix normal ; Reverse / Holo… → prix holo s'il existe
-const cmUnit = (e, key) => ((key && !/^normal(\/|$)/.test(key)) ? (e[1] ?? e[0]) : (e[0] ?? e[1]));
+// Prix Cardmarket de la fiche : « tendance » = tirage normal de la carte (y compris une carte Holo), « tendance holo » = tirage Reverse.
+// Version Reverse → prix reverse (repli : prix normal) ; toute autre version (Normal, Holo…) → prix normal (repli : prix reverse).
+const cmUnit = (e, key) => ((key && /^reverse(\/|$)/.test(key)) ? (e[1] ?? e[0]) : (e[0] ?? e[1]));
 // Vente eBay.fr relevée à la main (dernière vente réussie) : { idCarte: [prix] } (d'anciennes saisies de 1 à 3 prix sont lues : leur moyenne compte) ; combinée à celle de Cardmarket
 function sanitizeEbay(o) {
   const out = {};
@@ -567,7 +568,8 @@ async function ensureCmSlug(id) {
   if (!setS || !nameS || !abbrS || !numS) return;
   // deux cartes du même nom dans l'extension (ex. « Saquedeneu d'Erika » n° 7 et n° 218) : Cardmarket ajoute V1, V2… dans l'ordre des numéros
   const sd = await api(`/en/sets/${encodeURIComponent(sid)}`);
-  const same = (sd.cards || []).filter((x) => slugCm(x.name) === nameS);
+  const grp = numPrefix(d.localId);
+  const same = (sd.cards || []).filter((x) => slugCm(x.name) === nameS && numPrefix(x.localId) === grp);   // « Pharamp » n° 1 et « Pharamp » H01 sont deux numérotations différentes
   if (same.length > 1) { const k = same.findIndex((x) => x.id === id); if (k >= 0) nameS += `-V${k + 1}`; }
   cmSlugs[id] = `${setS}/${nameS}-${abbrS}${numS}`;
   store.set(K.cmslug, JSON.stringify(cmSlugs));
@@ -840,7 +842,8 @@ async function showSet(L, setId, my) {
     openLightbox(vis, Math.max(0, vis.indexOf(t)), L);
   };
   const sections = parts.map((part) => {
-    const pt = part.cards.map((c) => makeTile(c, part.mine, persist(part), { info: part.info, setName: part.name, zoom }));
+    const ptot = prefixTotals(part.cards);
+    const pt = part.cards.map((c) => makeTile(c, part.mine, persist(part), { info: part.info, setName: part.name, zoom, prefixTotals: ptot }));
     tiles.push(...pt);
     const el = h('section', { class: 'part' },
       parts.length > 1 && h('h2', { class: 'part-h' }, `${part.name} · ${plural(part.cards.length || part.total, 'carte', 'cartes')}`),
@@ -1059,7 +1062,8 @@ async function buildSearchIndex(L, sets) {
       if (i) for (const v of i.vars) { const e = vers.get(v.key) || { label: v.label, n: 0 }; e.n++; vers.set(v.key, e); }
     }
   }
-  return { L, recs, infos, blocks, rars, vers, official: new Map(sets.map((x) => [x.id, x.cardCount && x.cardCount.official])) };
+  const prefix = new Map(); for (const [m] of order) prefix.set(m.id, prefixTotals((names[m.id] || []).map((row) => ({ localId: typeof row[2] === 'string' ? row[1] : row[0] }))));
+  return { L, recs, infos, blocks, rars, vers, prefix, official: new Map(sets.map((x) => [x.id, x.cardCount && x.cardCount.official])) };
 }
 
 /* ---------- Scan d'une carte : reconnaissance du texte dans l'appareil (la photo n'est envoyée nulle part) ---------- */
@@ -1095,9 +1099,10 @@ async function ocrPhoto(file) {
   return text;
 }
 function parseCardText(text) {
-  const nums = [...text.replace(/[Il|]/g, '1').matchAll(/(\d{1,3})\s*[\/\\]\s*(\d{2,3})/g)].map((m) => [parseInt(m[1], 10), parseInt(m[2], 10)]);
-  const pick = nums.find(([a, b]) => a > 0 && b >= 10 && a <= b + 40) || null;
-  return { n: pick ? pick[0] : null, total: pick ? pick[1] : null, norm: ' ' + norm(text).replace(/[^a-z0-9]+/g, ' ') + ' ' };
+  const t = text.replace(/[Il|]/g, '1').toUpperCase();
+  const nums = [...t.matchAll(/(^|[^A-Z])([A-Z]{0,3})\s?(\d{1,3})\s*[\/\\]\s*([A-Z]{0,3})\s?(\d{2,3})/g)].map((m) => ({ pre: m[2], n: parseInt(m[3], 10), tpre: m[4], total: parseInt(m[5], 10) }));   // le préfixe (H, TG, GG, SV…) ne doit pas être la fin d'un mot
+  const pick = nums.find((x) => x.n > 0 && x.total >= 10 && x.n <= x.total + 40 && (x.pre === x.tpre || !x.tpre)) || null;
+  return { n: pick ? pick.n : null, pre: pick ? pick.pre : '', total: pick ? pick.total : null, tpre: pick ? pick.tpre : '', norm: ' ' + norm(text).replace(/[^a-z0-9]+/g, ' ') + ' ' };
 }
 // → liste d'identifiants de cartes, de la plus probable à la moins probable
 function matchScan(idx, p) {
@@ -1109,9 +1114,9 @@ function matchScan(idx, p) {
     if (full.length >= 5 && p.norm.includes(' ' + full + ' ')) sc = 100 + full.length;
     else if (base.length >= 5 && p.norm.includes(' ' + base + ' ')) sc = base.length;
     if (sc < 0) continue;
-    const digits = String(r.card.localId).replace(/\D/g, '');
-    const numHit = p.n != null && digits !== '' && parseInt(digits, 10) === p.n;
-    const totHit = p.total != null && idx.official.get(r.sid) === p.total;
+    const lm = String(r.card.localId).match(/^([A-Za-z]*)0*(\d+)$/);        // « H01 » → groupe H, numéro 1 ; « 1 » → groupe vide, numéro 1
+    const numHit = p.n != null && !!lm && lm[1].toUpperCase() === (p.tpre ? p.pre : '') && parseInt(lm[2], 10) === p.n;   // total sans lettre (« 103/130 ») : carte à numéro simple ; lettres parasites avant le numéro ignorées
+    const totHit = p.total != null && (p.tpre ? (idx.prefix.get(r.sid) && idx.prefix.get(r.sid).get(p.tpre)) === p.total : idx.official.get(r.sid) === p.total);
     out.push({ id: r.card.id, score: sc + (numHit ? 200 : 0) + (totHit ? 40 : 0), numHit });
   }
   const best = out.some((x) => x.numHit) ? out.filter((x) => x.numHit) : out;
@@ -1173,7 +1178,7 @@ async function showSearch(L, my, preset = {}) {
   const persist = (sid) => { const m = mines.get(sid); if (countKeys(m)) owned[L][sid] = m; else delete owned[L][sid]; saveOwned(); };
   const zoom = (t) => { const vis = tiles.filter((x) => !x.el.hidden); openLightbox(vis, Math.max(0, vis.indexOf(t)), L); };
   const mk = (r) => {
-    const t = makeTile(r.card, mines.get(r.sid), () => { persist(r.sid); t.el.hidden = !match(r, needle); updateSummary(); }, { info: idx.infos.get(r.sid), setName: r.setName, zoom });
+    const t = makeTile(r.card, mines.get(r.sid), () => { persist(r.sid); t.el.hidden = !match(r, needle); updateSummary(); }, { info: idx.infos.get(r.sid), setName: r.setName, zoom, prefixTotals: idx.prefix.get(r.sid) });
     t.el.querySelector('.nm').after(h('span', { class: 'setlbl' }, r.setName));
     tiles.push(t); return t;
   };
@@ -1323,6 +1328,10 @@ function mediaButton(card, name, onclick, badge) {
   return { media, placeholder };
 }
 
+// Numérotation par groupe : « H01 » fait partie des « H » (H01/H32), pas des 147 cartes numérotées d'Aquapolis ; idem TG, GG, SV…
+const numPrefix = (lid) => (String(lid).match(/^[A-Za-z]+/) || [''])[0].toUpperCase();
+function prefixTotals(cards) { const m = new Map(); for (const c of cards) { const p = numPrefix(c.localId); if (p) m.set(p, (m.get(p) || 0) + 1); } return m; }
+const numLabelOf = (card, totals) => { const p = numPrefix(card.localId), n = p && totals && totals.get(p); return n > 1 ? `${card.localId}/${p}${String(n).padStart(2, '0')}` : String(card.localId); };
 const MAXCHIPS = 4;
 function makeTile(card, mine, onChange, ctx) {
   const id = card.id, name = card.name || '#' + card.localId;
@@ -1330,7 +1339,8 @@ function makeTile(card, mine, onChange, ctx) {
   const { media } = mediaButton(card, name, () => ctx.zoom(t));
 
   const dbl = h('span', { class: 'dbl', hidden: true });
-  const num = h('span', { class: 'num' }, '#' + card.localId);
+  const numLabel = numLabelOf(card, ctx.prefixTotals);
+  const num = h('span', { class: 'num' }, '#' + numLabel);
   const rar = h('span', { class: 'rar' });
   const price = h('span', { class: 'price', hidden: true });
   const ctl = h('div', { class: 'ctl' });
@@ -1338,7 +1348,7 @@ function makeTile(card, mine, onChange, ctx) {
   let cb = null, mark = null, qv = null, minus = null, plus = null, chips = [], unChip = null;
 
   const t = {
-    el, card, mine, id, name, setName: ctx.setName, text: '',
+    el, card, mine, id, name, setName: ctx.setName, numLabel, text: '',
     get info() { return info; },
     setInfo(i) { info = i; build(); sync(); },
     get value() { return mine[id]; },
@@ -1478,8 +1488,8 @@ function openLightbox(items, index, L) {
     const e = priceCache[it.card.id];
     if (!e) { priceEl.textContent = 'Prix : relevé en cours…'; return; }
     const parts = [];
-    if (e[0] != null) parts.push(`Normal ${eur(e[0])}`);
-    if (e[1] != null && e[1] !== e[0]) parts.push(`Reverse / Holo ${eur(e[1])}`);
+    if (e[0] != null) parts.push(`Normal / Holo ${eur(e[0])}`);
+    if (e[1] != null && e[1] !== e[0]) parts.push(`Reverse ${eur(e[1])}`);
     priceEl.replaceChildren(parts.length ? h('b', {}, 'Prix Cardmarket (tendance) : ') : 'Prix indisponible pour cette carte.', parts.join(' · '),
       parts.length ? h('span', { class: 'lb-help' }, ' Tous vendeurs et toutes langues (pas seulement la France).') : '');
   }
@@ -1517,7 +1527,7 @@ function openLightbox(items, index, L) {
     if (L === 'fr' && !cmSlugs[c.id]) ensureCmSlug(c.id).then(() => { if (items[i] === it && lb) paintLinks(it); }).catch(() => {});
     if (!priceCache[c.id] && L === 'fr') fetchPrice(L, c.id).then(() => { savePrices(); if (items[i] === it && lb) paintPrice(it); }).catch(() => { if (items[i] === it && lb) priceEl.textContent = 'Prix indisponible pour le moment.'; });
     nameEl.textContent = it.name;
-    subEl.textContent = `#${c.localId} · ${it.setName || ''} · ${i + 1}/${items.length}`;
+    subEl.textContent = `#${it.numLabel || c.localId} · ${it.setName || ''} · ${i + 1}/${items.length}`;
     rarEl.textContent = info && info.rar ? `Rareté : ${info.rar}` : '';
     rarEl.className = 'lb-rar' + (info && info.rar ? ' rt-' + rarityTier(info.rar) : '');
     rarEl.hidden = !(info && info.rar);
