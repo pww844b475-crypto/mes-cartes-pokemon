@@ -437,7 +437,7 @@ async function fetchPrice(L, id) {
   const path = `/${L}/cards/${encodeURIComponent(id)}`;
   let c = null;
   try { const d = await api(path); mem.delete(path); c = d.pricing && d.pricing.cardmarket; } catch (e) { if (!/HTTP 404/.test(e.message || '')) throw e; }
-  priceCache[id] = c ? [numOrNull(c.trend) ?? numOrNull(c.avg) ?? numOrNull(c.low), numOrNull(c['trend-holo']) ?? numOrNull(c['avg-holo']) ?? numOrNull(c['low-holo']), Date.now()] : [null, null, Date.now()];
+  priceCache[id] = c ? [numOrNull(c.trend) ?? numOrNull(c.avg) ?? numOrNull(c.low), numOrNull(c['trend-holo']) ?? numOrNull(c['avg-holo']) ?? numOrNull(c['low-holo']), Date.now(), numOrNull(c.idProduct)] : [null, null, Date.now(), null];   // [prix, prix holo, date, identifiant produit Cardmarket]
 }
 // version « Normal » → prix normal ; Reverse / Holo… → prix holo s'il existe
 const cmUnit = (e, key) => ((key && !/^normal(\/|$)/.test(key)) ? (e[1] ?? e[0]) : (e[0] ?? e[1]));
@@ -1412,17 +1412,22 @@ function openLightbox(items, index, L) {
     ebayEl.replaceChildren(h('p', { class: 'lb-help' }, 'Mes 3 dernières ventes réussies sur eBay.fr (en €) :'), h('div', { class: 'ebrow' }, inputs), res);
     upd();
   }
+  // fiche exacte de la carte (identifiant produit fourni par TCGdex) avec les filtres : carte française, vendeur en France, Near Mint ou mieux
+  function cmUrl(it) {
+    const e = priceCache[it.card.id], F = 'language=2&sellerCountry=12&minCondition=2';
+    return e && e[3] ? `https://www.cardmarket.com/fr/Pokemon/Products/Singles?idProduct=${e[3]}&${F}` : 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, it.card.localId].filter(Boolean).join(' ')) + '&' + F;
+  }
   function paintLinks(it) {
     const c = it.card, term = [it.name, c.localId].filter(Boolean).join(' ');
     linksEl.replaceChildren(
       h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term) + '&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1', target: '_blank', rel: 'noopener noreferrer' }, 'Ventes terminées sur eBay.fr ↗'),
       ' · ',
-      h('a', { href: 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, c.localId].filter(Boolean).join(' ')) + '&sellerCountry=12&language=2&minCondition=2', target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket ↗'));
+      h('a', { href: cmUrl(it), target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket (français, France, NM) ↗'));
   }
   function show() {
     const it = items[i], c = it.card, info = infoOf(it);
     paintPrice(it); paintLinks(it); paintEbay(it);
-    if (!priceCache[c.id] && L === 'fr') fetchPrice(L, c.id).then(() => { savePrices(); if (items[i] === it && lb) paintPrice(it); }).catch(() => { if (items[i] === it && lb) priceEl.textContent = 'Prix indisponible pour le moment.'; });
+    if ((!priceCache[c.id] || priceCache[c.id].length < 4) && L === 'fr') fetchPrice(L, c.id).then(() => { savePrices(); if (items[i] === it && lb) { paintPrice(it); paintLinks(it); } }).catch(() => { if (items[i] === it && lb) priceEl.textContent = 'Prix indisponible pour le moment.'; });
     nameEl.textContent = it.name;
     subEl.textContent = `#${c.localId} · ${it.setName || ''} · ${i + 1}/${items.length}`;
     rarEl.textContent = info && info.rar ? `Rareté : ${info.rar}` : '';
