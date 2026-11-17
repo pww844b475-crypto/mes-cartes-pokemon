@@ -522,3 +522,5 @@ html.lb-open body { overflow: hidden; }
 .rbkc { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 2px 5px; }
 .rbkc .rdot { align-self: center; }
 .rbkc .rn { flex-basis: 100%; }
+.lb-add { margin: 10px 0 0; }
+.lb-own { margin: 10px 0 0; font-weight: 700; color: var(--ok); }

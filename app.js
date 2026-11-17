@@ -1453,6 +1453,12 @@ function openLightbox(items, index, L) {
       return;
     }
     const v = it.value;
+    if (info) {      // ajout en un geste : un exemplaire (de la première version si la carte en a plusieurs ; ajustable juste dessous)
+      const first = hasVersions(info) ? info.vars[0] : null, have = qtyTotal(v);
+      varsEl.append(have > 0
+        ? h('p', { class: 'lb-own' }, `✓ Dans ma collection : ${plural(have, 'exemplaire', 'exemplaires')}`)
+        : h('button', { class: 'btn lb-add', type: 'button', onclick: () => { it.set(first ? first.key : null, 1); renderVars(); toast(first ? `Ajouté : ${first.label}. Changez la version ci-dessous si besoin.` : 'Ajouté à votre collection.'); } }, '➕ Ajouter à ma collection'));
+    }
     if (hasVersions(info)) {
       varsEl.append(h('p', { class: 'lb-help' }, 'Quantité possédée pour chaque version :'));
       for (const vr of info.vars) {
