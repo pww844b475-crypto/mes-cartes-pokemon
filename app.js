@@ -458,18 +458,18 @@ function rowValue(r) { // undefined : prix pas encore demandé · null : pas de 
   return any ? t : null;
 }
 function summarize(rows) {
-  const out = { total: 0, cards: rows.length, copies: 0, pending: 0, noPrice: 0, oldest: 0, byRar: new Map() };
+  const out = { total: 0, cards: rows.length, copies: 0, pending: 0, noPrice: 0, skipped: 0, oldest: 0, byRar: new Map() };
   for (const r of rows) {
-    const v = rowValue(r), b = out.byRar.get(r.rar) || { rar: r.rar, cards: 0, copies: 0, value: 0 };
+    const v = isValued(r) ? rowValue(r) : 'skip', b = out.byRar.get(r.rar) || { rar: r.rar, cards: 0, copies: 0, value: 0, skipped: 0 };
     b.cards++; b.copies += r.qty; out.copies += r.qty;
-    if (v === undefined) out.pending++; else if (v === null) out.noPrice++; else { b.value += v; out.total += v; }
+    if (v === 'skip') { out.skipped++; b.skipped++; } else if (v === undefined) out.pending++; else if (v === null) out.noPrice++; else { b.value += v; out.total += v; }
     const ts = priceCache[r.id] && priceCache[r.id][2]; if (ts && (!out.oldest || ts < out.oldest)) out.oldest = ts;
     out.byRar.set(r.rar, b);
   }
   return out;
 }
 async function ensurePrices(L, rows, refresh, onProgress) {
-  const ids = [...new Set(rows.map((r) => r.id))].filter((id) => refresh || !priceCache[id]);
+  const ids = [...new Set(rows.filter(isValued).map((r) => r.id))].filter((id) => refresh || !priceCache[id]);
   let done = 0, i = 0;
   const worker = async () => {
     while (i < ids.length) {
@@ -483,8 +483,12 @@ async function ensurePrices(L, rows, refresh, onProgress) {
   savePrices();
   return ids.length;
 }
+// Par défaut, seules les cartes de valeur sont estimées (Illustration rare, Illustration spéciale rare, Hyper rare…) : moins de requêtes, et les autres comptent peu.
+const VALUE_TIERS = new Set(['secrete']);
+const valueOnly = () => store.get('cartes.valueOnly') !== '0';
+const isValued = (r) => !valueOnly() || (r.rar != null && VALUE_TIERS.has(rarityTier(r.rar)));
 const NO_RAR = 'Rareté inconnue';
-function openOwned(L, rows) {
+function openOwned(L, rows, onToggle) {
   const s = summarize(rows);
   const list = [...s.byRar.values()].sort((a, b) => (a.rar === null) - (b.rar === null) || rarityRank(a.rar) - rarityRank(b.rar) || String(a.rar).localeCompare(String(b.rar), 'fr'));
   const totalEl = h('p', { class: 'owned-total' });
@@ -498,15 +502,19 @@ function openOwned(L, rows) {
     const cb = h('input', { type: 'checkbox', checked: true, 'aria-label': `Compter ${b.rar || NO_RAR}` }); cb.addEventListener('change', upd); checks.push(cb);
     const go = b.rar === null ? null : h('button', { type: 'button', class: 'orow-go', 'aria-label': `Voir mes cartes : ${b.rar}`, onclick: () => { closeSheet(); location.hash = '#chercher/own/' + encodeURIComponent(b.rar); } }, '›');
     return h('div', { class: 'orow' }, h('label', { class: 'orow-l' }, cb, h('span', { class: 'rdot rt-' + (b.rar === null ? 'aucune' : rarityTier(b.rar)) }), h('span', { class: 'rn' }, b.rar || NO_RAR),
-      h('span', { class: 'rc' }, h('b', {}, eur(b.value)), ` · ${plural(b.cards, 'carte', 'cartes')}`)), go);
+      h('span', { class: 'rc' }, b.skipped === b.cards ? h('b', { class: 'dim' }, 'non estimée') : h('b', {}, eur(b.value)), ` · ${plural(b.cards, 'carte', 'cartes')}`)), go);
   });
   const notes = [];
   if (s.pending) notes.push(h('div', { class: 'note warn' }, `Prix en cours de chargement pour ${plural(s.pending, 'carte', 'cartes')}. Rouvrez cette fenêtre dans un instant.`));
+  if (s.skipped) notes.push(h('div', { class: 'note' }, `${plural(s.skipped, 'carte n’est', 'cartes ne sont')} pas estimée${s.skipped > 1 ? 's' : ''} (raretés de moindre valeur) : ${s.skipped > 1 ? 'elles ne comptent' : 'elle ne compte'} pas dans le total. Décochez l’option ci-dessous pour tout estimer.`));
   if (s.noPrice) notes.push(h('div', { class: 'note' }, `${plural(s.noPrice, 'carte n’a', 'cartes n’ont')} pas de prix Cardmarket connu : ${s.noPrice > 1 ? 'elles sont comptées' : 'elle est comptée'} pour 0 €.`));
+  const vo = h('input', { type: 'checkbox', checked: valueOnly(), 'aria-label': 'Estimer seulement les cartes de valeur' });
+  vo.addEventListener('change', () => { store.set('cartes.valueOnly', vo.checked ? '1' : '0'); closeSheet(); if (onToggle) onToggle(); });
   openSheet(
     h('h2', {}, 'Mes cartes possédées'),
     rows.length ? h('p', {}, 'Cochez les raretés à additionner. Touchez › pour voir les cartes d’une rareté.') : h('p', {}, 'Vous ne possédez encore aucune carte.'),
     h('div', { class: 'orows' }, rowsEl), totalEl, ...notes,
+    h('label', { class: 'orow-l' }, vo, h('span', { class: 'rn' }, 'Estimer seulement les cartes de valeur (Illustration rare, Illustration spéciale rare, Hyper rare)')),
     h('p', { class: 'lb-help' }, `Prix Cardmarket (tendance, en euros) fournis par TCGdex : tous vendeurs et toutes langues confondus, pas seulement les vendeurs français.${s.oldest ? ' Prix relevés le ' + new Date(s.oldest).toLocaleDateString('fr-FR') + '.' : ''}`),
     rows.length ? h('button', { class: 'btn', type: 'button', onclick: () => { closeSheet(); location.hash = '#chercher/own'; } }, 'Voir toutes mes cartes') : null,
     h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
@@ -603,15 +611,15 @@ async function showList(my) {
   syncToggle();
   // raccourci vers mes cartes possédées (par rareté) + estimation de leur valeur
   let valRows = [], busy = false;
-  const mineBtn = h('button', { type: 'button', class: 'mine', onclick: () => openOwned(L, valRows) }, h('span', {}, '🃏 Mes cartes possédées'), h('b', { class: 'mn' }, '0'));
+  const mineBtn = h('button', { type: 'button', class: 'mine', onclick: () => openOwned(L, valRows, () => recalc(false)) }, h('span', {}, '🃏 Mes cartes possédées'), h('b', { class: 'mn' }, '0'));
   const valNum = h('b', { class: 'vv' }, '…'), valSub = h('span', { class: 'vs' });
   const refreshBtn = h('button', { type: 'button', class: 'tbtn2', 'aria-label': 'Actualiser les prix', title: 'Actualiser les prix', onclick: () => recalc(true) }, '⟳');
-  const valbox = h('div', { class: 'valbox' }, h('button', { type: 'button', class: 'vt', 'aria-label': 'Détail de la valeur par rareté', onclick: () => openOwned(L, valRows) }, h('span', { class: 'vl' }, 'Valeur estimée'), valNum, valSub), refreshBtn);
+  const valbox = h('div', { class: 'valbox' }, h('button', { type: 'button', class: 'vt', 'aria-label': 'Détail de la valeur par rareté', onclick: () => openOwned(L, valRows, () => recalc(false)) }, h('span', { class: 'vl' }, 'Valeur estimée'), valNum, valSub), refreshBtn);
   const paint = (prog) => {
     const sm = summarize(valRows);
     mineBtn.querySelector('.mn').textContent = String(sm.cards);
     valNum.textContent = eur(sm.total);
-    valSub.textContent = prog ? `Calcul des prix… ${prog}` : sm.pending ? 'Prix indisponibles pour le moment (connexion ?)' : `Cardmarket · tendance · tous vendeurs${sm.oldest ? ' · relevé le ' + new Date(sm.oldest).toLocaleDateString('fr-FR') : ''}`;
+    valSub.textContent = prog ? `Calcul des prix… ${prog}` : sm.pending ? 'Prix indisponibles pour le moment (connexion ?)' : `${valueOnly() ? 'Cartes de valeur · ' : ''}Cardmarket · tendance · tous vendeurs${sm.oldest ? ' · relevé le ' + new Date(sm.oldest).toLocaleDateString('fr-FR') : ''}`;
   };
   // à chaque ouverture de l'application (une fois par lancement) : proposer d'actualiser les prix
   const askSlot = h('div', { class: 'askslot' });
