@@ -17,7 +17,7 @@ const K = {
   lang: 'cartes.lang', cov: 'cartes.cov', exp: 'cartes.lastExport', tip: 'cartes.tipHidden', order: 'cartes.order',
   friends: 'cartes.friends.v1', pseudo: 'cartes.pseudo',
   splash: 'cartes.splash', // 'off' = écran d'ouverture désactivé
-  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay', cmslug: 'cartes.cmslug2', view: 'cartes.view', setview: 'cartes.setview',
+  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay', cmslug: 'cartes.cmslug3', view: 'cartes.view', setview: 'cartes.setview',
 };
 const BACKUP_VERSION = 3;   // sauvegarde personnelle (3 : quantités par version de carte)
 const SHARE_VERSION = 2;    // fichier de partage entre amis (2 : quantités par version de carte)
@@ -559,19 +559,36 @@ function priceTiles(L, tiles, my, all) {   // all : toutes les cartes (résultat
 const slugCm = (t) => String(t == null ? '' : t).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/['’`.:!?,()]/g, '').replace(/&/g, ' ').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 let cmSlugs = {};
 try { const o = JSON.parse(store.get(K.cmslug) || '{}'); for (const [k, v] of Object.entries(o || {})) if (typeof v === 'string' && /^[A-Za-z0-9-]+\/[A-Za-z0-9-]+$/.test(v)) cmSlugs[k] = v; } catch { cmSlugs = {}; }
+const CM_PARENT = { exu: 'ex10' };      // la collection Zarbi est une partie de « EX Forces Cachées » chez Cardmarket
+// Règles déduites d'adresses réelles :
+//  · …/Singles/Aquapolis/Umbreon-V1-AQH29 : cartes du même nom dans l'extension = V1, V2… ; les cartes « H » passent avant les cartes numérotées ;
+//  · …/Singles/EX-Unseen-Forces/Unown-A-UFA-28 : Zarbi = nom-lettre-ABRÉVIATION+lettre-total, dans l'extension principale ; les extensions de la série EX sont préfixées « EX ».
 async function ensureCmSlug(id) {
   if (cmSlugs[id]) return;
   const d = await api(`/en/cards/${encodeURIComponent(id)}`);
-  const sid = d.set && d.set.id; let abbr = (sid && (setMeta(sid) || [])[2]) || '';
-  if (!abbr && sid) { try { const sd = await api(`/en/sets/${encodeURIComponent(sid)}`); abbr = (sd.abbreviation && sd.abbreviation.official) || ''; } catch { /* repli : recherche */ } }
-  const setS = slugCm(d.set && d.set.name); let nameS = slugCm(d.name); const abbrS = slugCm(abbr), numS = slugCm(d.localId);
-  if (!setS || !nameS || !abbrS || !numS) return;
-  // deux cartes du même nom dans l'extension (ex. « Saquedeneu d'Erika » n° 7 et n° 218) : Cardmarket ajoute V1, V2… dans l'ordre des numéros
-  const sd = await api(`/en/sets/${encodeURIComponent(sid)}`);
-  const grp = numGroup(d.localId);
-  const same = (sd.cards || []).filter((x) => slugCm(x.name) === nameS && numGroup(x.localId) === grp);   // « Pharamp » n° 1 et « Pharamp » H01 sont deux numérotations différentes
-  if (same.length > 1) { const k = same.findIndex((x) => x.id === id); if (k >= 0) nameS += `-V${k + 1}`; }
-  cmSlugs[id] = `${setS}/${nameS}-${abbrS}${numS}`;
+  const own = d.set && d.set.id; if (!own) return;
+  const top = CM_PARENT[own] || own;                                  // extension affichée par Cardmarket
+  let setName = d.set.name;
+  if (top !== own) setName = (await api(`/en/sets/${encodeURIComponent(top)}`)).name;
+  let abbr = (setMeta(top) || [])[2] || '';
+  if (!abbr) { try { const sd0 = await api(`/en/sets/${encodeURIComponent(top)}`); abbr = (sd0.abbreviation && sd0.abbreviation.official) || ''; } catch { /* repli : recherche */ } }
+  if ((setMeta(top) || [])[0] === 'ex' && !/^EX /i.test(setName || '')) setName = 'EX ' + setName;
+  const setS = slugCm(setName); let nameS = slugCm(d.name); const abbrS = slugCm(abbr);
+  if (!setS || !nameS || !abbrS) return;
+  const sd = await api(`/en/sets/${encodeURIComponent(own)}`), grp = numGroup(d.localId);
+  if (grp === '*') {                                                   // Zarbi : « A/28 »
+    const ch = slugCm(lidShow(d.localId)); if (!ch) return;            // « ? » et « ! » : pas d'adresse connue → recherche
+    const total = (sd.cards || []).filter((x) => numGroup(x.localId) === '*').length;
+    cmSlugs[id] = `${setS}/${nameS}-${ch}-${abbrS}${ch}-${total}`;
+  } else {
+    const numS = slugCm(d.localId); if (!numS) return;
+    const same = (sd.cards || []).filter((x) => slugCm(x.name) === nameS);
+    if (same.length > 1) {
+      same.sort((a, b) => ((numGroup(a.localId) === '') - (numGroup(b.localId) === '')) || lidShow(a.localId).localeCompare(lidShow(b.localId), 'en', { numeric: true }));
+      const k = same.findIndex((x) => x.id === id); if (k >= 0) nameS += `-V${k + 1}`;
+    }
+    cmSlugs[id] = `${setS}/${nameS}-${abbrS}${numS}`;
+  }
   store.set(K.cmslug, JSON.stringify(cmSlugs));
 }
 
