@@ -1009,7 +1009,7 @@ async function showListInner(my) {
   homeScanIn.addEventListener('change', () => { const file = homeScanIn.files[0]; homeScanIn.value = ''; if (!file) return; pendingScan = file; listScroll = scrollY; location.hash = '#chercher/scan'; });
   const menu = h('nav', { class: 'menu', 'aria-label': 'Menu' },
     mineBtn,
-    mtile('📷', 'Scanner', 'Scanner une carte avec l’appareil photo', () => homeScanIn.click()),
+    mtile('📷', 'Scanner', 'Scanner une carte avec l’appareil photo', () => { pendingScan = 'live'; listScroll = scrollY; location.hash = '#chercher/scan'; }),
     homeScanIn,
     mtile('📊', 'Statistiques', 'Statistiques de la collection', openStats),
     mtile('👥', 'Amis', 'Amis : partager et comparer', goto('#amis')),
@@ -1413,8 +1413,20 @@ async function getOcr() {
   ocrWorker = await Tesseract.createWorker('fra', 1, { workerPath: abs('vendor/tesseract/worker.min.js'), corePath: abs('vendor/tesseract/core'), langPath: abs('vendor/tesseract/lang') });
   return ocrWorker;
 }
-async function photoCanvases(file) { // photo entière (réduite), bande du bas (numéro) et bandes du haut (nom), agrandies
-  const bmp = await createImageBitmap(file);
+// Charge une photo avec son orientation (EXIF) : par une balise <img> (le décodage d'image applique l'orientation partout), puis dessinée sur un canevas (3200 px au plus)
+async function loadPhoto(file) {
+  try {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image(); img.src = url; await img.decode();
+      const k = Math.min(1, 3200 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return c;
+    } finally { URL.revokeObjectURL(url); }
+  } catch { return createImageBitmap(file); }
+}
+const turnCanvas = (src, quarter) => { const c = document.createElement('canvas'); c.width = src.height; c.height = src.width; const x = c.getContext('2d'); x.translate(c.width / 2, c.height / 2); x.rotate(quarter * Math.PI / 2); x.drawImage(src, -src.width / 2, -src.height / 2); return c; };
+async function photoCanvases(src) { // photo entière (réduite), bande du bas (numéro) et bandes du haut (nom), agrandies
+  const bmp = src.width ? src : await loadPhoto(src);
   const k = Math.min(1, 1800 / Math.max(bmp.width, bmp.height));
   const full = document.createElement('canvas'); full.width = Math.round(bmp.width * k); full.height = Math.round(bmp.height * k);
   full.getContext('2d').drawImage(bmp, 0, 0, full.width, full.height);
@@ -1523,20 +1535,63 @@ function detectCardBox(bmp) {
    « score(texte) » (fourni par l'appelant) : 3 = numéro + total (+ nom ou extension) retrouvés, 2 = numéro retrouvé, 1 = nom seul, 0 = rien.
    Tentatives : (1) carte repérée et redressée, bandes lues telles quelles ; (2) mêmes bandes en niveaux de gris contrastés ; (3) cadre décalé / autres échelles ;
    (4) bandes de la photo entière sans repérage ; (5) lecture classique de la photo entière. Au final, le texte qui donne le meilleur score. */
-async function ocrPhoto(file, score, onStep) {
-  const w = await getOcr(), bmp = await createImageBitmap(file);
-  const det = detectCardBox(bmp), box = det && det.box, srcImg = det ? det.src : bmp;
-  const tries = [];                       // { text, sc, photo, cropped }
-  let done = false;
+// Niveaux de gris + étirement du contraste (2 % – 98 % de l'histogramme) : rend le texte plus net pour le lecteur, quelle que soit la lumière
+function enhance(c) {
+  try {
+    const x = c.getContext('2d', { willReadFrequently: true }), im = x.getImageData(0, 0, c.width, c.height), d = im.data, n = d.length / 4, hist = new Uint32Array(256);
+    for (let i = 0; i < d.length; i += 4) { const g = Math.round(d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11); d[i] = d[i + 1] = d[i + 2] = g; hist[g]++; }
+    let acc = 0, lo = 0, hi = 255; for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc >= n * 0.02) { lo = i; break; } }
+    acc = 0; for (let i = 255; i >= 0; i--) { acc += hist[i]; if (acc >= n * 0.02) { hi = i; break; } }
+    const k = hi > lo + 8 ? 255 / (hi - lo) : 1;
+    for (let i = 0; i < d.length; i += 4) { const g = Math.max(0, Math.min(255, (d[i] - lo) * k)); d[i] = d[i + 1] = d[i + 2] = g; }
+    x.putImageData(im, 0, 0);
+  } catch { /* image non lisible : on la laisse telle quelle */ }
+}
+// Outils de lecture (partagés par la lecture d'une photo et par le scanner en direct)
+function ocrTools(w) {
   const flat = (c) => { try { const t = document.createElement('canvas'); t.width = 32; t.height = 16; const x = t.getContext('2d', { willReadFrequently: true }); x.drawImage(c, 0, 0, 32, 16); const d = x.getImageData(0, 0, 32, 16).data; let m = 0; for (let i = 0; i < d.length; i += 4) m += d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11; m /= 512; let v = 0; for (let i = 0; i < d.length; i += 4) { const g = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11; v += (g - m) ** 2; } return Math.sqrt(v / 512) < 10; } catch { return false; } };
   const okc = (c) => c.width >= 240 && c.height >= 40 && !flat(c);      // une bande minuscule ou uniforme fait protester le lecteur
   const rd = async (c, psm, wl) => { if (!okc(c)) return ''; await w.setParameters({ tessedit_pageseg_mode: psm, tessedit_char_whitelist: wl || '' }); const t = '\n' + (await w.recognize(c)).data.text; await w.setParameters({ tessedit_char_whitelist: '' }); return t; };
   const grab = (src, bx, kk, filt, plain) => (fx0, fy0, fx1, fy1, k2 = kk) => {      // bande de la carte (coordonnées relatives au cadre bx), agrandie
     const c = document.createElement('canvas'), sx = bx.x + bx.w * fx0, sy = bx.y + bx.h * fy0, sw = bx.w * (fx1 - fx0), sh = bx.h * (fy1 - fy0);
     c.width = Math.max(1, Math.round(sw * k2)); c.height = Math.max(1, Math.round(sh * k2));
-    const cx = c.getContext('2d'); if (filt && !plain) cx.filter = 'grayscale(1) contrast(1.4)'; cx.drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height); return c;
+    const cx = c.getContext('2d', { willReadFrequently: true }); cx.drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    if (filt && !plain) enhance(c);        // pas de « ctx.filter » : Safari ne le gère pas ; le traitement se fait pixel par pixel
+    return c;
   };
-  const NUMS = '0123456789/';
+  return { rd, grab, okc };
+}
+const NUMS = '0123456789/';
+// lit nom (en haut) et numéro (en bas, chiffres seuls) sur un cadre bx de src ; renvoie le texte lu
+async function readCardBands(w, src, bx, filt, scales, fast) {
+  const { rd, grab } = ocrTools(w), ks = Math.min(2.5, 1500 / bx.w), cr = grab(src, bx, ks, filt);
+  let text = await rd(cr(0.08, 0.0, 0.75, 0.14), '6');
+  if (!fast) text += await rd(cr(0.03, 0.0, 0.9, 0.2), '6');         // bande du haut plus large (nom de l'évolution, « Pv »)
+  for (const [sc, y0, y1] of scales) {
+    text += await rd(cr(0, y0, 1, y1, ks * sc), '6', NUMS);
+    const pn = parseCardText(text); if (pn.n != null && pn.total != null && String(pn.n).length + String(pn.total).length >= 5) break;
+  }
+  return text;
+}
+async function ocrPhoto(file, score, onStep) {
+  const bmp = await loadPhoto(file);
+  let res = await ocrBitmap(bmp, score, onStep, false);
+  // la photo peut être couchée (carte tournée d'un quart de tour, orientation du téléphone mal lue) : on essaie les deux sens
+  if (res.score < 2) for (const q of [1, -1]) {
+    if (onStep) onStep('Photo tournée ?…');
+    const r2 = await ocrBitmap(turnCanvas(bmp, q), score, null, true);
+    if (r2.score > res.score) res = r2;
+    if (res.score >= 3) break;
+  }
+  return res;
+}
+async function ocrBitmap(bmp, score, onStep, quick) {
+  const w = await getOcr();
+  const det = detectCardBox(bmp), box = det && det.box, srcImg = det ? det.src : bmp;
+  const tries = [];                       // { text, sc, photo, cropped }
+  let done = false;
+  const { grab, rd } = ocrTools(w);
+  const readCard = (bx, filt, scales) => readCardBands(w, srcImg, bx, filt, scales);
   let acc = '';                           // texte cumulé de toutes les tentatives : le nom lu dans l'une et le numéro lu dans l'autre se complètent
   const evalTry = (text, photo, cropped) => {
     const sc = score(text); tries.push({ text, sc, photo, cropped }); acc += '\n' + text;
@@ -1544,38 +1599,27 @@ async function ocrPhoto(file, score, onStep) {
     else if (tries.length > 1) { const sa = score(acc); if (sa >= 3) { tries.push({ text: acc, sc: sa, photo, cropped }); done = true; } }
     return sc;
   };
-  // lit nom + numéro sur un cadre ; renvoie le texte
-  async function readCard(bx, filt, scales) {
-    const ks = Math.min(2.5, 1500 / bx.w), cr = grab(srcImg, bx, ks, filt);
-    let text = await rd(cr(0.08, 0.0, 0.75, 0.14), '6');
-    text += await rd(cr(0.03, 0.0, 0.9, 0.2), '6');                    // bande du haut plus large (nom de l'évolution, « Pv »)
-    for (const [sc, y0, y1] of scales) {
-      text += await rd(cr(0, y0, 1, y1, ks * sc), '6', NUMS);
-      const pn = parseCardText(text); if (pn.n != null && pn.total != null && String(pn.n).length + String(pn.total).length >= 5) break;
-    }
-    return text;
-  }
   const plainPhoto = () => grab(srcImg, box, Math.min(1, 1000 / box.h), false, true)(0, 0, 1, 1, Math.min(1, 1000 / box.h));
   if (box) {
     if (onStep) onStep('Lecture de la carte…');
     const photo = plainPhoto();
-    evalTry(await readCard(box, false, [[1.3, 0.88, 1.07], [1, 0.86, 1.09], [1.7, 0.9, 1.06]]), photo, true);
-    if (!done) { if (onStep) onStep('Lecture renforcée…'); evalTry(await readCard(box, true, [[1.3, 0.88, 1.07], [1, 0.86, 1.09], [1.7, 0.9, 1.06], [2.1, 0.9, 1.05]]), photo, true); }
+    evalTry(await readCard(box, true, [[1.3, 0.88, 1.07], [1, 0.86, 1.09], [1.7, 0.9, 1.06]]), photo, true);
+    if (!done) { if (onStep) onStep('Lecture renforcée…'); evalTry(await readCard(box, false, [[1.3, 0.88, 1.07], [1, 0.86, 1.09], [1.7, 0.9, 1.06], [2.1, 0.9, 1.05]]), photo, true); }
     // cadre décalé : le repérage peut être faussé de quelques %
     for (const [dx, dy, dh] of [[0, 0.03, 0], [0, -0.03, 0], [-0.03, 0, 0.03], [0.03, 0, 0.03]]) {
-      if (done || Math.max(0, ...tries.map((t) => t.sc)) < 1) break;       // rien lu du tout dans le cadre : inutile de le décaler, on passe aux bandes de la photo entière
+      if (quick || done || Math.max(0, ...tries.map((t) => t.sc)) < 1) break;       // rien lu du tout dans le cadre : inutile de le décaler, on passe aux bandes de la photo entière
       const b2 = { x: box.x + box.w * dx, y: box.y + box.h * dy, w: box.w * (1 + dh * 0.5), h: box.h * (1 + dh) };
       if (onStep) onStep('Nouvel essai de lecture…');
       evalTry(await readCard(b2, true, [[1.3, 0.88, 1.07], [1, 0.84, 1.1]]), photo, true);
     }
   }
-  if (!done) {                            // sans repérage : bandes de la photo entière (le numéro est en bas de la carte, le nom en haut)
+  if (!done && !quick) {                  // sans repérage : bandes de la photo entière (le numéro est en bas de la carte, le nom en haut)
     if (onStep) onStep('Analyse de toute la photo…');
     const full = { x: 0, y: 0, w: bmp.width, h: bmp.height }, ks = Math.min(2.5, 1800 / bmp.width), cr = grab(bmp, full, ks, true);
     let text = '';
     for (const [y0, y1] of [[0.62, 0.8], [0.74, 0.92], [0.84, 1]]) { text += await rd(cr(0, y0, 1, y1), '6', NUMS); if (done) break; }
     for (const [y0, y1] of [[0.0, 0.2], [0.1, 0.3], [0.18, 0.38]]) text += await rd(cr(0, y0, 1, y1), '6');
-    const cs = await photoCanvases(file); await w.setParameters({ tessedit_pageseg_mode: '6' });
+    const cs = await photoCanvases(bmp); await w.setParameters({ tessedit_pageseg_mode: '6' });
     const full0 = cs[0];
     evalTry(text, full0, false);
     if (!done) { let t2 = ''; for (const c of cs) t2 += '\n' + (await w.recognize(c)).data.text; evalTry(t2, full0, false); }   // lecture classique de la photo entière
@@ -1691,7 +1735,10 @@ function matchScan(idx, p) {
     const numHit = p.n != null && !!m && m[1].toUpperCase() === (p.tpre ? p.pre : '') && parseInt(m[2], 10) === p.n;   // total sans lettre (« 103/130 ») : carte à numéro simple ; lettres parasites avant le numéro ignorées
     const chHit = !!p.ch && lidShow(r.card.localId).toUpperCase() === p.ch;
     const totHit = chHit ? (idx.prefix.get(r.sid) && idx.prefix.get(r.sid).get('*')) === p.chTotal : p.total != null && (p.tpre ? (idx.prefix.get(r.sid) && idx.prefix.get(r.sid).get(p.tpre)) === p.total : idx.official.get(r.sid) === p.total);
-    out.push({ id: r.card.id, score: sc + ((numHit || chHit) ? 200 : 0) + (totHit ? 40 : 0) + (abSids.has(r.sid) ? 120 : 0), numHit: numHit || chHit, strict: (numHit || chHit) && totHit, ab: abSids.has(r.sid) });
+    // total lu avec un seul chiffre faux (« 125 » pour « 128 ») : accepté avec un nom lu
+    const off = p.tpre ? (idx.prefix.get(r.sid) && idx.prefix.get(r.sid).get(p.tpre)) : idx.official.get(r.sid);
+    const totNear = !chHit && !totHit && p.total != null && off != null && lev(String(p.total), String(off)) === 1;
+    out.push({ id: r.card.id, score: sc + ((numHit || chHit) ? 200 : 0) + (totHit ? 40 : totNear ? 15 : 0) + (abSids.has(r.sid) ? 120 : 0), numHit: numHit || chHit, strict: (numHit || chHit) && totHit, near: numHit && totNear, ab: abSids.has(r.sid) });
   };
   for (const r of idx.recs) {
     const full = norm(r.card.name).replace(/[^a-z0-9]+/g, ' ').trim();
@@ -1721,7 +1768,7 @@ function matchScan(idx, p) {
   const ids = best.map((x, i) => [x, i]).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 120).map(([x]) => x.id);   // à score égal : extension la plus récente d'abord
   ids.hits = new Set(best.filter((x) => x.numHit).map((x) => x.id));
   const injStrict = best.filter((x) => x.inj && x.strict).length, namedHit = best.some((x) => !x.inj && x.numHit);
-  ids.conf = best.some((x) => x.numHit && (!x.inj || x.ab));                       // numéro retrouvé avec un nom lu ou l'extension imprimée reconnue : résultat sûr
+  ids.conf = best.some((x) => (x.strict || (x.near && !x.inj)) && (!x.inj || x.ab));                     // numéro ET total (nombre de cartes de l'extension) retrouvés, avec un nom lu ou l'extension imprimée reconnue : sûr                       // numéro retrouvé avec un nom lu ou l'extension imprimée reconnue : résultat sûr
   // note de la lecture : 3 sûr, 2 nom + numéro non confirmés, 1 nom seul, 0,5 numéro + total seuls (un couple lu au hasard peut tomber juste : jamais préféré à un nom), 0 rien
   ids.score = ids.conf ? 3 : namedHit ? 2 : named.length ? 1 : injStrict ? 0.5 : 0;     // numéro retrouvé avec un nom lu ou l'extension imprimée reconnue : résultat sûr
   return ids;
@@ -1900,33 +1947,86 @@ async function showSearchInner(L, my, preset = {}) {
   }
   const filterBtn = h('button', { type: 'button', class: 'tbtn', 'aria-label': 'Filtres', title: 'Filtres', onclick: openFilters }, '⚙︎ Filtres ', h('span', { class: 'nb', hidden: true }, '0'));
   const scanIn = h('input', { type: 'file', accept: 'image/*', capture: 'environment', hidden: true, 'aria-label': 'Photo de la carte' });
-  const scanBtn = h('button', { type: 'button', class: 'tbtn', 'aria-label': 'Scanner une carte avec l’appareil photo', title: 'Scanner une carte', onclick: () => scanIn.click() }, '📷 Scanner');
+  const scanBtn = h('button', { type: 'button', class: 'tbtn', 'aria-label': 'Scanner une carte avec l’appareil photo', title: 'Scanner une carte', onclick: () => openLiveScan() }, '📷 Scanner');
+  // affiche le résultat d'une lecture : la meilleure carte s'ouvre tout de suite avec son prix, les autres candidats se parcourent avec ‹ ›
+  const readNote = h('p', { class: 'lb-help', hidden: true });
+  async function finishScan(ids, readScore, full, cropped) {
+    if (ids.length > 1 && !ids.vs) { const hits = ids.hits; ids = await rerankVisual(idx, ids, hits, full, cropped); if (my !== tok) return; }
+    // lecture pas sûre (ou rien de lu) : on cherche aussi parmi toutes les cartes celles dont l'illustration ressemble à la photo ; si l'une ressemble nettement
+    // plus que les candidats du texte, elle passe devant
+    if (full && (readScore || 0) < 3) {
+      const vs = await visualSearch(idx, full, cropped, 12); if (my !== tok) return;
+      const topText = ids.vs && ids.vs.size ? Math.max(...ids.vs.values()) : -1;
+      if (vs.length && (!ids.length || (vs[0][1] >= 0.8 && vs[0][1] > topText + 0.04))) {
+        const first = vs.map(([id]) => id); ids = [...first, ...ids.filter((id) => !first.includes(id))];
+        toast(readScore ? 'Lecture incertaine : cartes qui ressemblent le plus à la photo en premier.' : 'Ni nom ni numéro lisibles : voici les cartes qui ressemblent le plus à la photo.');
+      }
+    }
+    if (!ids.length) { f.ids = f.rank = null; run(); toast('Carte non reconnue. Photo de face, bien éclairée, nom et numéro lisibles ; ou tapez son nom.'); return; }
+    q.value = ''; f.ids = new Set(ids); f.rank = new Map(ids.map((id, i) => [id, i])); run();
+    // les prix des 3 premières sont demandés en parallèle
+    if (L === 'fr') await Promise.race([Promise.all(ids.slice(0, 3).filter((id) => !priceCache[id]).map((id) => fetchPrice(L, id).catch(() => {}))).then(() => savePrices()), new Promise((r) => setTimeout(r, 1500))]);
+    if (my !== tok) return;
+    if (tiles[0]) { zoom(tiles[0]); if (ids.length > 1) toast(`Meilleure correspondance parmi ${plural(ids.length, 'carte possible', 'cartes possibles')} : ‹ › pour voir les autres.`); }
+  }
   async function runScan(file) {
     scanBtn.disabled = true; summary.textContent = 'Analyse de la photo… (la première fois, quelques secondes)';
     const ldScan = loader.start('Analyse de la photo');
     try {
       const { text, full, cropped, score: readScore } = await ocrPhoto(file, (t) => { const r = matchScan(idx, parseCardText(t)); return r.score; }, (m) => { summary.textContent = 'Analyse de la photo · ' + m; }); if (my !== tok) return;
-      let ids = matchScan(idx, parseCardText(text));
-      if (ids.length > 1) { const hits = ids.hits; ids = await rerankVisual(idx, ids, hits, full, cropped); if (my !== tok) return; }
-      // lecture pas sûre (ou rien de lu) : on cherche aussi parmi toutes les cartes celles dont l'illustration ressemble à la photo ; si l'une ressemble nettement
-      // plus que les candidats du texte, elle passe devant
-      if (full && (readScore || 0) < 3) {
-        const vs = await visualSearch(idx, full, cropped, 12); if (my !== tok) return;
-        const topText = ids.vs && ids.vs.size ? Math.max(...ids.vs.values()) : -1;
-        if (vs.length && (!ids.length || (vs[0][1] >= 0.8 && vs[0][1] > topText + 0.04))) {
-          const first = vs.map(([id]) => id); ids = [...first, ...ids.filter((id) => !first.includes(id))];
-          toast(readScore ? 'Lecture incertaine : cartes qui ressemblent le plus à la photo en premier.' : 'Ni nom ni numéro lisibles : voici les cartes qui ressemblent le plus à la photo.');
+      { const pr = parseCardText(text); readNote.textContent = 'Lecture : ' + (pr.n != null && pr.total != null ? `n° ${pr.n}/${pr.total} · ` : 'numéro non lu · ') + (text.replace(/[^A-Za-zÀ-ÿ0-9\/ ]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90) || 'rien'); readNote.hidden = false; }      // pour comprendre un échec
+      await finishScan(matchScan(idx, parseCardText(text)), readScore, full, cropped);
+    } catch (e) { run(); toast('Scan impossible : ' + (e && e.message ? e.message : 'erreur')); } finally { scanBtn.disabled = false; ldScan.done(); }
+  }
+  /* Scanner en direct : l'appareil photo reste ouvert, la carte se place dans le cadre, des images sont lues en continu (nom, numéro, total, extension) et le résultat
+     s'affiche dès qu'une carte est trouvée. Les lectures des dernières images se cumulent ; la photo reste disponible en secours. */
+  async function openLiveScan() {
+    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { scanIn.click(); return; }
+    let stream = null, stopped = false;
+    const video = h('video', { class: 'live-video', playsinline: '', autoplay: '', muted: '' }); video.muted = true;
+    const frame = h('div', { class: 'live-frame' }, h('i', { class: 'live-line' }));
+    const msg = h('p', { class: 'live-msg' }, 'Démarrage de l’appareil photo…'), readout = h('p', { class: 'live-read' });
+    const shut = () => { stopped = true; if (stream) stream.getTracks().forEach((t) => t.stop()); ov.remove(); };
+    const ov = h('div', { class: 'live', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Scanner une carte' }, video, frame,
+      h('div', { class: 'live-top' }, msg, readout),
+      h('div', { class: 'live-bar' }, h('button', { class: 'btn sec', type: 'button', onclick: shut }, 'Fermer'), h('button', { class: 'btn sec', type: 'button', onclick: () => { shut(); scanIn.click(); } }, '📁 Photo')));
+    document.body.append(ov);
+    try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }); }
+    catch (e) { shut(); toast('Appareil photo inaccessible : autorisez-le dans les réglages, ou utilisez « 📁 Photo ».'); return; }
+    video.srcObject = stream; try { await video.play(); } catch { /* lecture automatique refusée : le flux s'affiche quand même */ }
+    msg.textContent = 'Placez la carte dans le cadre, bien à plat et éclairée.';
+    const w = await getOcr();
+    const SC = [[[1.3, 0.88, 1.07]], [[1, 0.86, 1.09]], [[1.7, 0.9, 1.06]], [[1.3, 0.84, 1.1]]];
+    const pad = 0.04, texts = []; let n = 0, lastVs = null, lastSure = null;
+    const grabFrame = () => {      // la zone du cadre (avec une marge de 4 %), prise dans l'image de la caméra (affichée en « cover » plein écran)
+      const vw = video.videoWidth, vh = video.videoHeight; if (!vw || !vh) return null;
+      const W = ov.clientWidth, H = ov.clientHeight, k = Math.max(W / vw, H / vh), ox = (vw * k - W) / 2, oy = (vh * k - H) / 2, r = frame.getBoundingClientRect();
+      const x0 = (r.left - r.width * pad + ox) / k, y0 = (r.top - r.height * pad + oy) / k, ww = r.width * (1 + 2 * pad) / k, hh = r.height * (1 + 2 * pad) / k, kk = Math.min(1, 1100 / hh);
+      window.__liveGeom = { vw, vh, W, H, k, ox, oy, r: [r.left, r.top, r.width, r.height], crop: [x0, y0, ww, hh] };
+      const c = document.createElement('canvas'); c.width = Math.round(ww * kk); c.height = Math.round(hh * kk); c.getContext('2d').drawImage(video, x0, y0, ww, hh, 0, 0, c.width, c.height); return c;
+    };
+    while (!stopped && my === tok) {
+      const c = grabFrame(); if (!c) { await new Promise((r) => setTimeout(r, 200)); continue; }
+      const m = pad / (1 + 2 * pad), bx = { x: c.width * m, y: c.height * m, w: c.width * (1 - 2 * m), h: c.height * (1 - 2 * m) };
+      let t = ''; try { t = await readCardBands(w, c, bx, n % 2 === 1, SC[n % SC.length], true); } catch { t = ''; }
+      if (stopped) return;
+      if (window.__liveDebug) (window.__liveFrames = window.__liveFrames || []).push({ t, png: n < 3 ? c.toDataURL('image/png') : '' });      // diagnostic des tests
+      texts.push(t); if (texts.length > 5) texts.shift(); n++;
+      const acc = texts.join('\n'), pr = parseCardText(acc), r = matchScan(idx, pr);
+      readout.textContent = 'Lu : ' + ((pr.n != null && pr.total != null ? `${String(pr.n).padStart(3, '0')}/${pr.total} · ` : '') + (t.replace(/[^A-Za-zÀ-ÿ0-9\/ ]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60) || '…'));
+      msg.textContent = n < 3 ? 'Lecture en cours…' : 'Cherche la carte… ajustez la distance si besoin.';
+      let ids = null, sc = r.score;
+      if (sc >= 3) { const top = r[0]; if (lastSure && lastSure === top) ids = r; lastSure = top; }       // sûr seulement si la même carte ressort sur deux images de suite
+      else {
+        lastSure = null;
+        if (n >= 3 && n % 2 === 1) {          // lecture pas sûre : ressemblance visuelle avec toutes les cartes ; acceptée si la même carte revient deux fois, nettement
+          const vs = await visualSearch(idx, c, true, 3); if (stopped) return;
+          if (vs.length && vs[0][1] >= 0.85 && lastVs && lastVs === vs[0][0]) ids = [vs[0][0]]; lastVs = vs.length && vs[0][1] >= 0.85 ? vs[0][0] : null;
         }
       }
-      if (!ids.length) { f.ids = f.rank = null; run(); toast('Carte non reconnue. Photo de face, bien éclairée, nom et numéro lisibles ; ou tapez son nom.'); }
-      else {
-        q.value = ''; f.ids = new Set(ids); f.rank = new Map(ids.map((id, i) => [id, i])); run();
-        // la meilleure correspondance s'ouvre tout de suite, avec son prix (les autres candidats se parcourent avec ‹ ›) ; les prix des 3 premières sont demandés en parallèle
-        if (L === 'fr') await Promise.race([Promise.all(ids.slice(0, 3).filter((id) => !priceCache[id]).map((id) => fetchPrice(L, id).catch(() => {}))).then(() => savePrices()), new Promise((r) => setTimeout(r, 1500))]);
-        if (my !== tok) return;
-        if (tiles[0]) { zoom(tiles[0]); if (ids.length > 1) toast(`Meilleure correspondance parmi ${plural(ids.length, 'carte possible', 'cartes possibles')} : ‹ › pour voir les autres.`); }
-      }
-    } catch (e) { run(); toast('Scan impossible : ' + (e && e.message ? e.message : 'erreur')); } finally { scanBtn.disabled = false; ldScan.done(); }
+      if (ids) { if (ids.length > 1) ids = await rerankVisual(idx, ids, ids.hits, c, true); shut(); await finishScan(ids, sc >= 3 ? 3 : 2, c, true); return; }
+      if (n === 12) msg.textContent = 'Toujours rien : rapprochez la carte du cadre, évitez les reflets, ou touchez « 📁 Photo ».';
+    }
   }
   scanIn.addEventListener('change', () => { const file = scanIn.files[0]; scanIn.value = ''; if (file) runScan(file); });
   top.append(h('div', { class: 'tools2' }, filterBtn, sortBtn, scanBtn, scanIn), chips);
@@ -1934,9 +2034,9 @@ async function showSearchInner(L, my, preset = {}) {
   let timer = null;
   q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 120); });
   moreBtn.addEventListener('click', more);
-  main.replaceChildren(summary, rarPick, carSlot, grid, moreBtn, none);
+  main.replaceChildren(summary, readNote, rarPick, carSlot, grid, moreBtn, none);
   run();
-  if (pendingScan) { const file = pendingScan; pendingScan = null; history.replaceState(null, '', '#chercher'); runScan(file); }
+  if (pendingScan) { const file = pendingScan; pendingScan = null; history.replaceState(null, '', '#chercher'); if (file === 'live') openLiveScan(); else runScan(file); }
 }
 
 /* ---------- Rareté et versions de chaque carte (français) ---------- */
@@ -2870,6 +2970,8 @@ function splashSetup() {
 
 /* ---------- Réglages ---------- */
 function openSettings() {
+  const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
+  if (window.caches) caches.keys().then((ks) => { const v = ks.find((k) => /^shell-v\d+$/.test(k)); verEl.textContent = 'Version de l’application : ' + (v ? v.replace('shell-', '') : 'inconnue') + ' (si ce numéro n’augmente pas après une mise à jour, fermez complètement l’application et rouvrez-la deux fois).'; }).catch(() => {});
   const sw = h('input', { type: 'checkbox', role: 'switch', 'aria-label': 'Afficher l’écran d’ouverture au lancement' });
   sw.checked = splashOn();
   sw.addEventListener('change', () => {
@@ -2882,6 +2984,7 @@ function openSettings() {
     h('label', { class: 'switch' },
       h('span', {}, h('span', { class: 'st' }, 'Écran d’ouverture'), h('span', { class: 'sd' }, 'Affiche le logo et « Touchez pour entrer » à chaque lancement de l’application.')), sw),
     h('button', { class: 'btn sec', type: 'button', onclick: () => { closeSheet(); document.documentElement.classList.remove('no-splash'); showSplash(); } }, '▶︎ Revoir l’écran d’ouverture'),
+    verEl,
     h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
 }
 
