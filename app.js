@@ -1535,6 +1535,18 @@ function detectCardBox(bmp) {
    « score(texte) » (fourni par l'appelant) : 3 = numéro + total (+ nom ou extension) retrouvés, 2 = numéro retrouvé, 1 = nom seul, 0 = rien.
    Tentatives : (1) carte repérée et redressée, bandes lues telles quelles ; (2) mêmes bandes en niveaux de gris contrastés ; (3) cadre décalé / autres échelles ;
    (4) bandes de la photo entière sans repérage ; (5) lecture classique de la photo entière. Au final, le texte qui donne le meilleur score. */
+// Niveaux de gris + étirement du contraste (2 % – 98 % de l'histogramme) : rend le texte plus net pour le lecteur, quelle que soit la lumière
+function enhance(c) {
+  try {
+    const x = c.getContext('2d', { willReadFrequently: true }), im = x.getImageData(0, 0, c.width, c.height), d = im.data, n = d.length / 4, hist = new Uint32Array(256);
+    for (let i = 0; i < d.length; i += 4) { const g = Math.round(d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11); d[i] = d[i + 1] = d[i + 2] = g; hist[g]++; }
+    let acc = 0, lo = 0, hi = 255; for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc >= n * 0.02) { lo = i; break; } }
+    acc = 0; for (let i = 255; i >= 0; i--) { acc += hist[i]; if (acc >= n * 0.02) { hi = i; break; } }
+    const k = hi > lo + 8 ? 255 / (hi - lo) : 1;
+    for (let i = 0; i < d.length; i += 4) { const g = Math.max(0, Math.min(255, (d[i] - lo) * k)); d[i] = d[i + 1] = d[i + 2] = g; }
+    x.putImageData(im, 0, 0);
+  } catch { /* image non lisible : on la laisse telle quelle */ }
+}
 // Outils de lecture (partagés par la lecture d'une photo et par le scanner en direct)
 function ocrTools(w) {
   const flat = (c) => { try { const t = document.createElement('canvas'); t.width = 32; t.height = 16; const x = t.getContext('2d', { willReadFrequently: true }); x.drawImage(c, 0, 0, 32, 16); const d = x.getImageData(0, 0, 32, 16).data; let m = 0; for (let i = 0; i < d.length; i += 4) m += d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11; m /= 512; let v = 0; for (let i = 0; i < d.length; i += 4) { const g = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11; v += (g - m) ** 2; } return Math.sqrt(v / 512) < 10; } catch { return false; } };
@@ -1543,7 +1555,9 @@ function ocrTools(w) {
   const grab = (src, bx, kk, filt, plain) => (fx0, fy0, fx1, fy1, k2 = kk) => {      // bande de la carte (coordonnées relatives au cadre bx), agrandie
     const c = document.createElement('canvas'), sx = bx.x + bx.w * fx0, sy = bx.y + bx.h * fy0, sw = bx.w * (fx1 - fx0), sh = bx.h * (fy1 - fy0);
     c.width = Math.max(1, Math.round(sw * k2)); c.height = Math.max(1, Math.round(sh * k2));
-    const cx = c.getContext('2d'); if (filt && !plain) cx.filter = 'grayscale(1) contrast(1.4)'; cx.drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height); return c;
+    const cx = c.getContext('2d', { willReadFrequently: true }); cx.drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    if (filt && !plain) enhance(c);        // pas de « ctx.filter » : Safari ne le gère pas ; le traitement se fait pixel par pixel
+    return c;
   };
   return { rd, grab, okc };
 }
@@ -1589,8 +1603,8 @@ async function ocrBitmap(bmp, score, onStep, quick) {
   if (box) {
     if (onStep) onStep('Lecture de la carte…');
     const photo = plainPhoto();
-    evalTry(await readCard(box, false, [[1.3, 0.88, 1.07], [1, 0.86, 1.09], [1.7, 0.9, 1.06]]), photo, true);
-    if (!done) { if (onStep) onStep('Lecture renforcée…'); evalTry(await readCard(box, true, [[1.3, 0.88, 1.07], [1, 0.86, 1.09], [1.7, 0.9, 1.06], [2.1, 0.9, 1.05]]), photo, true); }
+    evalTry(await readCard(box, true, [[1.3, 0.88, 1.07], [1, 0.86, 1.09], [1.7, 0.9, 1.06]]), photo, true);
+    if (!done) { if (onStep) onStep('Lecture renforcée…'); evalTry(await readCard(box, false, [[1.3, 0.88, 1.07], [1, 0.86, 1.09], [1.7, 0.9, 1.06], [2.1, 0.9, 1.05]]), photo, true); }
     // cadre décalé : le repérage peut être faussé de quelques %
     for (const [dx, dy, dh] of [[0, 0.03, 0], [0, -0.03, 0], [-0.03, 0, 0.03], [0.03, 0, 0.03]]) {
       if (quick || done || Math.max(0, ...tries.map((t) => t.sc)) < 1) break;       // rien lu du tout dans le cadre : inutile de le décaler, on passe aux bandes de la photo entière
@@ -1721,7 +1735,10 @@ function matchScan(idx, p) {
     const numHit = p.n != null && !!m && m[1].toUpperCase() === (p.tpre ? p.pre : '') && parseInt(m[2], 10) === p.n;   // total sans lettre (« 103/130 ») : carte à numéro simple ; lettres parasites avant le numéro ignorées
     const chHit = !!p.ch && lidShow(r.card.localId).toUpperCase() === p.ch;
     const totHit = chHit ? (idx.prefix.get(r.sid) && idx.prefix.get(r.sid).get('*')) === p.chTotal : p.total != null && (p.tpre ? (idx.prefix.get(r.sid) && idx.prefix.get(r.sid).get(p.tpre)) === p.total : idx.official.get(r.sid) === p.total);
-    out.push({ id: r.card.id, score: sc + ((numHit || chHit) ? 200 : 0) + (totHit ? 40 : 0) + (abSids.has(r.sid) ? 120 : 0), numHit: numHit || chHit, strict: (numHit || chHit) && totHit, ab: abSids.has(r.sid) });
+    // total lu avec un seul chiffre faux (« 125 » pour « 128 ») : accepté avec un nom lu
+    const off = p.tpre ? (idx.prefix.get(r.sid) && idx.prefix.get(r.sid).get(p.tpre)) : idx.official.get(r.sid);
+    const totNear = !chHit && !totHit && p.total != null && off != null && lev(String(p.total), String(off)) === 1;
+    out.push({ id: r.card.id, score: sc + ((numHit || chHit) ? 200 : 0) + (totHit ? 40 : totNear ? 15 : 0) + (abSids.has(r.sid) ? 120 : 0), numHit: numHit || chHit, strict: (numHit || chHit) && totHit, near: numHit && totNear, ab: abSids.has(r.sid) });
   };
   for (const r of idx.recs) {
     const full = norm(r.card.name).replace(/[^a-z0-9]+/g, ' ').trim();
@@ -1751,7 +1768,7 @@ function matchScan(idx, p) {
   const ids = best.map((x, i) => [x, i]).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 120).map(([x]) => x.id);   // à score égal : extension la plus récente d'abord
   ids.hits = new Set(best.filter((x) => x.numHit).map((x) => x.id));
   const injStrict = best.filter((x) => x.inj && x.strict).length, namedHit = best.some((x) => !x.inj && x.numHit);
-  ids.conf = best.some((x) => x.numHit && (!x.inj || x.ab));                       // numéro retrouvé avec un nom lu ou l'extension imprimée reconnue : résultat sûr
+  ids.conf = best.some((x) => (x.strict || (x.near && !x.inj)) && (!x.inj || x.ab));                     // numéro ET total (nombre de cartes de l'extension) retrouvés, avec un nom lu ou l'extension imprimée reconnue : sûr                       // numéro retrouvé avec un nom lu ou l'extension imprimée reconnue : résultat sûr
   // note de la lecture : 3 sûr, 2 nom + numéro non confirmés, 1 nom seul, 0,5 numéro + total seuls (un couple lu au hasard peut tomber juste : jamais préféré à un nom), 0 rien
   ids.score = ids.conf ? 3 : namedHit ? 2 : named.length ? 1 : injStrict ? 0.5 : 0;     // numéro retrouvé avec un nom lu ou l'extension imprimée reconnue : résultat sûr
   return ids;
@@ -1980,7 +1997,7 @@ async function showSearchInner(L, my, preset = {}) {
     msg.textContent = 'Placez la carte dans le cadre, bien à plat et éclairée.';
     const w = await getOcr();
     const SC = [[[1.3, 0.88, 1.07]], [[1, 0.86, 1.09]], [[1.7, 0.9, 1.06]], [[1.3, 0.84, 1.1]]];
-    const pad = 0.04, texts = []; let n = 0, lastVs = null;
+    const pad = 0.04, texts = []; let n = 0, lastVs = null, lastSure = null;
     const grabFrame = () => {      // la zone du cadre (avec une marge de 4 %), prise dans l'image de la caméra (affichée en « cover » plein écran)
       const vw = video.videoWidth, vh = video.videoHeight; if (!vw || !vh) return null;
       const W = ov.clientWidth, H = ov.clientHeight, k = Math.max(W / vw, H / vh), ox = (vw * k - W) / 2, oy = (vh * k - H) / 2, r = frame.getBoundingClientRect();
@@ -1999,10 +2016,13 @@ async function showSearchInner(L, my, preset = {}) {
       readout.textContent = 'Lu : ' + ((pr.n != null && pr.total != null ? `${String(pr.n).padStart(3, '0')}/${pr.total} · ` : '') + (t.replace(/[^A-Za-zÀ-ÿ0-9\/ ]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60) || '…'));
       msg.textContent = n < 3 ? 'Lecture en cours…' : 'Cherche la carte… ajustez la distance si besoin.';
       let ids = null, sc = r.score;
-      if (sc >= 3) ids = r;
-      else if (n >= 3 && n % 2 === 1) {          // lecture pas sûre : ressemblance visuelle avec toutes les cartes ; acceptée si la même carte revient deux fois, nettement
-        const vs = await visualSearch(idx, c, true, 3); if (stopped) return;
-        if (vs.length && vs[0][1] >= 0.85 && lastVs && lastVs === vs[0][0]) ids = [vs[0][0]]; lastVs = vs.length && vs[0][1] >= 0.85 ? vs[0][0] : null;
+      if (sc >= 3) { const top = r[0]; if (lastSure && lastSure === top) ids = r; lastSure = top; }       // sûr seulement si la même carte ressort sur deux images de suite
+      else {
+        lastSure = null;
+        if (n >= 3 && n % 2 === 1) {          // lecture pas sûre : ressemblance visuelle avec toutes les cartes ; acceptée si la même carte revient deux fois, nettement
+          const vs = await visualSearch(idx, c, true, 3); if (stopped) return;
+          if (vs.length && vs[0][1] >= 0.85 && lastVs && lastVs === vs[0][0]) ids = [vs[0][0]]; lastVs = vs.length && vs[0][1] >= 0.85 ? vs[0][0] : null;
+        }
       }
       if (ids) { if (ids.length > 1) ids = await rerankVisual(idx, ids, ids.hits, c, true); shut(); await finishScan(ids, sc >= 3 ? 3 : 2, c, true); return; }
       if (n === 12) msg.textContent = 'Toujours rien : rapprochez la carte du cadre, évitez les reflets, ou touchez « 📁 Photo ».';
