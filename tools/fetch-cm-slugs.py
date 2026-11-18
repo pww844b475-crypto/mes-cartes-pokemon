@@ -53,7 +53,7 @@ def redirect(pid):
         except urllib.error.HTTPError as e:
             if e.code in (301, 302, 303, 307, 308): return e.headers.get('Location')
             if e.code == 404: return None
-            time.sleep(1.5 * (attempt + 1))
+            time.sleep(3 * (attempt + 1))
         except Exception:
             time.sleep(1.5 * (attempt + 1))
     return None
@@ -72,7 +72,7 @@ def main():
     for sid, pid in smap.items():
         rows = names.get(sid) or []
         lids = [(r[1] if len(r) > 2 and isinstance(r[2], str) else r[0]) for r in rows]
-        todo = [l for l in lids if f'{sid}|{l}' not in cache]
+        todo = [l for l in lids if f'{sid}|{l}' not in cache or (os.environ.get('CM_RETRY') and not cache[f'{sid}|{l}'])]      # CM_RETRY=1 : retente les cartes sans adresse (erreurs passagères du service)
         def work(l):
             for v in num_variants(l):
                 loc = redirect(f'{pid}-{v}')
