@@ -1413,8 +1413,20 @@ async function getOcr() {
   ocrWorker = await Tesseract.createWorker('fra', 1, { workerPath: abs('vendor/tesseract/worker.min.js'), corePath: abs('vendor/tesseract/core'), langPath: abs('vendor/tesseract/lang') });
   return ocrWorker;
 }
-async function photoCanvases(file) { // photo entière (réduite), bande du bas (numéro) et bandes du haut (nom), agrandies
-  const bmp = await createImageBitmap(file);
+// Charge une photo avec son orientation (EXIF) : par une balise <img> (le décodage d'image applique l'orientation partout), puis dessinée sur un canevas (3200 px au plus)
+async function loadPhoto(file) {
+  try {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image(); img.src = url; await img.decode();
+      const k = Math.min(1, 3200 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return c;
+    } finally { URL.revokeObjectURL(url); }
+  } catch { return createImageBitmap(file); }
+}
+const turnCanvas = (src, quarter) => { const c = document.createElement('canvas'); c.width = src.height; c.height = src.width; const x = c.getContext('2d'); x.translate(c.width / 2, c.height / 2); x.rotate(quarter * Math.PI / 2); x.drawImage(src, -src.width / 2, -src.height / 2); return c; };
+async function photoCanvases(src) { // photo entière (réduite), bande du bas (numéro) et bandes du haut (nom), agrandies
+  const bmp = src.width ? src : await loadPhoto(src);
   const k = Math.min(1, 1800 / Math.max(bmp.width, bmp.height));
   const full = document.createElement('canvas'); full.width = Math.round(bmp.width * k); full.height = Math.round(bmp.height * k);
   full.getContext('2d').drawImage(bmp, 0, 0, full.width, full.height);
@@ -1548,7 +1560,19 @@ async function readCardBands(w, src, bx, filt, scales, fast) {
   return text;
 }
 async function ocrPhoto(file, score, onStep) {
-  const w = await getOcr(), bmp = await createImageBitmap(file);
+  const bmp = await loadPhoto(file);
+  let res = await ocrBitmap(bmp, score, onStep, false);
+  // la photo peut être couchée (carte tournée d'un quart de tour, orientation du téléphone mal lue) : on essaie les deux sens
+  if (res.score < 2) for (const q of [1, -1]) {
+    if (onStep) onStep('Photo tournée ?…');
+    const r2 = await ocrBitmap(turnCanvas(bmp, q), score, null, true);
+    if (r2.score > res.score) res = r2;
+    if (res.score >= 3) break;
+  }
+  return res;
+}
+async function ocrBitmap(bmp, score, onStep, quick) {
+  const w = await getOcr();
   const det = detectCardBox(bmp), box = det && det.box, srcImg = det ? det.src : bmp;
   const tries = [];                       // { text, sc, photo, cropped }
   let done = false;
@@ -1569,19 +1593,19 @@ async function ocrPhoto(file, score, onStep) {
     if (!done) { if (onStep) onStep('Lecture renforcée…'); evalTry(await readCard(box, true, [[1.3, 0.88, 1.07], [1, 0.86, 1.09], [1.7, 0.9, 1.06], [2.1, 0.9, 1.05]]), photo, true); }
     // cadre décalé : le repérage peut être faussé de quelques %
     for (const [dx, dy, dh] of [[0, 0.03, 0], [0, -0.03, 0], [-0.03, 0, 0.03], [0.03, 0, 0.03]]) {
-      if (done || Math.max(0, ...tries.map((t) => t.sc)) < 1) break;       // rien lu du tout dans le cadre : inutile de le décaler, on passe aux bandes de la photo entière
+      if (quick || done || Math.max(0, ...tries.map((t) => t.sc)) < 1) break;       // rien lu du tout dans le cadre : inutile de le décaler, on passe aux bandes de la photo entière
       const b2 = { x: box.x + box.w * dx, y: box.y + box.h * dy, w: box.w * (1 + dh * 0.5), h: box.h * (1 + dh) };
       if (onStep) onStep('Nouvel essai de lecture…');
       evalTry(await readCard(b2, true, [[1.3, 0.88, 1.07], [1, 0.84, 1.1]]), photo, true);
     }
   }
-  if (!done) {                            // sans repérage : bandes de la photo entière (le numéro est en bas de la carte, le nom en haut)
+  if (!done && !quick) {                  // sans repérage : bandes de la photo entière (le numéro est en bas de la carte, le nom en haut)
     if (onStep) onStep('Analyse de toute la photo…');
     const full = { x: 0, y: 0, w: bmp.width, h: bmp.height }, ks = Math.min(2.5, 1800 / bmp.width), cr = grab(bmp, full, ks, true);
     let text = '';
     for (const [y0, y1] of [[0.62, 0.8], [0.74, 0.92], [0.84, 1]]) { text += await rd(cr(0, y0, 1, y1), '6', NUMS); if (done) break; }
     for (const [y0, y1] of [[0.0, 0.2], [0.1, 0.3], [0.18, 0.38]]) text += await rd(cr(0, y0, 1, y1), '6');
-    const cs = await photoCanvases(file); await w.setParameters({ tessedit_pageseg_mode: '6' });
+    const cs = await photoCanvases(bmp); await w.setParameters({ tessedit_pageseg_mode: '6' });
     const full0 = cs[0];
     evalTry(text, full0, false);
     if (!done) { let t2 = ''; for (const c of cs) t2 += '\n' + (await w.recognize(c)).data.text; evalTry(t2, full0, false); }   // lecture classique de la photo entière
@@ -1908,6 +1932,7 @@ async function showSearchInner(L, my, preset = {}) {
   const scanIn = h('input', { type: 'file', accept: 'image/*', capture: 'environment', hidden: true, 'aria-label': 'Photo de la carte' });
   const scanBtn = h('button', { type: 'button', class: 'tbtn', 'aria-label': 'Scanner une carte avec l’appareil photo', title: 'Scanner une carte', onclick: () => openLiveScan() }, '📷 Scanner');
   // affiche le résultat d'une lecture : la meilleure carte s'ouvre tout de suite avec son prix, les autres candidats se parcourent avec ‹ ›
+  const readNote = h('p', { class: 'lb-help', hidden: true });
   async function finishScan(ids, readScore, full, cropped) {
     if (ids.length > 1 && !ids.vs) { const hits = ids.hits; ids = await rerankVisual(idx, ids, hits, full, cropped); if (my !== tok) return; }
     // lecture pas sûre (ou rien de lu) : on cherche aussi parmi toutes les cartes celles dont l'illustration ressemble à la photo ; si l'une ressemble nettement
@@ -1932,6 +1957,7 @@ async function showSearchInner(L, my, preset = {}) {
     const ldScan = loader.start('Analyse de la photo');
     try {
       const { text, full, cropped, score: readScore } = await ocrPhoto(file, (t) => { const r = matchScan(idx, parseCardText(t)); return r.score; }, (m) => { summary.textContent = 'Analyse de la photo · ' + m; }); if (my !== tok) return;
+      { const pr = parseCardText(text); readNote.textContent = 'Lecture : ' + (pr.n != null && pr.total != null ? `n° ${pr.n}/${pr.total} · ` : 'numéro non lu · ') + (text.replace(/[^A-Za-zÀ-ÿ0-9\/ ]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90) || 'rien'); readNote.hidden = false; }      // pour comprendre un échec
       await finishScan(matchScan(idx, parseCardText(text)), readScore, full, cropped);
     } catch (e) { run(); toast('Scan impossible : ' + (e && e.message ? e.message : 'erreur')); } finally { scanBtn.disabled = false; ldScan.done(); }
   }
@@ -1959,6 +1985,7 @@ async function showSearchInner(L, my, preset = {}) {
       const vw = video.videoWidth, vh = video.videoHeight; if (!vw || !vh) return null;
       const W = ov.clientWidth, H = ov.clientHeight, k = Math.max(W / vw, H / vh), ox = (vw * k - W) / 2, oy = (vh * k - H) / 2, r = frame.getBoundingClientRect();
       const x0 = (r.left - r.width * pad + ox) / k, y0 = (r.top - r.height * pad + oy) / k, ww = r.width * (1 + 2 * pad) / k, hh = r.height * (1 + 2 * pad) / k, kk = Math.min(1, 1100 / hh);
+      window.__liveGeom = { vw, vh, W, H, k, ox, oy, r: [r.left, r.top, r.width, r.height], crop: [x0, y0, ww, hh] };
       const c = document.createElement('canvas'); c.width = Math.round(ww * kk); c.height = Math.round(hh * kk); c.getContext('2d').drawImage(video, x0, y0, ww, hh, 0, 0, c.width, c.height); return c;
     };
     while (!stopped && my === tok) {
@@ -1987,7 +2014,7 @@ async function showSearchInner(L, my, preset = {}) {
   let timer = null;
   q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 120); });
   moreBtn.addEventListener('click', more);
-  main.replaceChildren(summary, rarPick, carSlot, grid, moreBtn, none);
+  main.replaceChildren(summary, readNote, rarPick, carSlot, grid, moreBtn, none);
   run();
   if (pendingScan) { const file = pendingScan; pendingScan = null; history.replaceState(null, '', '#chercher'); if (file === 'live') openLiveScan(); else runScan(file); }
 }
