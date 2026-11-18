@@ -1431,7 +1431,59 @@ async function ocrPhoto(file) {
   const w = await getOcr(), cs = await photoCanvases(file); let text = '';
   await w.setParameters({ tessedit_pageseg_mode: '6' });
   for (const c of cs) text += '\n' + (await w.recognize(c)).data.text;      // page, numéro (bas), nom (haut, deux hauteurs)
-  return text;
+  return { text, full: cs[0] };
+}
+/* ---------- Scan : classement visuel des candidats ----------
+   Beaucoup de cartes portent le même nom (Pikachu : des centaines) ; quand le numéro imprimé n'est pas lisible, on compare l'illustration de la photo
+   (couleurs de la zone centrale, à 3 échelles de cadrage) à celle de chaque candidat (image TCGdex en basse définition). */
+const VIS_ART = [0.08, 0.11, 0.92, 0.54];
+function visDesc(src, box) {
+  const w = src.width || src.naturalWidth, hh = src.height || src.naturalHeight;
+  const c = document.createElement('canvas'); c.width = 24; c.height = 24;
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.drawImage(src, box[0] * w, box[1] * hh, (box[2] - box[0]) * w, (box[3] - box[1]) * hh, 0, 0, 24, 24);
+  const d = x.getImageData(0, 0, 24, 24).data, g = new Float32Array(108), hb = new Float32Array(12);
+  for (let cy = 0; cy < 6; cy++) for (let cx = 0; cx < 6; cx++) for (let ch = 0; ch < 3; ch++) {
+    let sum = 0; for (let y = 0; y < 4; y++) for (let xx = 0; xx < 4; xx++) sum += d[((cy * 4 + y) * 24 + cx * 4 + xx) * 4 + ch];
+    g[(cy * 6 + cx) * 3 + ch] = sum / 16 / 255;
+  }
+  for (let ch = 0; ch < 3; ch++) { let m = 0; for (let i = 0; i < 36; i++) m += g[i * 3 + ch]; m /= 36; for (let i = 0; i < 36; i++) g[i * 3 + ch] -= m; }
+  let n = 0; for (let i = 0; i < 108; i++) n += g[i] * g[i]; n = Math.sqrt(n) + 1e-6; for (let i = 0; i < 108; i++) g[i] /= n;
+  let hs = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i] / 255, gg = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), df = mx - mn;
+    if (df < 1e-6 || mx < 1e-6) continue;
+    let hue = mx === r ? ((gg - b) / df) % 6 : mx === gg ? (b - r) / df + 2 : (r - gg) / df + 4; hue = (hue < 0 ? hue + 6 : hue) / 6;
+    const wgt = (df / mx) * mx; hb[Math.min(11, Math.floor(hue * 12))] += wgt; hs += wgt;
+  }
+  for (let i = 0; i < 12; i++) hb[i] /= hs + 1e-6;
+  return { g, hb };
+}
+function visSim(a, b) { let dot = 0, inter = 0; for (let i = 0; i < 108; i++) dot += a.g[i] * b.g[i]; for (let i = 0; i < 12; i++) inter += Math.min(a.hb[i], b.hb[i]); return dot * 0.6 + inter * 0.4; }
+const loadCorsImage = (src) => new Promise((res) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+// → identifiants réordonnés (les cartes dont le numéro correspond gardent un bonus) ; en cas d'échec, l'ordre d'origine
+async function rerankVisual(idx, ids, hits, photo) {
+  try {
+    if (!idx.byId) idx.byId = new Map(idx.recs.map((r) => [r.card.id, r]));
+    const W = photo.width, H = photo.height, pd = [1, 0.85, 0.7].map((sc) => {
+      const ch = sc, cw = Math.min(1, sc * 0.716 * H / W), x0 = 0.5 - cw / 2, y0 = 0.5 - ch / 2;
+      return visDesc(photo, [x0 + cw * VIS_ART[0], y0 + ch * VIS_ART[1], x0 + cw * VIS_ART[2], y0 + ch * VIS_ART[3]]);
+    });
+    const top = ids.slice(0, 100), score = new Map();
+    let next = 0;
+    const worker = async () => {
+      while (next < top.length) {
+        const id = top[next++], r = idx.byId.get(id); if (!r || !r.card.image) continue;
+        const im = await loadCorsImage(imgLow(r.card)); if (!im) continue;
+        try { const d = visDesc(im, VIS_ART); score.set(id, Math.max(...pd.map((p) => visSim(p, d)))); } catch { /* image illisible : ignorée */ }
+      }
+    };
+    await Promise.race([Promise.all(Array.from({ length: 10 }, worker)), new Promise((r) => setTimeout(r, 7000))]);
+    if (score.size < 2) return ids;
+    const avg = [...score.values()].reduce((a, b) => a + b, 0) / score.size;
+    const key = (id, i) => (score.has(id) ? score.get(id) : avg) + (hits && hits.has(id) ? 0.25 : 0) - 0.0005 * i;
+    return [...top.map((id, i) => [id, key(id, i)]).sort((a, b) => b[1] - a[1]).map(([id]) => id), ...ids.slice(100)];
+  } catch { return ids; }
 }
 function parseCardText(text) {
   const t = text.replace(/[Il|]/g, '1').toUpperCase();
@@ -1476,7 +1528,9 @@ function matchScan(idx, p) {
     near.sort((x, y) => x[1] - y[1]).slice(0, 6).forEach(([b, d, list]) => list.forEach((i) => rate(idx.recs[i], b.length - 12 * d)));
   }
   const best = out.some((x) => x.numHit) ? out.filter((x) => x.numHit) : out;
-  return best.map((x, i) => [x, i]).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 60).map(([x]) => x.id);   // à score égal : extension la plus récente d'abord
+  const ids = best.map((x, i) => [x, i]).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 120).map(([x]) => x.id);   // à score égal : extension la plus récente d'abord
+  ids.hits = new Set(best.filter((x) => x.numHit).map((x) => x.id));
+  return ids;
 }
 
 async function showSearch(L, my, preset = {}) {
@@ -1657,13 +1711,16 @@ async function showSearchInner(L, my, preset = {}) {
     scanBtn.disabled = true; summary.textContent = 'Analyse de la photo… (la première fois, quelques secondes)';
     const ldScan = loader.start('Analyse de la photo');
     try {
-      const text = await ocrPhoto(file); if (my !== tok) return;
-      const ids = matchScan(idx, parseCardText(text));
+      const { text, full } = await ocrPhoto(file); if (my !== tok) return;
+      let ids = matchScan(idx, parseCardText(text));
+      if (ids.length > 1) { const hits = ids.hits; ids = await rerankVisual(idx, ids, hits, full); if (my !== tok) return; }
       if (!ids.length) { f.ids = f.rank = null; run(); toast('Carte non reconnue. Photo de face, bien éclairée, nom et numéro lisibles ; ou tapez son nom.'); }
       else {
         q.value = ''; f.ids = new Set(ids); f.rank = new Map(ids.map((id, i) => [id, i])); run();
-        if (matches.length === 1 && tiles[0]) zoom(tiles[0]);          // une seule carte : on l'ouvre avec son prix
-        else toast(plural(ids.length, 'carte trouvée', 'cartes trouvées') + ' : touchez la bonne, son prix s’affiche.');
+        // la meilleure correspondance s'ouvre tout de suite, avec son prix (les autres candidats se parcourent avec ‹ ›) ; les prix des 3 premières sont demandés en parallèle
+        if (L === 'fr') await Promise.race([Promise.all(ids.slice(0, 3).filter((id) => !priceCache[id]).map((id) => fetchPrice(L, id).catch(() => {}))).then(() => savePrices()), new Promise((r) => setTimeout(r, 1500))]);
+        if (my !== tok) return;
+        if (tiles[0]) { zoom(tiles[0]); if (ids.length > 1) toast(`Meilleure correspondance parmi ${plural(ids.length, 'carte possible', 'cartes possibles')} : ‹ › pour voir les autres.`); }
       }
     } catch (e) { run(); toast('Scan impossible : ' + (e && e.message ? e.message : 'erreur')); } finally { scanBtn.disabled = false; ldScan.done(); }
   }
