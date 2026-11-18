@@ -1996,18 +1996,27 @@ async function showSearchInner(L, my, preset = {}) {
      s'affiche dès qu'une carte est trouvée. Les lectures des dernières images se cumulent ; la photo reste disponible en secours. */
   async function openLiveScan() {
     if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { scanIn.click(); return; }
-    let stream = null, stopped = false;
+    let stream = null, track = null, stopped = false, ended = false, restarts = 0, black = 0;
     const video = h('video', { class: 'live-video', playsinline: '', autoplay: '', muted: '' }); video.muted = true;
     const frame = h('div', { class: 'live-frame' }, h('i', { class: 'live-line' }));
     const msg = h('p', { class: 'live-msg' }, 'Démarrage de l’appareil photo…'), readout = h('p', { class: 'live-read' });
-    const shut = () => { stopped = true; if (stream) stream.getTracks().forEach((t) => t.stop()); ov.remove(); };
+    const onVis = () => { if (!document.hidden && !stopped) ended = true; };      // retour dans l'application : la caméra est relancée
+    const shut = () => { stopped = true; document.removeEventListener('visibilitychange', onVis); if (stream) stream.getTracks().forEach((t) => t.stop()); ov.remove(); };
     const ov = h('div', { class: 'live', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Scanner une carte' }, video, frame,
       h('div', { class: 'live-top' }, msg, readout),
       h('div', { class: 'live-bar' }, h('button', { class: 'btn sec', type: 'button', onclick: shut }, 'Fermer'), h('button', { class: 'btn sec', type: 'button', onclick: () => { shut(); scanIn.click(); } }, '📁 Photo')));
     document.body.append(ov);
-    try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }); }
+    // flux de la caméra ; il peut s'interrompre (écran noir sur iPhone après quelques secondes, application mise en arrière-plan…) : on le relance tout seul
+    const startStream = async () => {
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+      track = stream.getVideoTracks()[0]; ended = false; black = 0; if (track) track.addEventListener('ended', () => { ended = true; });
+      video.srcObject = stream; try { await video.play(); } catch { /* lecture automatique refusée : le flux s'affiche quand même */ }
+    };
+    try { await startStream(); }
     catch (e) { shut(); toast('Appareil photo inaccessible : autorisez-le dans les réglages, ou utilisez « 📁 Photo ».'); return; }
-    video.srcObject = stream; try { await video.play(); } catch { /* lecture automatique refusée : le flux s'affiche quand même */ }
+    video.addEventListener('pause', () => { if (!stopped) video.play().catch(() => {}); });
+    document.addEventListener('visibilitychange', onVis);
     msg.textContent = 'Placez la carte dans le cadre, bien à plat et éclairée.';
     // Reconnaissance par l'image d'abord (instantanée, sans lecture de texte donc presque sans batterie) : l'illustration du cadre est comparée aux empreintes
     // des 20 000 cartes. Le texte (numéro) n'est lu que si plusieurs éditions ont la même illustration, et seulement quelques fois.
@@ -2023,8 +2032,18 @@ async function showSearchInner(L, my, preset = {}) {
     const finish = async (ids, sc, c) => { shut(); await finishScan(ids, sc, c, true); };
     while (!stopped && my === tok) {
       await sleep(330);                                   // ~3 images par seconde : assez réactif, sans chauffer
-      if (Date.now() - t0 > 30000) { shut(); toast('Pas trouvé en 30 s : rapprochez la carte du cadre, évitez les reflets, ou utilisez « 📁 Photo ».'); return; }
+      if (Date.now() - t0 > 30000 + restarts * 15000) { shut(); toast('Pas trouvé en 30 s : rapprochez la carte du cadre, évitez les reflets, ou utilisez « 📁 Photo ».'); return; }
+      if (ended || !track || track.readyState !== 'live') {          // flux interrompu : on relance la caméra (4 fois au plus)
+        if (restarts >= 4) { shut(); toast('La caméra s’est interrompue : relancez le scan ou utilisez « 📁 Photo ».'); return; }
+        restarts++; msg.textContent = 'Caméra relancée…'; try { await startStream(); } catch { shut(); toast('Appareil photo inaccessible.'); return; }
+        continue;
+      }
       const c = grabFrame(480); if (!c) continue;
+      { // image noire (flux figé) : relance après ~2 s
+        const t = document.createElement('canvas'); t.width = 16; t.height = 16; const tx = t.getContext('2d', { willReadFrequently: true }); tx.drawImage(c, 0, 0, 16, 16);
+        const d = tx.getImageData(0, 0, 16, 16).data; let sum = 0; for (let i = 0; i < d.length; i += 4) sum += d[i] + d[i + 1] + d[i + 2];
+        black = sum / (256 * 3) < 5 ? black + 1 : 0; if (black >= 6) { ended = true; c.width = c.height = 0; continue; }
+      }
       const vs = await visualSearch(idx, c, true, 8); if (stopped) return;
       const j = judgeVisual(vs, 0.7);
       readout.textContent = vs.length ? `Ressemblance : ${Math.round(vs[0][1] * 100)} %${j ? ' · carte repérée' : ''}` : '';
@@ -2988,7 +3007,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v82';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v83';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;
