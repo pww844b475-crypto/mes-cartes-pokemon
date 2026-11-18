@@ -1386,7 +1386,7 @@ async function buildSearchIndex(L, sets) {
     for (const row of names[sid]) {
       const odd = typeof row[2] === 'string', lid = String(odd ? row[1] : row[0]), nm = odd ? row[2] : row[1], noImg = odd ? row[3] === 0 : row[2] === 0;
       const id = odd ? row[0] : sid + '-' + lid;
-      cards.push({ id, localId: lid, name: nm, image: !noImg && serie ? `https://assets.tcgdex.net/${L}/${serie}/${sid}/${lid}` : null });
+      cards.push({ id, localId: lid, name: nm, image: !noImg && serie ? `https://assets.tcgdex.net/${L}/${serie}/${sid}/${lid}` : null, vi: cards.length });
     }
     applyScans(cards);
     for (const c of cards) {
@@ -1441,10 +1441,10 @@ function edgeSearch(bmp, W, win) {
   const R = (xx, yy) => { xx = Math.min(W - 1, Math.max(0, xx)); yy = Math.min(H - 1, Math.max(0, yy)); return (yy * W + xx) * 4; };
   const dc = (o1, o2) => Math.hypot(d[o1] - d[o2], d[o1 + 1] - d[o2 + 1], d[o1 + 2] - d[o2 + 2]);
   const db = (o) => Math.hypot(d[o] - bg[0], d[o + 1] - bg[1], d[o + 2] - bg[2]);
-  const hMin = win ? win.h0 : Math.round(H * 0.4), hMax = win ? win.h1 : Math.floor(Math.min(H, W / CARD_RATIO)), g = Math.max(2, Math.round(W / 40));
+  const hMin = win ? win.h0 : Math.round(H * 0.26), hMax = win ? win.h1 : Math.floor(Math.min(H, W / CARD_RATIO)), g = Math.max(2, Math.round(W / 40));
   const N = 14;
   let best = null;
-  for (let h = hMin; h <= hMax; h++) for (const fw of (win ? [0.92, 0.96, 1, 1.04, 1.08] : [1])) {      // affinage : largeur libre (±10 %, perspective)
+  for (let h = hMin; h <= hMax; h++) for (const fw of (win ? [0.94, 1, 1.06] : [1])) {      // affinage : largeur libre (±10 %, perspective)
     const w = Math.round(h * CARD_RATIO * fw); if (w >= W || h >= H) continue;
     const xa = win ? win.x0 : 0, xb = win ? win.x1 : W - w - 1, ya = win ? win.y0 : 0, yb = win ? win.y1 : H - h - 1;
     for (let x0 = Math.max(0, xa); x0 <= Math.min(W - w - 1, xb); x0++) for (let y0 = Math.max(0, ya); y0 <= Math.min(H - h - 1, yb); y0++) {
@@ -1461,44 +1461,129 @@ function edgeSearch(bmp, W, win) {
   }
   return best ? { ...best, W, H } : null;
 }
+// Recale les quatre côtés du cadre sur le vrai bord de la carte : le long de chaque côté, on suit la distance au fond local (bande de 6 à 10 % plus loin)
+// en s'éloignant du centre ; le bord est là où elle chute le plus. Corrige les décalages de quelques % dus aux bords gris peu contrastés.
+function snapBox(src, box) {
+  try {
+    const Wn = 420, k = Wn / src.width, Hn = Math.round(src.height * k), c = document.createElement('canvas'); c.width = Wn; c.height = Hn;
+    const x = c.getContext('2d', { willReadFrequently: true }); x.filter = 'blur(1px)'; x.drawImage(src, 0, 0, Wn, Hn);
+    const d = x.getImageData(0, 0, Wn, Hn).data;
+    const px = (xx, yy) => { xx = Math.min(Wn - 1, Math.max(0, Math.round(xx))); yy = Math.min(Hn - 1, Math.max(0, Math.round(yy))); const o = (yy * Wn + xx) * 4; return [d[o], d[o + 1], d[o + 2]]; };
+    const bx = { x: box.x * k, y: box.y * k, w: box.w * k, h: box.h * k };
+    // côté : direction sortante (ox, oy), points le long du côté
+    const sides = { top: { n: [0, -1], pt: (t) => [bx.x + bx.w * t, bx.y] }, bottom: { n: [0, 1], pt: (t) => [bx.x + bx.w * t, bx.y + bx.h] }, left: { n: [-1, 0], pt: (t) => [bx.x, bx.y + bx.h * t] }, right: { n: [1, 0], pt: (t) => [bx.x + bx.w, bx.y + bx.h * t] } };
+    const L = { top: bx.h, bottom: bx.h, left: bx.w, right: bx.w }, out = {};
+    for (const [nm, sd] of Object.entries(sides)) {
+      const len = L[nm], offs = [];                               // décalages testés, de -7 % (dedans) à +7 % (dehors) de la dimension
+      for (let o = -0.07; o <= 0.0701; o += 0.005) offs.push(o);
+      const samp = (o) => { const col = [[], [], []]; for (let i = 0; i < 16; i++) { const t = 0.12 + 0.76 * (i / 15), p = sd.pt(t), q = px(p[0] + sd.n[0] * o * len, p[1] + sd.n[1] * o * len); col[0].push(q[0]); col[1].push(q[1]); col[2].push(q[2]); } return col.map((a) => a.sort((m, n2) => m - n2)[8]); };
+      const bgc = (() => { const col = [[], [], []]; for (const o of [0.1, 0.12, 0.14]) { const q = samp(o); col[0].push(q[0]); col[1].push(q[1]); col[2].push(q[2]); } return col.map((a) => a.sort((m, n2) => m - n2)[1]); })();
+      const dist = offs.map((o) => { const q = samp(o); return Math.hypot(q[0] - bgc[0], q[1] - bgc[1], q[2] - bgc[2]); });
+      // le bord extérieur est la dernière chute importante (le cadre intérieur peut en produire une plus forte) après laquelle on est revenu au niveau du fond
+      let maxDrop = 0; for (let i = 0; i < offs.length - 2; i++) maxDrop = Math.max(maxDrop, dist[i] - dist[i + 2]);
+      const dmax = Math.max(...dist); let bi = -1;
+      for (let i = offs.length - 3; i >= 0; i--) if (dist[i] - dist[i + 2] > 0.4 * maxDrop && dist[i + 2] < 0.4 * dmax) { bi = i + 1; break; }
+      out[nm] = bi >= 0 && maxDrop > 12 ? offs[bi] * len : 0;           // décalage en pixels réduits (positif = vers l'extérieur)
+    }
+    const nb = { x: bx.x - out.left, y: bx.y - out.top, w: bx.w + out.left + out.right, h: bx.h + out.top + out.bottom };
+    const ratio = nb.w / nb.h; if (ratio < 0.58 || ratio > 0.86 || nb.w < bx.w * 0.8 || nb.h < bx.h * 0.8) return box;      // résultat incohérent : on garde le cadre d'origine
+    return { x: nb.x / k, y: nb.y / k, w: nb.w / k, h: nb.h / k };
+  } catch { return box; }
+}
+function rotCanvas(src, W, ang, bg) {      // image redressée de « ang » degrés, coins remplis avec la couleur du fond
+  const H = Math.round(W * src.height / src.width), c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d', { willReadFrequently: true }); x.fillStyle = `rgb(${bg[0]},${bg[1]},${bg[2]})`; x.fillRect(0, 0, W, H);
+  x.translate(W / 2, H / 2); x.rotate(ang * Math.PI / 180); x.drawImage(src, -W / 2, -H / 2, W, H); return c;
+}
+// → { box: { x, y, w, h }, src } : la carte repérée dans « src » (la photo, ou la photo redressée si la carte est penchée), ou null
 function detectCardBox(bmp) {
   try {
-    const a = edgeSearch(bmp, 48); if (!a || a.sc < 8) return null;      // contour trop peu net (image vide, fond uni…)
-    const k = 4, b = edgeSearch(bmp, 48 * k, { x0: a.x0 * k - 14, x1: a.x0 * k + 14, y0: a.y0 * k - 14, y1: a.y0 * k + 14, h0: a.h * k - 14, h1: a.h * k + 14 }) || null;
+    const t = document.createElement('canvas'); t.width = 32; t.height = Math.max(8, Math.round(32 * bmp.height / bmp.width));
+    const tx = t.getContext('2d', { willReadFrequently: true }); tx.drawImage(bmp, 0, 0, t.width, t.height);
+    const td = tx.getImageData(0, 0, t.width, t.height).data, rg = [[], [], []];
+    for (let yy = 0; yy < t.height; yy++) for (let xx = 0; xx < t.width; xx++) if (xx < 2 || yy < 2 || xx >= t.width - 2 || yy >= t.height - 2) { const o = (yy * t.width + xx) * 4; rg[0].push(td[o]); rg[1].push(td[o + 1]); rg[2].push(td[o + 2]); }
+    const bg = rg.map((a) => a.sort((p, q) => p - q)[a.length >> 1]);
+    let best = null, zero = null;
+    const tryAng = (ang) => { const a = edgeSearch(rotCanvas(bmp, 48, ang, bg), 48); if (a && ang === 0) zero = { ang, a }; if (a && (!best || a.sc > best.a.sc)) best = { ang, a }; };
+    for (const ang of [0, -4, 4, -8, 8]) tryAng(ang);       // la carte peut être posée de travers : on cherche aussi les petits angles
+    window.__detSc = best ? best.a.sc : null;
+    if (!best || best.a.sc < 8) return null;
+    const a0 = best.ang; for (const d of [-2, 2]) tryAng(a0 + d);
+    // un petit angle ne vaut pas la peine de rééchantillonner (le texte minuscule s'en trouve flou) : on reste sur la photo d'origine
+    if (zero && Math.abs(best.ang) <= 1.5 && zero.a.sc >= best.a.sc * 0.85) best = zero;
+    const { ang, a } = best, k = 4, hi = rotCanvas(bmp, 48 * k, ang, bg);
+    const b = edgeSearch(hi, 48 * k, { x0: a.x0 * k - 10, x1: a.x0 * k + 10, y0: a.y0 * k - 10, y1: a.y0 * k + 10, h0: a.h * k - 10, h1: a.h * k + 10 });
     const r = b || { x0: a.x0 * k, y0: a.y0 * k, w: a.w * k, h: a.h * k, W: a.W * k, H: a.H * k };
-    return { x: r.x0 / r.W * bmp.width, y: r.y0 / r.H * bmp.height, w: r.w / r.W * bmp.width, h: r.h / r.H * bmp.height };
+    const src = ang ? rotCanvas(bmp, bmp.width, ang, bg) : bmp;
+    const box0 = { x: r.x0 / r.W * src.width, y: r.y0 / r.H * src.height, w: r.w / r.W * src.width, h: r.h / r.H * src.height };
+    return { box: window.__snap ? snapBox(src, box0) : box0, box0, src, ang };
   } catch { return null; }
 }
-async function ocrPhoto(file, accept) {
-  const w = await getOcr(), bmp = await createImageBitmap(file); let text = '', photo = null;
-  const box = detectCardBox(bmp);
-  if (box) {                          // la carte est repérée : on lit le nom (haut) et le numéro / l'extension (bas), agrandis ; bien plus fiable que la photo entière
-    const ks = Math.min(2.5, 1500 / box.w);
-    const crop = (fx0, fy0, fx1, fy1, kk = ks) => { const c = document.createElement('canvas'); const sx = box.x + box.w * fx0, sy = box.y + box.h * fy0, sw = box.w * (fx1 - fx0), sh = box.h * (fy1 - fy0); c.width = Math.round(sw * kk); c.height = Math.round(sh * kk); c.getContext('2d').drawImage(bmp, sx, sy, sw, sh, 0, 0, c.width, c.height); return c; };
-    photo = crop(0, 0, 1, 1, Math.min(1, 1000 / box.h));      // la carte seule (pour le classement visuel)
-    // bandes généreuses (le repérage du cadre peut être décalé de quelques % en hauteur) : le nom en haut ; en bas, le numéro lu avec une liste de chiffres autorisés
-    // (« 067/128 » : c'est ce qui le rend lisible) puis l'extension imprimée en majuscules
-    const flat = (c) => { try { const t = document.createElement('canvas'); t.width = 32; t.height = 16; const x = t.getContext('2d', { willReadFrequently: true }); x.drawImage(c, 0, 0, 32, 16); const d = x.getImageData(0, 0, 32, 16).data; let m = 0; for (let i = 0; i < d.length; i += 4) m += d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11; m /= 512; let v = 0; for (let i = 0; i < d.length; i += 4) { const g = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11; v += (g - m) ** 2; } return Math.sqrt(v / 512) < 10; } catch { return false; } };
-    const okc = (c) => c.width >= 240 && c.height >= 40 && !flat(c);      // une bande minuscule ou uniforme fait protester le lecteur
-    const rd = async (c, psm, wl) => { if (!okc(c)) return ''; await w.setParameters({ tessedit_pageseg_mode: psm, tessedit_char_whitelist: wl || '' }); return '\n' + (await w.recognize(c)).data.text; };
-    text += await rd(crop(0.08, 0.0, 0.75, 0.14), '6');
-    for (const [sc, y0, y1] of [[1.3, 0.88, 1.07], [1, 0.86, 1.09], [1.7, 0.9, 1.06], [1.3, 0.84, 1.1]]) {       // le numéro est relu à d'autres échelles tant qu'aucune paire « n/total » plausible n'est trouvée
-      text += await rd(crop(0, y0, 1, y1, ks * sc), '6', '0123456789/');
+/* Lecture d'une photo : plusieurs tentatives de plus en plus poussées, on s'arrête dès qu'un résultat est sûr.
+   « score(texte) » (fourni par l'appelant) : 3 = numéro + total (+ nom ou extension) retrouvés, 2 = numéro retrouvé, 1 = nom seul, 0 = rien.
+   Tentatives : (1) carte repérée et redressée, bandes lues telles quelles ; (2) mêmes bandes en niveaux de gris contrastés ; (3) cadre décalé / autres échelles ;
+   (4) bandes de la photo entière sans repérage ; (5) lecture classique de la photo entière. Au final, le texte qui donne le meilleur score. */
+async function ocrPhoto(file, score, onStep) {
+  const w = await getOcr(), bmp = await createImageBitmap(file);
+  const det = detectCardBox(bmp), box = det && det.box, srcImg = det ? det.src : bmp;
+  const tries = [];                       // { text, sc, photo, cropped }
+  let done = false;
+  const flat = (c) => { try { const t = document.createElement('canvas'); t.width = 32; t.height = 16; const x = t.getContext('2d', { willReadFrequently: true }); x.drawImage(c, 0, 0, 32, 16); const d = x.getImageData(0, 0, 32, 16).data; let m = 0; for (let i = 0; i < d.length; i += 4) m += d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11; m /= 512; let v = 0; for (let i = 0; i < d.length; i += 4) { const g = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11; v += (g - m) ** 2; } return Math.sqrt(v / 512) < 10; } catch { return false; } };
+  const okc = (c) => c.width >= 240 && c.height >= 40 && !flat(c);      // une bande minuscule ou uniforme fait protester le lecteur
+  const rd = async (c, psm, wl) => { if (!okc(c)) return ''; await w.setParameters({ tessedit_pageseg_mode: psm, tessedit_char_whitelist: wl || '' }); const t = '\n' + (await w.recognize(c)).data.text; await w.setParameters({ tessedit_char_whitelist: '' }); return t; };
+  const grab = (src, bx, kk, filt, plain) => (fx0, fy0, fx1, fy1, k2 = kk) => {      // bande de la carte (coordonnées relatives au cadre bx), agrandie
+    const c = document.createElement('canvas'), sx = bx.x + bx.w * fx0, sy = bx.y + bx.h * fy0, sw = bx.w * (fx1 - fx0), sh = bx.h * (fy1 - fy0);
+    c.width = Math.max(1, Math.round(sw * k2)); c.height = Math.max(1, Math.round(sh * k2));
+    const cx = c.getContext('2d'); if (filt && !plain) cx.filter = 'grayscale(1) contrast(1.4)'; cx.drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height); return c;
+  };
+  const NUMS = '0123456789/';
+  let acc = '';                           // texte cumulé de toutes les tentatives : le nom lu dans l'une et le numéro lu dans l'autre se complètent
+  const evalTry = (text, photo, cropped) => {
+    const sc = score(text); tries.push({ text, sc, photo, cropped }); acc += '\n' + text;
+    if (sc >= 3) done = true;
+    else if (tries.length > 1) { const sa = score(acc); if (sa >= 3) { tries.push({ text: acc, sc: sa, photo, cropped }); done = true; } }
+    return sc;
+  };
+  // lit nom + numéro sur un cadre ; renvoie le texte
+  async function readCard(bx, filt, scales) {
+    const ks = Math.min(2.5, 1500 / bx.w), cr = grab(srcImg, bx, ks, filt);
+    let text = await rd(cr(0.08, 0.0, 0.75, 0.14), '6');
+    text += await rd(cr(0.03, 0.0, 0.9, 0.2), '6');                    // bande du haut plus large (nom de l'évolution, « Pv »)
+    for (const [sc, y0, y1] of scales) {
+      text += await rd(cr(0, y0, 1, y1, ks * sc), '6', NUMS);
       const pn = parseCardText(text); if (pn.n != null && pn.total != null && String(pn.n).length + String(pn.total).length >= 5) break;
     }
-    await w.setParameters({ tessedit_char_whitelist: '' });
+    return text;
   }
-  window.__cropDbg = { box, text };
-  let sure = false; try { sure = !!(box && accept && accept(text)); } catch { sure = false; }
-  if (!sure) {                         // résultat pas assez sûr (cadre mal repéré…) : on repart des passes complètes sur la photo entière, sans le texte des bandes
-    text = '';
-    const cs = await photoCanvases(file);
-    await w.setParameters({ tessedit_pageseg_mode: '6' });
-    for (const c of cs) text += '\n' + (await w.recognize(c)).data.text;      // page, numéro (bas), nom (haut, deux hauteurs)
-    photo = cs[0];                     // cadre non fiable : classement visuel sur la photo entière (3 cadrages)
+  const plainPhoto = () => grab(srcImg, box, Math.min(1, 1000 / box.h), false, true)(0, 0, 1, 1, Math.min(1, 1000 / box.h));
+  if (box) {
+    if (onStep) onStep('Lecture de la carte…');
+    const photo = plainPhoto();
+    evalTry(await readCard(box, false, [[1.3, 0.88, 1.07], [1, 0.86, 1.09], [1.7, 0.9, 1.06]]), photo, true);
+    if (!done) { if (onStep) onStep('Lecture renforcée…'); evalTry(await readCard(box, true, [[1.3, 0.88, 1.07], [1, 0.86, 1.09], [1.7, 0.9, 1.06], [2.1, 0.9, 1.05]]), photo, true); }
+    // cadre décalé : le repérage peut être faussé de quelques %
+    for (const [dx, dy, dh] of [[0, 0.03, 0], [0, -0.03, 0], [-0.03, 0, 0.03], [0.03, 0, 0.03]]) {
+      if (done || Math.max(0, ...tries.map((t) => t.sc)) < 1) break;       // rien lu du tout dans le cadre : inutile de le décaler, on passe aux bandes de la photo entière
+      const b2 = { x: box.x + box.w * dx, y: box.y + box.h * dy, w: box.w * (1 + dh * 0.5), h: box.h * (1 + dh) };
+      if (onStep) onStep('Nouvel essai de lecture…');
+      evalTry(await readCard(b2, true, [[1.3, 0.88, 1.07], [1, 0.84, 1.1]]), photo, true);
+    }
+  }
+  if (!done) {                            // sans repérage : bandes de la photo entière (le numéro est en bas de la carte, le nom en haut)
+    if (onStep) onStep('Analyse de toute la photo…');
+    const full = { x: 0, y: 0, w: bmp.width, h: bmp.height }, ks = Math.min(2.5, 1800 / bmp.width), cr = grab(bmp, full, ks, true);
+    let text = '';
+    for (const [y0, y1] of [[0.62, 0.8], [0.74, 0.92], [0.84, 1]]) { text += await rd(cr(0, y0, 1, y1), '6', NUMS); if (done) break; }
+    for (const [y0, y1] of [[0.0, 0.2], [0.1, 0.3], [0.18, 0.38]]) text += await rd(cr(0, y0, 1, y1), '6');
+    const cs = await photoCanvases(file); await w.setParameters({ tessedit_pageseg_mode: '6' });
+    const full0 = cs[0];
+    evalTry(text, full0, false);
+    if (!done) { let t2 = ''; for (const c of cs) t2 += '\n' + (await w.recognize(c)).data.text; evalTry(t2, full0, false); }   // lecture classique de la photo entière
   }
   if (bmp.close) bmp.close();
-  return { text, full: photo, cropped: sure };
+  const best = tries.reduce((b, t) => (!b || t.sc > b.sc ? t : b), null) || { text: '', photo: null, cropped: false };
+  window.__scanDbg = { tries: tries.map((t) => ({ sc: t.sc, cropped: t.cropped, text: t.text.slice(0, 120) })) };
+  return { text: best.text, full: best.photo, cropped: best.cropped, score: best.sc };
 }
 /* ---------- Scan : classement visuel des candidats ----------
    Beaucoup de cartes portent le même nom (Pikachu : des centaines) ; quand le numéro imprimé n'est pas lisible, on compare l'illustration de la photo
@@ -1527,30 +1612,56 @@ function visDesc(src, box) {
   return { g, hb };
 }
 function visSim(a, b) { let dot = 0, inter = 0; for (let i = 0; i < 108; i++) dot += a.g[i] * b.g[i]; for (let i = 0; i < 12; i++) inter += Math.min(a.hb[i], b.hb[i]); return dot * 0.6 + inter * 0.4; }
-const loadCorsImage = (src) => new Promise((res) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+/* Empreintes visuelles précalculées (data/vis.bin : 120 octets par carte ; outil tools/build-vis.py) : plus aucune image à télécharger au moment du scan,
+   donc rien qui dépende des droits d'accès (CORS) du serveur d'images, et un classement instantané, même hors connexion. */
+let visPromise = null;
+function loadVis() {
+  if (!visPromise) visPromise = Promise.all([fetch('data/vis.bin').then((r) => (r.ok ? r.arrayBuffer() : null)), fetch('data/vis-index.json').then((r) => (r.ok ? r.json() : null))])
+    .then(([buf, index]) => (buf && index ? { bytes: new Uint8Array(buf), index } : null)).catch(() => null);
+  return visPromise;
+}
+function visOf(vis, r) {      // empreinte d'une fiche de la recherche, ou null (carte sans image)
+  const e = vis.index[r.sid]; if (!e || r.card.vi == null) return null;
+  const o = (e.o + r.card.vi) * 120; if (o + 120 > vis.bytes.length) return null;
+  const b = vis.bytes.subarray(o, o + 120); let any = 0; for (let i = 0; i < 120; i++) any |= b[i]; if (!any) return null;
+  const g = new Float32Array(108), hb = new Float32Array(12); for (let i = 0; i < 108; i++) g[i] = (b[i] - 128) / 127; for (let i = 0; i < 12; i++) hb[i] = b[108 + i] / 255;
+  return { g, hb };
+}
+function photoDescs(photo, cropped) {
+  const W = photo.width, H = photo.height;
+  // carte repérée : cadrage exact + petits décalages / échelles (le cadre peut être faussé de quelques %) ; sinon 3 cadrages possibles
+  const frames = cropped ? [[0, 0, 1], [0.025, 0.025, 1], [-0.025, -0.025, 1], [0.03, -0.03, 1], [-0.03, 0.03, 1], [0, 0, 0.92], [0, 0, 1.08]] : [[0, 0, 1], [0, 0, 0.85], [0, 0, 0.7]];
+  return frames.map(([dx, dy, sc]) => {
+    const ch = sc, cw = cropped ? sc : Math.min(1, sc * 0.716 * H / W), x0 = 0.5 - cw / 2 + dx, y0 = 0.5 - ch / 2 + dy;
+    return visDesc(photo, [Math.max(0, x0 + cw * VIS_ART[0]), Math.max(0, y0 + ch * VIS_ART[1]), Math.min(1, x0 + cw * VIS_ART[2]), Math.min(1, y0 + ch * VIS_ART[3])]);
+  });
+}
 // → identifiants réordonnés (les cartes dont le numéro correspond gardent un bonus) ; en cas d'échec, l'ordre d'origine
 async function rerankVisual(idx, ids, hits, photo, cropped) {
   try {
+    const vis = await loadVis(); if (!vis) return ids;
     if (!idx.byId) idx.byId = new Map(idx.recs.map((r) => [r.card.id, r]));
-    const W = photo.width, H = photo.height, pd = (cropped ? [1] : [1, 0.85, 0.7]).map((sc) => {      // carte détectée : cadrage exact ; sinon 3 cadrages possibles
-      const ch = sc, cw = cropped ? 1 : Math.min(1, sc * 0.716 * H / W), x0 = 0.5 - cw / 2, y0 = 0.5 - ch / 2;
-      return visDesc(photo, [x0 + cw * VIS_ART[0], y0 + ch * VIS_ART[1], x0 + cw * VIS_ART[2], y0 + ch * VIS_ART[3]]);
-    });
-    const top = ids.slice(0, 100), score = new Map();
-    let next = 0;
-    const worker = async () => {
-      while (next < top.length) {
-        const id = top[next++], r = idx.byId.get(id); if (!r || !r.card.image) continue;
-        const im = await loadCorsImage(imgLow(r.card)); if (!im) continue;
-        try { const d = visDesc(im, VIS_ART); score.set(id, Math.max(...pd.map((p) => visSim(p, d)))); } catch { /* image illisible : ignorée */ }
-      }
-    };
-    await Promise.race([Promise.all(Array.from({ length: 10 }, worker)), new Promise((r) => setTimeout(r, 7000))]);
+    const pd = photoDescs(photo, cropped), top = ids.slice(0, 200), score = new Map();
+    for (const id of top) { const r = idx.byId.get(id), d = r && visOf(vis, r); if (d) score.set(id, Math.max(...pd.map((p) => visSim(p, d)))); }
+    window.__visDbg = [...score.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
     if (score.size < 2) return ids;
     const avg = [...score.values()].reduce((a, b) => a + b, 0) / score.size;
     const key = (id, i) => (score.has(id) ? score.get(id) : avg) + (hits && hits.has(id) ? 0.25 : 0) - 0.0005 * i;
-    return [...top.map((id, i) => [id, key(id, i)]).sort((a, b) => b[1] - a[1]).map(([id]) => id), ...ids.slice(100)];
+    const out = [...top.map((id, i) => [id, key(id, i)]).sort((a, b) => b[1] - a[1]).map(([id]) => id), ...ids.slice(200)]; out.vs = score; return out;
   } catch { return ids; }
+}
+// recherche visuelle dans toutes les cartes (quand ni le nom ni le numéro n'ont pu être lus) → les n cartes qui ressemblent le plus à la photo
+async function visualSearch(idx, photo, cropped, n = 20) {
+  try {
+    const vis = await loadVis(); if (!vis) return [];
+    const pd = photoDescs(photo, cropped), best = [];
+    for (const r of idx.recs) {
+      const d = visOf(vis, r); if (!d) continue;
+      let sc = -9; for (const p of pd) { const v = visSim(p, d); if (v > sc) sc = v; }
+      if (best.length < n || sc > best[best.length - 1][1]) { best.push([r.card.id, sc]); best.sort((a, b) => b[1] - a[1]); if (best.length > n) best.pop(); }
+    }
+    return best.filter(([, sc]) => sc >= 0.7);      // [id, ressemblance] ; en dessous, la ressemblance n'est pas assez nette pour proposer quoi que ce soit
+  } catch { return []; }
 }
 function parseCardText(text) {
   const t = text.replace(/[Il|]/g, '1').toUpperCase();
@@ -1609,7 +1720,10 @@ function matchScan(idx, p) {
   const best = pool.some((x) => x.numHit) ? pool.filter((x) => x.numHit) : pool;
   const ids = best.map((x, i) => [x, i]).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 120).map(([x]) => x.id);   // à score égal : extension la plus récente d'abord
   ids.hits = new Set(best.filter((x) => x.numHit).map((x) => x.id));
-  ids.conf = best.some((x) => x.numHit && (!x.inj || x.ab));     // numéro retrouvé avec un nom lu ou l'extension imprimée reconnue : résultat sûr
+  const injStrict = best.filter((x) => x.inj && x.strict).length, namedHit = best.some((x) => !x.inj && x.numHit);
+  ids.conf = best.some((x) => x.numHit && (!x.inj || x.ab));                       // numéro retrouvé avec un nom lu ou l'extension imprimée reconnue : résultat sûr
+  // note de la lecture : 3 sûr, 2 nom + numéro non confirmés, 1 nom seul, 0,5 numéro + total seuls (un couple lu au hasard peut tomber juste : jamais préféré à un nom), 0 rien
+  ids.score = ids.conf ? 3 : namedHit ? 2 : named.length ? 1 : injStrict ? 0.5 : 0;     // numéro retrouvé avec un nom lu ou l'extension imprimée reconnue : résultat sûr
   return ids;
 }
 
@@ -1791,10 +1905,19 @@ async function showSearchInner(L, my, preset = {}) {
     scanBtn.disabled = true; summary.textContent = 'Analyse de la photo… (la première fois, quelques secondes)';
     const ldScan = loader.start('Analyse de la photo');
     try {
-      const { text, full, cropped } = await ocrPhoto(file, (t) => matchScan(idx, parseCardText(t)).conf); if (my !== tok) return;
-      window.__scanDbg = { text, cropped };      // lecture brute de la dernière photo (diagnostic)
+      const { text, full, cropped, score: readScore } = await ocrPhoto(file, (t) => { const r = matchScan(idx, parseCardText(t)); return r.score; }, (m) => { summary.textContent = 'Analyse de la photo · ' + m; }); if (my !== tok) return;
       let ids = matchScan(idx, parseCardText(text));
       if (ids.length > 1) { const hits = ids.hits; ids = await rerankVisual(idx, ids, hits, full, cropped); if (my !== tok) return; }
+      // lecture pas sûre (ou rien de lu) : on cherche aussi parmi toutes les cartes celles dont l'illustration ressemble à la photo ; si l'une ressemble nettement
+      // plus que les candidats du texte, elle passe devant
+      if (full && (readScore || 0) < 3) {
+        const vs = await visualSearch(idx, full, cropped, 12); if (my !== tok) return;
+        const topText = ids.vs && ids.vs.size ? Math.max(...ids.vs.values()) : -1;
+        if (vs.length && (!ids.length || (vs[0][1] >= 0.8 && vs[0][1] > topText + 0.04))) {
+          const first = vs.map(([id]) => id); ids = [...first, ...ids.filter((id) => !first.includes(id))];
+          toast(readScore ? 'Lecture incertaine : cartes qui ressemblent le plus à la photo en premier.' : 'Ni nom ni numéro lisibles : voici les cartes qui ressemblent le plus à la photo.');
+        }
+      }
       if (!ids.length) { f.ids = f.rank = null; run(); toast('Carte non reconnue. Photo de face, bien éclairée, nom et numéro lisibles ; ou tapez son nom.'); }
       else {
         q.value = ''; f.ids = new Set(ids); f.rank = new Map(ids.map((id, i) => [id, i])); run();
