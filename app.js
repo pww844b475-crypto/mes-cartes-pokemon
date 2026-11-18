@@ -1325,10 +1325,25 @@ async function showSetInner(L, setId, my) {
   const setcard = h('section', { class: 'setcard' },
     h('div', { class: 'sc-top' }, logoBox, h('div', { class: 'sc-info' }, h('h2', {}, parts[0].name), meta0[1] ? h('p', {}, 'Date de sortie : ' + fmtD(meta0[1])) : null, meta0[2] ? h('span', { class: 'sc-abbr' }, meta0[2]) : null)),
     progress, rbk);
-  let view = ['cartes', 'liste', 'grille'].includes(store.get(K.view)) ? store.get(K.view) : 'grille';
-  const VIEWS = [['cartes', 'Cartes'], ['liste', 'Liste'], ['grille', 'Grille']];
-  const applyView = () => { VIEWS.forEach(([k]) => main.classList.toggle('view-' + k, k === view)); viewBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(VIEWS[i][0] === view))); };
-  const viewBtns = VIEWS.map(([k, l]) => h('button', { type: 'button', 'aria-pressed': String(k === view), onclick: () => { view = k; store.set(K.view, k); applyView(); } }, l));
+  // Affichage par défaut : éventail (la carte du centre, la précédente et la suivante visibles), pour toutes les cartes de l'extension, possédées ou non
+  const VIEWS = [['eventail', 'Éventail'], ['cartes', 'Cartes'], ['liste', 'Liste'], ['grille', 'Grille']];
+  let view = VIEWS.some(([k]) => k === store.get('cartes.view2')) ? store.get('cartes.view2') : 'eventail';
+  const cfSlot = h('div', { class: 'carslot' });
+  function paintCf() {
+    if (view !== 'eventail' || !main.isConnected) { cfSlot.hidden = true; return; }
+    const vis = sections.flatMap((x) => x.tiles).filter((t) => !t.el.hidden);
+    cfSlot.hidden = !vis.length;
+    if (!vis.length) { cfSlot.replaceChildren(); return; }
+    const items = vis.map((t) => { const e = priceCache[t.card.id]; return { card: t.card, name: t.card.name, sub: '#' + lidShow(t.card.localId) + (qtyTotal(t.mine[t.card.id]) > 0 ? ' · possédée' : ''), price: blend(t.card.id, e ? (e[0] ?? e[1]) : null) }; });
+    const keep = cfSlot.querySelector('.cf-track') ? cfSlot.querySelector('.cf-track').scrollLeft : 0;
+    cfSlot.replaceChildren(buildCoverflow(`${vis.length.toLocaleString('fr-FR')} carte${vis.length > 1 ? 's' : ''}`, items, (i) => openLightbox(vis, i, L)));
+    const tr = cfSlot.querySelector('.cf-track'); if (tr && keep) requestAnimationFrame(() => { tr.scrollLeft = keep; });
+  }
+  const applyView = () => {
+    VIEWS.forEach(([k]) => main.classList.toggle('view-' + k, k === view)); viewBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(VIEWS[i][0] === view)));
+    sections.forEach((x) => { x.el.style.display = view === 'eventail' ? 'none' : ''; }); paintCf();
+  };
+  const viewBtns = VIEWS.map(([k, l]) => h('button', { type: 'button', 'aria-pressed': String(k === view), onclick: () => { view = k; store.set('cartes.view2', k); applyView(); } }, l));
   const viewSeg = h('div', { class: 'vseg views', role: 'group', 'aria-label': 'Affichage des cartes' }, viewBtns);
 
   function apply() {
@@ -1346,12 +1361,14 @@ async function showSetInner(L, setId, my) {
       if (sec.tiles.length) sec.el.hidden = secShown === 0; // une partie sans carte visible disparaît pendant un filtre
     }
     none.hidden = shown > 0 || !allCards;
-    paintRbk();
+    paintRbk(); paintCf();
   }
   q.addEventListener('input', apply);
   apply(); applyView();
-  main.replaceChildren(...notes, setcard, viewSeg, ...sections.map((x) => x.el), none);
+  main.replaceChildren(...notes, setcard, viewSeg, cfSlot, ...sections.map((x) => x.el), none);
+  applyView();
   priceTiles(L, tiles, my);
+  for (const ms of [2500, 7000]) setTimeout(() => { if (main.isConnected && view === 'eventail' && my === tok) paintCf(); }, ms);      // les prix arrivent après l'affichage
 }
 
 /* ---------- Vue : recherche dans toute la collection (nom, extension, rareté, version, possession) ---------- */
@@ -1961,22 +1978,24 @@ function openLightbox(items, index, L) {
     const F = 'language=2&sellerCountry=12&minCondition=2', slug = cmStatic[it.card.id] || (cmSlugs[it.card.id] || '').replace(/\?$/, '');
     return slug ? `https://www.cardmarket.com/fr/Pokemon/Products/Singles/${slug}?${F}` : 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, lidShow(it.card.localId).replace(/[^A-Za-z0-9]/g, '')].filter(Boolean).join(' ')) + '&' + F;
   }
+  // Liens Cardmarket mis de côté pour l'instant (connexion exigée) : cartes.cmLinks = '1' les remet (direct, copie, repli).
+  const SHOW_CM_LINKS = () => store.get('cartes.cmLinks') === '1';      // interrupteur caché (réglage 'cartes.cmLinks' = '1')
   function paintLinks(it) {
     const c = it.card, term = [it.name, lidShow(c.localId).replace(/[^A-Za-z0-9]/g, '')].filter(Boolean).join(' ');
     linksEl.replaceChildren(...[
       h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term) + '&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1', target: '_blank', rel: 'noopener noreferrer' }, 'Ventes terminées sur eBay.fr ↗'),
-      ' · ',
-      h('a', { href: cmUrl(it), target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket (carte française, vendeurs France, NM) ↗'),
-      ' ',
-      h('button', { type: 'button', class: 'lb-copy', 'aria-label': 'Copier l’adresse Cardmarket', onclick: async () => { const u = cmUrl(it); try { await navigator.clipboard.writeText(u); toast('Adresse Cardmarket copiée.'); } catch { window.prompt('Adresse Cardmarket :', u); } } }, '📋 Copier'),
-      ' · ',
-      h('a', { href: cmFallbackUrl(it), target: '_blank', rel: 'noopener noreferrer' }, ((priceCache[it.card.id] || [])[3] ? 'ou page de la carte (choisir la version) ↗' : 'ou recherche Cardmarket ↗')),     // si l'adresse directe est introuvable
-      /\?$/.test(cmSlugs[it.card.id] || '') && !cmStatic[it.card.id] ? h('span', { class: 'lb-help' }, ' Adresse déduite, non vérifiée : si la page est introuvable, utilisez le second lien Cardmarket.') : null].filter(Boolean));
+      SHOW_CM_LINKS() ? ' · ' : null,
+      SHOW_CM_LINKS() ? h('a', { href: cmUrl(it), target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket (carte française, vendeurs France, NM) ↗') : null,
+      SHOW_CM_LINKS() ? ' ' : null,
+      SHOW_CM_LINKS() ? h('button', { type: 'button', class: 'lb-copy', 'aria-label': 'Copier l’adresse Cardmarket', onclick: async () => { const u = cmUrl(it); try { await navigator.clipboard.writeText(u); toast('Adresse Cardmarket copiée.'); } catch { window.prompt('Adresse Cardmarket :', u); } } }, '📋 Copier') : null,
+      SHOW_CM_LINKS() ? ' · ' : null,
+      SHOW_CM_LINKS() ? h('a', { href: cmFallbackUrl(it), target: '_blank', rel: 'noopener noreferrer' }, ((priceCache[it.card.id] || [])[3] ? 'ou page de la carte (choisir la version) ↗' : 'ou recherche Cardmarket ↗')) : null,
+      SHOW_CM_LINKS() && /\?$/.test(cmSlugs[it.card.id] || '') && !cmStatic[it.card.id] ? h('span', { class: 'lb-help' }, ' Adresse déduite, non vérifiée : si la page est introuvable, utilisez le second lien Cardmarket.') : null].filter(Boolean));
   }
   function show() {
     const it = items[i], c = it.card, info = infoOf(it);
     paintPrice(it); paintLinks(it); paintEbay(it);
-    if (L === 'fr' && !cmSlugs[c.id] && !cmStatic[c.id]) ensureCmSlug(c.id).then(() => { if (items[i] === it && lb) paintLinks(it); }).catch(() => {});
+    if (SHOW_CM_LINKS() && L === 'fr' && !cmSlugs[c.id] && !cmStatic[c.id]) ensureCmSlug(c.id).then(() => { if (items[i] === it && lb) paintLinks(it); }).catch(() => {});
     if (!priceCache[c.id] && L === 'fr') fetchPrice(L, c.id).then(() => { savePrices(); if (items[i] === it && lb) { paintPrice(it); paintLinks(it); } }).catch(() => { if (items[i] === it && lb) priceEl.textContent = 'Prix indisponible pour le moment.'; });
     nameEl.textContent = it.name;
     subEl.textContent = `#${it.numLabel || lidShow(c.localId)} · ${it.setName || ''} · ${i + 1}/${items.length}`;
@@ -2023,59 +2042,77 @@ const saveBoosters = (a) => store.set(K.boosters, JSON.stringify(a));
 const pullPct = (hits, n) => (n > 0 ? Math.round((hits / n) * 1000) / 10 : 0);
 function openBoosters(blocks, L) {
   const groups = blocks.flatMap((b) => b.items.map((g) => ({ g, block: b.name })));
-  const sel = h('select', { class: 'bo-set', 'aria-label': 'Extension ouverte' }, h('option', { value: '' }, 'Choisir l’extension…'),
-    ...blocks.map((b) => h('optgroup', { label: b.name }, b.items.map((g) => h('option', { value: g.id }, g.set.name || g.id)))));
-  const nIn = h('input', { class: 'qin bo-n', type: 'number', inputmode: 'numeric', min: '1', max: '9999', value: '1', 'aria-label': 'Nombre de boosters ouverts' });
-  const form = h('div', { class: 'bo-form' });
-  const stats = h('div', { class: 'bo-stats' });
-  let cur = null, rars = [];
-  const hitIn = new Map();
   const nameOf = (id) => { const x = groups.find((y) => y.g.id === id); return x ? (x.g.set.name || id) : id; };
-  function paintStats() {
-    const all = loadBoosters().filter((x) => cur && x.set === cur);
-    if (!cur) { stats.replaceChildren(); return; }
-    if (!all.length) { stats.replaceChildren(h('p', { class: 'lb-help' }, 'Aucune ouverture enregistrée pour cette extension.')); return; }
+  const sel = h('select', { class: 'bo-set', 'aria-label': 'Extension ouverte' }, h('option', { value: '' }, 'Choisir l’extension ouverte…'),
+    ...blocks.map((b) => h('optgroup', { label: b.name }, b.items.map((g) => h('option', { value: g.id }, g.set.name || g.id)))));
+  const body = h('div', { class: 'bo-body' });
+  let cur = null;
+  // compteur à gros boutons − / +
+  const stepper = (label, value, onChange, opts = {}) => {
+    const inp = h('input', { class: 'qin bo-in', type: 'number', inputmode: 'numeric', min: String(opts.min ?? 0), max: '9999', value: String(value), 'aria-label': label });
+    const set = (v) => { v = Math.max(opts.min ?? 0, Math.min(9999, Number.isFinite(v) ? v : 0)); inp.value = String(v); if (onChange) onChange(v); };
+    inp.addEventListener('focus', () => inp.select()); inp.addEventListener('change', () => set(parseInt(inp.value, 10)));
+    const el = h('div', { class: 'bo-step' }, h('button', { type: 'button', class: 'qb', 'aria-label': 'Un de moins : ' + label, onclick: () => set((parseInt(inp.value, 10) || 0) - 1) }, '−'), inp,
+      h('button', { type: 'button', class: 'qb', 'aria-label': 'Un de plus : ' + label, onclick: () => set((parseInt(inp.value, 10) || 0) + 1) }, '+'));
+    return { el, inp, get: () => Math.max(0, parseInt(inp.value, 10) || 0), reset: (v) => { inp.value = String(v); } };
+  };
+  // les communes et peu communes ne comptent pas comme « hits »
+  const isHit = (r) => !['commune', 'peu'].includes(rarityTier(r));
+  function graph(set) {
+    const all = loadBoosters().filter((x) => x.set === set);
+    if (!all.length) return h('p', { class: 'lb-help' }, 'Aucune ouverture enregistrée pour cette extension : vos statistiques apparaîtront ici et se cumuleront à chaque nouvelle ouverture.');
     const n = all.reduce((a, x) => a + x.n, 0), tot = {};
-    for (const x of all) for (const [r, c] of Object.entries(x.hits)) tot[r] = (tot[r] || 0) + (Number(c) || 0);
+    for (const x of all) for (const [r, c] of Object.entries(x.hits)) if (isHit(r)) tot[r] = (tot[r] || 0) + (Number(c) || 0);
     const rows = Object.entries(tot).filter(([, c]) => c > 0).sort((a, b) => rarityRank(a[0]) - rarityRank(b[0]));
-    stats.replaceChildren(
-      h('h3', {}, `Pull rate · ${nameOf(cur)}`),
-      h('p', { class: 'owned-total' }, h('b', {}, plural(n, 'booster ouvert', 'boosters ouverts')), ` · ${plural(rows.reduce((a, [, c]) => a + c, 0), 'hit', 'hits')} au total`),
-      rows.length ? h('div', { class: 'orows' }, rows.map(([r, c]) => h('div', { class: 'orow' }, h('div', { class: 'orow-l' }, h('span', { class: 'rn' }, r),
-        h('span', { class: 'rc' }, h('b', {}, `${pullPct(c, n).toLocaleString('fr-FR')} %`), ` · ${c}/${n}${c ? ` · 1 tous les ${(n / c).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} boosters` : ''}`))))) : h('p', { class: 'lb-help' }, 'Aucun hit noté pour le moment.'),
+    const maxPct = Math.max(1, ...rows.map(([, c]) => pullPct(c, n)));
+    const hitsTotal = rows.reduce((a, [, c]) => a + c, 0);
+    return h('div', { class: 'bo-graph' },
+      h('h3', {}, `Statistiques · ${nameOf(set)}`),
+      h('div', { class: 'bo-kpis' },
+        h('div', { class: 'bo-kpi' }, h('b', {}, n.toLocaleString('fr-FR')), h('span', {}, n > 1 ? 'boosters ouverts' : 'booster ouvert')),
+        h('div', { class: 'bo-kpi' }, h('b', {}, hitsTotal.toLocaleString('fr-FR')), h('span', {}, hitsTotal > 1 ? 'hits' : 'hit')),
+        h('div', { class: 'bo-kpi' }, h('b', {}, pullPct(hitsTotal, n).toLocaleString('fr-FR') + ' %'), h('span', {}, 'hits / booster'))),
+      rows.length ? h('div', { class: 'bo-bars', role: 'list' }, rows.map(([r, c]) => {
+        const pct = pullPct(c, n);
+        return h('div', { class: 'bo-bar', role: 'listitem', 'aria-label': `${r} : ${pct} %` },
+          h('div', { class: 'bo-bl' }, h('span', { class: 'rbi' }, rarityIcon(r, 20)), h('span', { class: 'bo-name' }, r)),
+          h('div', { class: 'bo-track' }, h('i', { class: 'rt-' + rarityTier(r), style: `width:${Math.max(3, (pct / maxPct) * 100).toFixed(1)}%` })),
+          h('div', { class: 'bo-val' }, h('b', {}, `${pct.toLocaleString('fr-FR')} %`), h('span', {}, ` · ${c}/${n} · 1 tous les ${(n / c).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} boosters`)));
+      })) : h('p', { class: 'lb-help' }, 'Aucun hit noté pour le moment.'),
       h('h3', {}, 'Ouvertures enregistrées'),
       h('div', { class: 'orows' }, all.slice().reverse().map((x) => h('div', { class: 'orow' }, h('div', { class: 'orow-l' },
         h('span', { class: 'rn' }, `${new Date(x.t).toLocaleDateString('fr-FR')} · ${plural(x.n, 'booster', 'boosters')}`),
-        h('span', { class: 'rc' }, Object.entries(x.hits).filter(([, c]) => c > 0).map(([r, c]) => `${c} ${r}`).join(', ') || 'aucun hit')),
-        h('button', { type: 'button', class: 'orow-go', 'aria-label': 'Supprimer cette ouverture', onclick: () => { saveBoosters(loadBoosters().filter((y) => y.id !== x.id)); paintStats(); } }, '✕')))));
+        h('span', { class: 'rc' }, Object.entries(x.hits).filter(([r, c]) => c > 0 && isHit(r)).map(([r, c]) => `${c} ${r}`).join(', ') || 'aucun hit')),
+        h('button', { type: 'button', class: 'orow-go', 'aria-label': 'Supprimer cette ouverture', onclick: () => { saveBoosters(loadBoosters().filter((y) => y.id !== x.id)); render(); } }, '✕')))));
   }
-  async function pick() {
-    cur = sel.value || null; hitIn.clear(); form.replaceChildren(); stats.replaceChildren();
-    if (!cur) return;
-    form.replaceChildren(h('p', { class: 'lb-help' }, 'Chargement des raretés…'));
+  async function render() {
+    body.replaceChildren();
+    if (!cur) { body.append(h('p', { class: 'lb-help' }, 'Choisissez l’extension dont vous avez ouvert des boosters. Chaque nouvelle ouverture s’ajoute à la même extension et met à jour les statistiques.')); return; }
+    body.append(h('p', { class: 'lb-help' }, 'Chargement des raretés…'));
     const x = groups.find((y) => y.g.id === cur);
     const maps = await Promise.all(x.g.members.map((m) => loadCardInfo(L, m.id)));
     if (sel.value !== cur) return;
-    rars = [...new Set(maps.flatMap((m) => [...m.values()].map((i) => i.rar).filter(Boolean)))].sort((a, b) => rarityRank(a) - rarityRank(b) || a.localeCompare(b, 'fr'));
-    form.replaceChildren(
-      h('label', { class: 'bo-line' }, h('span', {}, 'Boosters ouverts'), nIn),
-      h('p', { class: 'lb-help' }, 'Hits obtenus, par rareté (laisser 0 si aucun) :'),
-      ...rars.map((r) => { const i = h('input', { class: 'qin', type: 'number', inputmode: 'numeric', min: '0', max: '9999', value: '0', 'aria-label': `Hits : ${r}` }); i.addEventListener('focus', () => i.select()); hitIn.set(r, i); return h('label', { class: 'bo-line' }, h('span', {}, r), i); }),
-      h('button', { class: 'btn', type: 'button', onclick: save }, 'Enregistrer cette ouverture'));
-    paintStats();
+    const rars = [...new Set(maps.flatMap((m) => [...m.values()].map((i) => i.rar).filter(Boolean)))].filter(isHit).sort((a, b) => rarityRank(a) - rarityRank(b) || a.localeCompare(b, 'fr'));
+    const nStep = stepper('Nombre de boosters ouverts', 1, null, { min: 1 });
+    const hitSteps = new Map(rars.map((r) => [r, stepper(`Hits : ${r}`, 0)]));
+    const save = () => {
+      const n = nStep.get(); if (n < 1) { toast('Indiquez le nombre de boosters ouverts.'); return; }
+      const hits = {}; for (const [r, st] of hitSteps) if (st.get()) hits[r] = st.get();
+      const a = loadBoosters(); a.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), set: cur, name: nameOf(cur), n, hits, t: Date.now() });
+      saveBoosters(a); toast('Ouverture ajoutée à ' + nameOf(cur) + '.'); render();
+    };
+    body.replaceChildren(
+      h('div', { class: 'bo-form' },
+        h('h3', {}, 'Nouvelle ouverture'),
+        h('div', { class: 'bo-line big' }, h('span', { class: 'bo-name' }, 'Boosters ouverts'), nStep.el),
+        rars.length ? h('p', { class: 'lb-help' }, 'Hits obtenus (laissez 0 s’il n’y en a pas) :') : h('p', { class: 'lb-help' }, 'Aucune rareté de hit connue pour cette extension.'),
+        ...rars.map((r) => h('div', { class: 'bo-line' }, h('span', { class: 'rbi' }, rarityIcon(r, 24)), h('span', { class: 'bo-name' }, r), hitSteps.get(r).el)),
+        h('button', { class: 'btn', type: 'button', onclick: save }, '➕ Ajouter cette ouverture')),
+      graph(cur));
   }
-  function save() {
-    const n = Math.max(0, Math.min(9999, parseInt(nIn.value, 10) || 0));
-    if (n < 1) { toast('Indiquez le nombre de boosters ouverts.'); return; }
-    const hits = {};
-    for (const [r, i] of hitIn) { const c = Math.max(0, Math.min(9999, parseInt(i.value, 10) || 0)); if (c) hits[r] = c; }
-    const a = loadBoosters(); a.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), set: cur, name: nameOf(cur), n, hits, t: Date.now() });
-    saveBoosters(a); nIn.value = '1'; for (const i of hitIn.values()) i.value = '0';
-    toast('Ouverture enregistrée.'); paintStats();
-  }
-  sel.addEventListener('change', pick);
-  openSheet(h('h2', {}, 'Ouverture de booster'), h('p', { class: 'lb-help' }, 'Choisissez l’extension, le nombre de boosters ouverts et les hits obtenus : le taux d’obtention par rareté se calcule tout seul et se cumule pour chaque extension.'),
-    sel, form, stats, h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
+  sel.addEventListener('change', () => { cur = sel.value || null; render(); });
+  render();
+  openSheet(h('h2', {}, '🎁 Ouverture de booster'), sel, body, h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
 }
 
 function openSheet(...content) {

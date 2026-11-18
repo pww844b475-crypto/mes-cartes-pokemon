@@ -673,3 +673,23 @@ html { background: var(--bg); min-height: 100%; }
 @media (max-height: 620px) { .rpb { padding: 5px 10px; } }
 .rpb .rps, .rbkc .rbi { background: #d9def2; border-radius: 9px; padding: 3px; }     /* fond clair : les pictogrammes noirs restent lisibles en mode sombre */
 .lb-copy { border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: 999px; min-height: 32px; padding: 0 12px; font-size: 13px; font-weight: 600; margin-left: 4px; }
+
+/* ---------- Ouverture de booster : formulaire à compteurs et graphique par rareté ---------- */
+.bo-form h3, .bo-graph h3 { margin: 16px 0 8px; font-size: 16px; }
+.bo-line { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; background: var(--surface-2); margin-bottom: 6px; }
+.bo-line.big { padding: 12px; }
+.bo-line .bo-name { flex: 1; min-width: 0; font-weight: 600; }
+.bo-step { display: flex; align-items: center; gap: 6px; }
+.bo-step .qb { width: 40px; height: 40px; font-size: 22px; }
+.bo-step .bo-in { width: 64px; height: 40px; text-align: center; font-size: 17px; }
+.bo-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.bo-kpi { background: var(--surface-2); border-radius: 12px; padding: 10px 6px; text-align: center; display: grid; gap: 2px; }
+.bo-kpi b { font-size: 20px; } .bo-kpi span { font-size: 11.5px; color: var(--muted); }
+.bo-bars { display: grid; gap: 12px; margin-bottom: 8px; }
+.bo-bl { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-weight: 600; font-size: 14px; }
+.bo-bl .rbi { background: #d9def2; border-radius: 8px; padding: 2px; display: grid; place-items: center; }
+.bo-track { height: 14px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.bo-track i { display: block; height: 100%; border-radius: 999px; background: currentColor; }
+.bo-val { margin-top: 3px; font-size: 13px; color: var(--muted); } .bo-val b { color: var(--text); font-size: 15px; }
+.bo-graph .orow-l { flex-wrap: wrap; row-gap: 2px; }
+.bo-graph .orow-l .rn { flex: 1 1 100%; } .bo-graph .orow-l .rc { flex: 1 1 100%; white-space: normal; }
