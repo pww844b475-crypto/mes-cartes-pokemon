@@ -1444,7 +1444,7 @@ function edgeSearch(bmp, W, win) {
   const hMin = win ? win.h0 : Math.round(H * 0.26), hMax = win ? win.h1 : Math.floor(Math.min(H, W / CARD_RATIO)), g = Math.max(2, Math.round(W / 40));
   const N = 14;
   let best = null;
-  for (let h = hMin; h <= hMax; h++) for (const fw of (win ? [0.92, 0.96, 1, 1.04, 1.08] : [1])) {      // affinage : largeur libre (±10 %, perspective)
+  for (let h = hMin; h <= hMax; h++) for (const fw of (win ? [0.94, 1, 1.06] : [1])) {      // affinage : largeur libre (±10 %, perspective)
     const w = Math.round(h * CARD_RATIO * fw); if (w >= W || h >= H) continue;
     const xa = win ? win.x0 : 0, xb = win ? win.x1 : W - w - 1, ya = win ? win.y0 : 0, yb = win ? win.y1 : H - h - 1;
     for (let x0 = Math.max(0, xa); x0 <= Math.min(W - w - 1, xb); x0++) for (let y0 = Math.max(0, ya); y0 <= Math.min(H - h - 1, yb); y0++) {
@@ -1505,13 +1505,14 @@ function detectCardBox(bmp) {
     const bg = rg.map((a) => a.sort((p, q) => p - q)[a.length >> 1]);
     let best = null, zero = null;
     const tryAng = (ang) => { const a = edgeSearch(rotCanvas(bmp, 48, ang, bg), 48); if (a && ang === 0) zero = { ang, a }; if (a && (!best || a.sc > best.a.sc)) best = { ang, a }; };
-    for (const ang of [0, -3, 3, -6, 6, -9, 9]) tryAng(ang);       // la carte peut être posée de travers : on cherche aussi les petits angles
+    for (const ang of [0, -4, 4, -8, 8]) tryAng(ang);       // la carte peut être posée de travers : on cherche aussi les petits angles
+    window.__detSc = best ? best.a.sc : null;
     if (!best || best.a.sc < 8) return null;
-    const a0 = best.ang; for (const d of [-1.5, 1.5]) tryAng(a0 + d);
+    const a0 = best.ang; for (const d of [-2, 2]) tryAng(a0 + d);
     // un petit angle ne vaut pas la peine de rééchantillonner (le texte minuscule s'en trouve flou) : on reste sur la photo d'origine
     if (zero && Math.abs(best.ang) <= 1.5 && zero.a.sc >= best.a.sc * 0.85) best = zero;
     const { ang, a } = best, k = 4, hi = rotCanvas(bmp, 48 * k, ang, bg);
-    const b = edgeSearch(hi, 48 * k, { x0: a.x0 * k - 14, x1: a.x0 * k + 14, y0: a.y0 * k - 14, y1: a.y0 * k + 14, h0: a.h * k - 14, h1: a.h * k + 14 });
+    const b = edgeSearch(hi, 48 * k, { x0: a.x0 * k - 10, x1: a.x0 * k + 10, y0: a.y0 * k - 10, y1: a.y0 * k + 10, h0: a.h * k - 10, h1: a.h * k + 10 });
     const r = b || { x0: a.x0 * k, y0: a.y0 * k, w: a.w * k, h: a.h * k, W: a.W * k, H: a.H * k };
     const src = ang ? rotCanvas(bmp, bmp.width, ang, bg) : bmp;
     const box0 = { x: r.x0 / r.W * src.width, y: r.y0 / r.H * src.height, w: r.w / r.W * src.width, h: r.h / r.H * src.height };
@@ -1536,7 +1537,13 @@ async function ocrPhoto(file, score, onStep) {
     const cx = c.getContext('2d'); if (filt && !plain) cx.filter = 'grayscale(1) contrast(1.4)'; cx.drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height); return c;
   };
   const NUMS = '0123456789/';
-  const evalTry = (text, photo, cropped) => { const sc = score(text); tries.push({ text, sc, photo, cropped }); if (sc >= 3) done = true; return sc; };
+  let acc = '';                           // texte cumulé de toutes les tentatives : le nom lu dans l'une et le numéro lu dans l'autre se complètent
+  const evalTry = (text, photo, cropped) => {
+    const sc = score(text); tries.push({ text, sc, photo, cropped }); acc += '\n' + text;
+    if (sc >= 3) done = true;
+    else if (tries.length > 1) { const sa = score(acc); if (sa >= 3) { tries.push({ text: acc, sc: sa, photo, cropped }); done = true; } }
+    return sc;
+  };
   // lit nom + numéro sur un cadre ; renvoie le texte
   async function readCard(bx, filt, scales) {
     const ks = Math.min(2.5, 1500 / bx.w), cr = grab(srcImg, bx, ks, filt);
@@ -1556,7 +1563,7 @@ async function ocrPhoto(file, score, onStep) {
     if (!done) { if (onStep) onStep('Lecture renforcée…'); evalTry(await readCard(box, true, [[1.3, 0.88, 1.07], [1, 0.86, 1.09], [1.7, 0.9, 1.06], [2.1, 0.9, 1.05]]), photo, true); }
     // cadre décalé : le repérage peut être faussé de quelques %
     for (const [dx, dy, dh] of [[0, 0.03, 0], [0, -0.03, 0], [-0.03, 0, 0.03], [0.03, 0, 0.03]]) {
-      if (done) break;
+      if (done || Math.max(0, ...tries.map((t) => t.sc)) < 1) break;       // rien lu du tout dans le cadre : inutile de le décaler, on passe aux bandes de la photo entière
       const b2 = { x: box.x + box.w * dx, y: box.y + box.h * dy, w: box.w * (1 + dh * 0.5), h: box.h * (1 + dh) };
       if (onStep) onStep('Nouvel essai de lecture…');
       evalTry(await readCard(b2, true, [[1.3, 0.88, 1.07], [1, 0.84, 1.1]]), photo, true);
@@ -1640,7 +1647,7 @@ async function rerankVisual(idx, ids, hits, photo, cropped) {
     if (score.size < 2) return ids;
     const avg = [...score.values()].reduce((a, b) => a + b, 0) / score.size;
     const key = (id, i) => (score.has(id) ? score.get(id) : avg) + (hits && hits.has(id) ? 0.25 : 0) - 0.0005 * i;
-    return [...top.map((id, i) => [id, key(id, i)]).sort((a, b) => b[1] - a[1]).map(([id]) => id), ...ids.slice(200)];
+    const out = [...top.map((id, i) => [id, key(id, i)]).sort((a, b) => b[1] - a[1]).map(([id]) => id), ...ids.slice(200)]; out.vs = score; return out;
   } catch { return ids; }
 }
 // recherche visuelle dans toutes les cartes (quand ni le nom ni le numéro n'ont pu être lus) → les n cartes qui ressemblent le plus à la photo
@@ -1653,7 +1660,7 @@ async function visualSearch(idx, photo, cropped, n = 20) {
       let sc = -9; for (const p of pd) { const v = visSim(p, d); if (v > sc) sc = v; }
       if (best.length < n || sc > best[best.length - 1][1]) { best.push([r.card.id, sc]); best.sort((a, b) => b[1] - a[1]); if (best.length > n) best.pop(); }
     }
-    return best.map(([id]) => id);
+    return best.filter(([, sc]) => sc >= 0.7);      // [id, ressemblance] ; en dessous, la ressemblance n'est pas assez nette pour proposer quoi que ce soit
   } catch { return []; }
 }
 function parseCardText(text) {
@@ -1898,10 +1905,19 @@ async function showSearchInner(L, my, preset = {}) {
     scanBtn.disabled = true; summary.textContent = 'Analyse de la photo… (la première fois, quelques secondes)';
     const ldScan = loader.start('Analyse de la photo');
     try {
-      const { text, full, cropped } = await ocrPhoto(file, (t) => { const r = matchScan(idx, parseCardText(t)); return r.score; }, (m) => { summary.textContent = m; }); if (my !== tok) return;
+      const { text, full, cropped, score: readScore } = await ocrPhoto(file, (t) => { const r = matchScan(idx, parseCardText(t)); return r.score; }, (m) => { summary.textContent = 'Analyse de la photo · ' + m; }); if (my !== tok) return;
       let ids = matchScan(idx, parseCardText(text));
       if (ids.length > 1) { const hits = ids.hits; ids = await rerankVisual(idx, ids, hits, full, cropped); if (my !== tok) return; }
-      if (!ids.length && full) { ids = await visualSearch(idx, full, cropped); if (my !== tok) return; if (ids.length) toast('Ni nom ni numéro lisibles : voici les cartes qui ressemblent le plus à la photo.'); }
+      // lecture pas sûre (ou rien de lu) : on cherche aussi parmi toutes les cartes celles dont l'illustration ressemble à la photo ; si l'une ressemble nettement
+      // plus que les candidats du texte, elle passe devant
+      if (full && (readScore || 0) < 3) {
+        const vs = await visualSearch(idx, full, cropped, 12); if (my !== tok) return;
+        const topText = ids.vs && ids.vs.size ? Math.max(...ids.vs.values()) : -1;
+        if (vs.length && (!ids.length || (vs[0][1] >= 0.8 && vs[0][1] > topText + 0.04))) {
+          const first = vs.map(([id]) => id); ids = [...first, ...ids.filter((id) => !first.includes(id))];
+          toast(readScore ? 'Lecture incertaine : cartes qui ressemblent le plus à la photo en premier.' : 'Ni nom ni numéro lisibles : voici les cartes qui ressemblent le plus à la photo.');
+        }
+      }
       if (!ids.length) { f.ids = f.rank = null; run(); toast('Carte non reconnue. Photo de face, bien éclairée, nom et numéro lisibles ; ou tapez son nom.'); }
       else {
         q.value = ''; f.ids = new Set(ids); f.rank = new Map(ids.map((id, i) => [id, i])); run();
