@@ -675,6 +675,9 @@ async function ensureCmSlug(id) {
   // adresse déduite d'une règle non confirmée pour cette extension ? (partie d'une autre, promo, numéros à lettres, série EX, signe dans le nom) → « ? » = à vérifier
   const serie = (setMeta(own) || [])[0] || '';
   const doubt = CM_VERIFIED.has(own) ? '' : '?';       // adresse calculée (pas relevée dans data/cm) : toujours signalée « non vérifiée »
+  if (own === '30th' && /^[RGB]$/.test(d.localId)) {                  // 30 ans : les trois Mew R / G / B (lien réel fourni pour le G : …/Mew-V2-30CGRGB) → V1, V2, V3 dans l'ordre R, G, B (R et B non confirmés)
+    cmSlugs[id] = `${setS}/${nameS}-V${'RGB'.indexOf(d.localId) + 1}-${abbrS}${d.localId}RGB?`; store.set(K.cmslug, JSON.stringify(cmSlugs)); return;
+  }
   if (grp === '*') {                                                   // Zarbi : « A/28 »
     const ch = slugCm(lidShow(d.localId)); if (!ch) return;            // « ? » et « ! » : pas d'adresse connue → recherche
     const total = (sd.cards || []).filter((x) => numGroup(x.localId) === '*').length;
@@ -684,7 +687,7 @@ async function ensureCmSlug(id) {
     const lid0 = lidShow(d.localId), lm0 = serie === 'ecard' && lid0.match(/^([A-Za-z]+)0*(\d+)$/);
     const numS = lm0 ? slugCm(lm0[1] + lm0[2]) : slugCm(d.localId); if (!numS) return;
     const same = (sd.cards || []).filter((x) => slugCm(x.name) === nameS);
-    if (same.length > 1) {
+    if (same.length > 1 && own !== '30th') {      // 30 ans (liens réels : …/Pikachu-30C040 parmi 30 Pikachu) : le code à 3 chiffres suffit, pas de V1/V2
       same.sort((a, b) => ((numGroup(a.localId) === '') - (numGroup(b.localId) === '')) || lidShow(a.localId).localeCompare(lidShow(b.localId), 'en', { numeric: true }));
       const k = same.findIndex((x) => x.id === id); if (k >= 0) nameS += `-V${k + 1}`;
       // Épée et Bouclier (liens réels fournis) : la dernière de 3 versions ou plus n'a pas de suffixe de numéro (…/Galarian-Moltres-V-V3, …/Umbreon-VMAX-V3)
@@ -1953,9 +1956,9 @@ function openLightbox(items, index, L) {
   // fiche exacte de la carte avec les filtres : carte française, vendeur en France, Near Mint ou mieux
   // repli : page Cardmarket de la carte par numéro de produit (test réel : Products?idProduct=… ouvre la bonne carte dans la bonne extension, parfois une autre version) ; sans numéro de produit : recherche
   const cmFallbackUrl = (it) => { const e = priceCache[it.card.id], idp = e && e[3]; return idp ? `https://www.cardmarket.com/fr/Pokemon/Products?idProduct=${idp}` : cmSearchUrl(it); };
-  const cmSearchUrl = (it) => 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, lidShow(it.card.localId).replace(/[^A-Za-z0-9]/g, '')].filter(Boolean).join(' ')) + '&language=2';
+  const cmSearchUrl = (it) => 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, lidShow(it.card.localId).replace(/[^A-Za-z0-9]/g, '')].filter(Boolean).join(' ')) + '&language=2&sellerCountry=12&minCondition=2';
   function cmUrl(it) {
-    const F = 'language=2', slug = cmStatic[it.card.id] || (cmSlugs[it.card.id] || '').replace(/\?$/, '');
+    const F = 'language=2&sellerCountry=12&minCondition=2', slug = cmStatic[it.card.id] || (cmSlugs[it.card.id] || '').replace(/\?$/, '');
     return slug ? `https://www.cardmarket.com/fr/Pokemon/Products/Singles/${slug}?${F}` : 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, lidShow(it.card.localId).replace(/[^A-Za-z0-9]/g, '')].filter(Boolean).join(' ')) + '&' + F;
   }
   function paintLinks(it) {
