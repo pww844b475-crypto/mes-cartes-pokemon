@@ -675,6 +675,9 @@ async function ensureCmSlug(id) {
   // adresse déduite d'une règle non confirmée pour cette extension ? (partie d'une autre, promo, numéros à lettres, série EX, signe dans le nom) → « ? » = à vérifier
   const serie = (setMeta(own) || [])[0] || '';
   const doubt = CM_VERIFIED.has(own) ? '' : '?';       // adresse calculée (pas relevée dans data/cm) : toujours signalée « non vérifiée »
+  if (own === '30th' && /^[RGB]$/.test(d.localId)) {                  // 30 ans : les trois Mew R / G / B (lien réel fourni pour le G : …/Mew-V2-30CGRGB) → V1, V2, V3 dans l'ordre R, G, B (R et B non confirmés)
+    cmSlugs[id] = `${setS}/${nameS}-V${'RGB'.indexOf(d.localId) + 1}-${abbrS}${d.localId}RGB?`; store.set(K.cmslug, JSON.stringify(cmSlugs)); return;
+  }
   if (grp === '*') {                                                   // Zarbi : « A/28 »
     const ch = slugCm(lidShow(d.localId)); if (!ch) return;            // « ? » et « ! » : pas d'adresse connue → recherche
     const total = (sd.cards || []).filter((x) => numGroup(x.localId) === '*').length;
