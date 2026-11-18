@@ -1953,9 +1953,9 @@ function openLightbox(items, index, L) {
   // fiche exacte de la carte avec les filtres : carte française, vendeur en France, Near Mint ou mieux
   // repli : page Cardmarket de la carte par numéro de produit (test réel : Products?idProduct=… ouvre la bonne carte dans la bonne extension, parfois une autre version) ; sans numéro de produit : recherche
   const cmFallbackUrl = (it) => { const e = priceCache[it.card.id], idp = e && e[3]; return idp ? `https://www.cardmarket.com/fr/Pokemon/Products?idProduct=${idp}` : cmSearchUrl(it); };
-  const cmSearchUrl = (it) => 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, lidShow(it.card.localId).replace(/[^A-Za-z0-9]/g, '')].filter(Boolean).join(' ')) + '&language=2&sellerCountry=12&minCondition=2';
+  const cmSearchUrl = (it) => 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, lidShow(it.card.localId).replace(/[^A-Za-z0-9]/g, '')].filter(Boolean).join(' ')) + '&language=2';
   function cmUrl(it) {
-    const F = 'language=2&sellerCountry=12&minCondition=2', slug = cmStatic[it.card.id] || (cmSlugs[it.card.id] || '').replace(/\?$/, '');
+    const F = 'language=2', slug = cmStatic[it.card.id] || (cmSlugs[it.card.id] || '').replace(/\?$/, '');
     return slug ? `https://www.cardmarket.com/fr/Pokemon/Products/Singles/${slug}?${F}` : 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, lidShow(it.card.localId).replace(/[^A-Za-z0-9]/g, '')].filter(Boolean).join(' ')) + '&' + F;
   }
   function paintLinks(it) {
