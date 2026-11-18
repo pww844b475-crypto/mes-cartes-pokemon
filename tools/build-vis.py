@@ -47,7 +47,7 @@ def main():
         if os.path.exists(out) and not sys.argv[1:]: continue
         rows = names[sid]; serie = meta[sid][0]
         def one(r):
-            odd = len(r) > 2 and isinstance(r[2], str); lid = r[1] if odd else r[0]; noimg = (r[3] == 0) if odd else (len(r) > 2 and r[2] == 0)
+            odd = len(r) > 2 and isinstance(r[2], str); lid = r[1] if odd else r[0]; noimg = (len(r) > 3 and r[3] == 0) if odd else (len(r) > 2 and r[2] == 0)
             if noimg: return bytes(120)
             for lang in ('fr', 'en'):
                 d = fetch(f'https://assets.tcgdex.net/{lang}/{serie}/{sid}/{lid}/low.webp')
