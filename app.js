@@ -1427,44 +1427,44 @@ async function photoCanvases(file) { // photo entière (réduite), bande du bas 
   if (bmp.close) bmp.close();
   return out;
 }
-/* Détection de la carte dans la photo : on cherche le rectangle de proportions 63×88 (une carte) dont le contour porte les bords les plus nets
-   (gradient de l'image réduite, intégrales par colonne / par ligne), d'abord en grossier puis affiné. Renvoie { x, y, w, h } en pixels de l'image d'origine, ou null. */
-const CARD_RATIO = 63 / 88, CARD_FRAC = 0.72;
+/* Détection de la carte dans la photo : on cherche le rectangle de proportions 63×88 (une carte) dont le contour sépare au mieux deux zones de couleurs différentes
+   ET dont l'extérieur ressemble au fond de la photo (couleur médiane des bords) : le contour extérieur de la carte l'emporte ainsi sur le cadre de l'illustration.
+   D'abord en grossier, puis affiné. Renvoie { x, y, w, h } en pixels de l'image d'origine, ou null. */
+const CARD_RATIO = 63 / 88;
 function edgeSearch(bmp, W, win) {
   const H = Math.round(W * bmp.height / bmp.width);
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const x = c.getContext('2d', { willReadFrequently: true }); x.filter = 'blur(1px)'; x.drawImage(bmp, 0, 0, W, H);
-  const d = x.getImageData(0, 0, W, H).data, g = new Float32Array(W * H);
-  for (let i = 0; i < W * H; i++) g[i] = d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11;
-  // colP[x][y] : somme des |dI/dx| sur la colonne x jusqu'à la ligne y ; rowP[y][x] : somme des |dI/dy| sur la ligne y jusqu'à la colonne x
-  const colP = new Float32Array(W * (H + 1)), rowP = new Float32Array(H * (W + 1)); let tot = 0;
-  for (let xx = 0; xx < W; xx++) for (let yy = 0; yy < H; yy++) { const gx = xx > 0 && xx < W - 1 ? Math.abs(g[yy * W + xx + 1] - g[yy * W + xx - 1]) : 0; colP[xx * (H + 1) + yy + 1] = colP[xx * (H + 1) + yy] + gx; tot += gx; }
-  for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) { const gy = yy > 0 && yy < H - 1 ? Math.abs(g[(yy + 1) * W + xx] - g[(yy - 1) * W + xx]) : 0; rowP[yy * (W + 1) + xx + 1] = rowP[yy * (W + 1) + xx] + gy; tot += gy; }
-  const mean = tot / (2 * W * H);
-  const v = (xx, y0, y1) => { let b = 0; for (let k = -1; k <= 1; k++) { const q = Math.min(W - 1, Math.max(0, xx + k)); b = Math.max(b, colP[q * (H + 1) + y1] - colP[q * (H + 1) + y0]); } return b; };
-  const hz = (yy, x0, x1) => { let b = 0; for (let k = -1; k <= 1; k++) { const q = Math.min(H - 1, Math.max(0, yy + k)); b = Math.max(b, rowP[q * (W + 1) + x1] - rowP[q * (W + 1) + x0]); } return b; };
-  const hMin = win ? win.h0 : Math.round(H * 0.4), hMax = win ? win.h1 : Math.floor(Math.min(H, W / CARD_RATIO));
-  const perH = [];                          // meilleur rectangle pour chaque hauteur
-  for (let h = hMin; h <= hMax; h++) {
-    const w = Math.round(h * CARD_RATIO); if (w >= W || h >= H) continue;
+  const d = x.getImageData(0, 0, W, H).data, m = Math.max(2, Math.round(Math.min(W, H) * 0.04)), ring = [[], [], []];
+  for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) if (xx < m || yy < m || xx >= W - m || yy >= H - m) { const o = (yy * W + xx) * 4; ring[0].push(d[o]); ring[1].push(d[o + 1]); ring[2].push(d[o + 2]); }
+  const bg = ring.map((a) => a.sort((p, q) => p - q)[a.length >> 1]);
+  const R = (xx, yy) => { xx = Math.min(W - 1, Math.max(0, xx)); yy = Math.min(H - 1, Math.max(0, yy)); return (yy * W + xx) * 4; };
+  const dc = (o1, o2) => Math.hypot(d[o1] - d[o2], d[o1 + 1] - d[o2 + 1], d[o1 + 2] - d[o2 + 2]);
+  const db = (o) => Math.hypot(d[o] - bg[0], d[o + 1] - bg[1], d[o + 2] - bg[2]);
+  const hMin = win ? win.h0 : Math.round(H * 0.4), hMax = win ? win.h1 : Math.floor(Math.min(H, W / CARD_RATIO)), g = Math.max(2, Math.round(W / 40));
+  const N = 14;
+  let best = null;
+  for (let h = hMin; h <= hMax; h++) for (const fw of (win ? [0.92, 0.96, 1, 1.04, 1.08] : [1])) {      // affinage : largeur libre (±10 %, perspective)
+    const w = Math.round(h * CARD_RATIO * fw); if (w >= W || h >= H) continue;
     const xa = win ? win.x0 : 0, xb = win ? win.x1 : W - w - 1, ya = win ? win.y0 : 0, yb = win ? win.y1 : H - h - 1;
-    let bh = null;
     for (let x0 = Math.max(0, xa); x0 <= Math.min(W - w - 1, xb); x0++) for (let y0 = Math.max(0, ya); y0 <= Math.min(H - h - 1, yb); y0++) {
-      const sc = (v(x0, y0, y0 + h) + v(x0 + w, y0, y0 + h) + hz(y0, x0, x0 + w) + hz(y0 + h, x0, x0 + w)) / (2 * (h + w));
-      if (!bh || sc > bh.sc) bh = { sc, x0, y0, w, h };
+      let sc = 0, n = 0;
+      for (let k = 0; k < N; k++) {
+        const t = (k + 0.5) / N, px = Math.round(x0 + w * t), py = Math.round(y0 + h * t);
+        // haut, bas, gauche, droite : (dedans, dehors)
+        // (dedans, dehors, bord de l'image dans la même direction) : le dehors du vrai contour ressemble au fond local, pas celui d'un cadre intérieur
+        const pairs = [[R(px, y0 + g), R(px, y0 - g), R(px, m)], [R(px, y0 + h - g), R(px, y0 + h + g), R(px, H - 1 - m)], [R(x0 + g, py), R(x0 - g, py), R(m, py)], [R(x0 + w - g, py), R(x0 + w + g, py), R(W - 1 - m, py)]];
+        for (const [i1, i2, i3] of pairs) { sc += Math.min(dc(i1, i2), 90) - 1.1 * Math.min(dc(i2, i3), 90); n++; }
+      }
+      sc /= n; if (!best || sc > best.sc) best = { sc, x0, y0, w, h };
     }
-    if (bh) perH.push(bh);
   }
-  if (!perH.length) return null;
-  const top = Math.max(...perH.map((r) => r.sc));
-  // le contour de la carte est le plus GRAND rectangle dont le bord est presque aussi net que le meilleur (évite le cadre de l'illustration à l'intérieur)
-  const chosen = [...perH].reverse().find((r) => r.sc >= top * (win ? 0.8 : CARD_FRAC)) || perH.find((r) => r.sc === top);
-  return { ...chosen, top, W, H, mean };
+  return best ? { ...best, W, H } : null;
 }
 function detectCardBox(bmp) {
   try {
-    const a = edgeSearch(bmp, 80); if (!a || a.top < a.mean * 1.6 || a.top < 8) return null;      // contour trop peu marqué (image vide, fond uni…)
-    const k = 3, b = edgeSearch(bmp, 80 * k, { x0: a.x0 * k - 8, x1: a.x0 * k + 8, y0: a.y0 * k - 8, y1: a.y0 * k + 8, h0: a.h * k - 8, h1: a.h * k + 8 }) || null;
+    const a = edgeSearch(bmp, 48); if (!a || a.sc < 8) return null;      // contour trop peu net (image vide, fond uni…)
+    const k = 4, b = edgeSearch(bmp, 48 * k, { x0: a.x0 * k - 14, x1: a.x0 * k + 14, y0: a.y0 * k - 14, y1: a.y0 * k + 14, h0: a.h * k - 14, h1: a.h * k + 14 }) || null;
     const r = b || { x0: a.x0 * k, y0: a.y0 * k, w: a.w * k, h: a.h * k, W: a.W * k, H: a.H * k };
     return { x: r.x0 / r.W * bmp.width, y: r.y0 / r.H * bmp.height, w: r.w / r.W * bmp.width, h: r.h / r.H * bmp.height };
   } catch { return null; }
@@ -1476,23 +1476,29 @@ async function ocrPhoto(file, accept) {
     const ks = Math.min(2.5, 1500 / box.w);
     const crop = (fx0, fy0, fx1, fy1, kk = ks) => { const c = document.createElement('canvas'); const sx = box.x + box.w * fx0, sy = box.y + box.h * fy0, sw = box.w * (fx1 - fx0), sh = box.h * (fy1 - fy0); c.width = Math.round(sw * kk); c.height = Math.round(sh * kk); c.getContext('2d').drawImage(bmp, sx, sy, sw, sh, 0, 0, c.width, c.height); return c; };
     photo = crop(0, 0, 1, 1, Math.min(1, 1000 / box.h));      // la carte seule (pour le classement visuel)
-    // bandes généreuses (le repérage du cadre peut être décalé de quelques % en hauteur) : nom en haut, numéro / extension en bas
-    await w.setParameters({ tessedit_pageseg_mode: '7' });
-    const okc = (c) => c.width >= 240 && c.height >= 40;      // une bande minuscule fait protester le lecteur
-    const nb = crop(0.08, 0.0, 0.76, 0.14); if (okc(nb)) text += '\n' + (await w.recognize(nb)).data.text;
-    await w.setParameters({ tessedit_pageseg_mode: '6' });
-    for (const c of [crop(0.03, 0.84, 0.7, 1, ks * 1.2), crop(0.03, 0.88, 0.97, 1, ks)]) if (okc(c)) text += '\n' + (await w.recognize(c)).data.text;
+    // bandes généreuses (le repérage du cadre peut être décalé de quelques % en hauteur) : le nom en haut ; en bas, le numéro lu avec une liste de chiffres autorisés
+    // (« 067/128 » : c'est ce qui le rend lisible) puis l'extension imprimée en majuscules
+    const flat = (c) => { try { const t = document.createElement('canvas'); t.width = 32; t.height = 16; const x = t.getContext('2d', { willReadFrequently: true }); x.drawImage(c, 0, 0, 32, 16); const d = x.getImageData(0, 0, 32, 16).data; let m = 0; for (let i = 0; i < d.length; i += 4) m += d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11; m /= 512; let v = 0; for (let i = 0; i < d.length; i += 4) { const g = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11; v += (g - m) ** 2; } return Math.sqrt(v / 512) < 10; } catch { return false; } };
+    const okc = (c) => c.width >= 240 && c.height >= 40 && !flat(c);      // une bande minuscule ou uniforme fait protester le lecteur
+    const rd = async (c, psm, wl) => { if (!okc(c)) return ''; await w.setParameters({ tessedit_pageseg_mode: psm, tessedit_char_whitelist: wl || '' }); return '\n' + (await w.recognize(c)).data.text; };
+    text += await rd(crop(0.08, 0.0, 0.75, 0.14), '6');
+    for (const [sc, y0, y1] of [[1.3, 0.88, 1.07], [1, 0.86, 1.09], [1.7, 0.9, 1.06], [1.3, 0.84, 1.1]]) {       // le numéro est relu à d'autres échelles tant qu'aucune paire « n/total » plausible n'est trouvée
+      text += await rd(crop(0, y0, 1, y1, ks * sc), '6', '0123456789/');
+      const pn = parseCardText(text); if (pn.n != null && pn.total != null && String(pn.n).length + String(pn.total).length >= 5) break;
+    }
+    await w.setParameters({ tessedit_char_whitelist: '' });
   }
+  window.__cropDbg = { box, text };
   let sure = false; try { sure = !!(box && accept && accept(text)); } catch { sure = false; }
   if (!sure) {                         // résultat pas assez sûr (cadre mal repéré…) : on repart des passes complètes sur la photo entière, sans le texte des bandes
     text = '';
     const cs = await photoCanvases(file);
     await w.setParameters({ tessedit_pageseg_mode: '6' });
     for (const c of cs) text += '\n' + (await w.recognize(c)).data.text;      // page, numéro (bas), nom (haut, deux hauteurs)
-    if (!photo) photo = cs[0];
+    photo = cs[0];                     // cadre non fiable : classement visuel sur la photo entière (3 cadrages)
   }
   if (bmp.close) bmp.close();
-  return { text, full: photo, cropped: !!box };
+  return { text, full: photo, cropped: sure };
 }
 /* ---------- Scan : classement visuel des candidats ----------
    Beaucoup de cartes portent le même nom (Pikachu : des centaines) ; quand le numéro imprimé n'est pas lisible, on compare l'illustration de la photo
@@ -1786,6 +1792,7 @@ async function showSearchInner(L, my, preset = {}) {
     const ldScan = loader.start('Analyse de la photo');
     try {
       const { text, full, cropped } = await ocrPhoto(file, (t) => matchScan(idx, parseCardText(t)).conf); if (my !== tok) return;
+      window.__scanDbg = { text, cropped };      // lecture brute de la dernière photo (diagnostic)
       let ids = matchScan(idx, parseCardText(text));
       if (ids.length > 1) { const hits = ids.hits; ids = await rerankVisual(idx, ids, hits, full, cropped); if (my !== tok) return; }
       if (!ids.length) { f.ids = f.rank = null; run(); toast('Carte non reconnue. Photo de face, bien éclairée, nom et numéro lisibles ; ou tapez son nom.'); }
