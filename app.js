@@ -1967,6 +1967,8 @@ function openLightbox(items, index, L) {
       h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term) + '&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1', target: '_blank', rel: 'noopener noreferrer' }, 'Ventes terminées sur eBay.fr ↗'),
       ' · ',
       h('a', { href: cmUrl(it), target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket (carte française, vendeurs France, NM) ↗'),
+      ' ',
+      h('button', { type: 'button', class: 'lb-copy', 'aria-label': 'Copier l’adresse Cardmarket', onclick: async () => { const u = cmUrl(it); try { await navigator.clipboard.writeText(u); toast('Adresse Cardmarket copiée.'); } catch { window.prompt('Adresse Cardmarket :', u); } } }, '📋 Copier'),
       ' · ',
       h('a', { href: cmFallbackUrl(it), target: '_blank', rel: 'noopener noreferrer' }, ((priceCache[it.card.id] || [])[3] ? 'ou page de la carte (choisir la version) ↗' : 'ou recherche Cardmarket ↗')),     // si l'adresse directe est introuvable
       /\?$/.test(cmSlugs[it.card.id] || '') && !cmStatic[it.card.id] ? h('span', { class: 'lb-help' }, ' Adresse déduite, non vérifiée : si la page est introuvable, utilisez le second lien Cardmarket.') : null].filter(Boolean));

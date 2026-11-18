@@ -672,3 +672,4 @@ html { background: var(--bg); min-height: 100%; }
 .rpb .rt-secrete { color: #e0a800; }
 @media (max-height: 620px) { .rpb { padding: 5px 10px; } }
 .rpb .rps, .rbkc .rbi { background: #d9def2; border-radius: 9px; padding: 3px; }     /* fond clair : les pictogrammes noirs restent lisibles en mode sombre */
+.lb-copy { border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: 999px; min-height: 32px; padding: 0 12px; font-size: 13px; font-weight: 600; margin-left: 4px; }
