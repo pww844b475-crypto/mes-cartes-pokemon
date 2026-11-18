@@ -17,7 +17,7 @@ const K = {
   lang: 'cartes.lang', cov: 'cartes.cov', exp: 'cartes.lastExport', tip: 'cartes.tipHidden', order: 'cartes.order',
   friends: 'cartes.friends.v1', pseudo: 'cartes.pseudo',
   splash: 'cartes.splash', // 'off' = écran d'ouverture désactivé
-  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay', cmslug: 'cartes.cmslug5', view: 'cartes.view', setview: 'cartes.setview', boosters: 'cartes.boosters',
+  meta: 'cartes.setmeta', blocks: 'cartes.blocks', prices: 'cartes.prices', ebay: 'cartes.ebay', cmslug: 'cartes.cmslug6', view: 'cartes.view', setview: 'cartes.setview', boosters: 'cartes.boosters',
 };
 const BACKUP_VERSION = 3;   // sauvegarde personnelle (3 : quantités par version de carte)
 const SHARE_VERSION = 2;    // fichier de partage entre amis (2 : quantités par version de carte)
@@ -650,8 +650,17 @@ const CM_PARENT = { exu: 'ex10' };      // la collection Zarbi est une partie de
 // Règles déduites d'adresses réelles :
 //  · …/Singles/Aquapolis/Umbreon-V1-AQH29 : cartes du même nom dans l'extension = V1, V2… ; les cartes « H » passent avant les cartes numérotées ;
 //  · …/Singles/EX-Unseen-Forces/Unown-A-UFA-28 : Zarbi = nom-lettre-ABRÉVIATION+lettre-total, dans l'extension principale ; les extensions de la série EX sont préfixées « EX ».
+// Adresses Cardmarket EXACTES (data/cm/<extension>.json, relevées avec tools/fetch-cm-slugs.py : { s: extension, n: { numéro: fin d'adresse } })
+const cmSetFiles = new Map();
+const cmSetFile = (sid) => { if (!cmSetFiles.has(sid)) cmSetFiles.set(sid, fetch(`data/cm/${encodeURIComponent(sid)}.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null)); return cmSetFiles.get(sid); };
+function setIdOfCard(id) { let best = ''; for (const k of [...Object.keys(setsMeta.sets), ...Object.keys(liveMeta)]) if (id.startsWith(k + '-') && k.length > best.length) best = k; return best; }
 async function ensureCmSlug(id) {
   if (cmSlugs[id] || cmStatic[id]) return;
+  const sid0 = setIdOfCard(id);
+  if (sid0) {
+    const j = await cmSetFile(sid0), v = j && j.n && j.n[id.slice(sid0.length + 1)];
+    if (v) { const slug = v.includes('/') ? v : `${j.s}/${v}`; if (/^[A-Za-z0-9-]+\/[A-Za-z0-9-]+$/.test(slug)) { cmSlugs[id] = slug; store.set(K.cmslug, JSON.stringify(cmSlugs)); return; } }
+  }
   const d = await api(`/en/cards/${encodeURIComponent(id)}`);
   const own = d.set && d.set.id; if (!own) return;
   const top = CM_PARENT[own] || own;                                  // extension affichée par Cardmarket
@@ -665,7 +674,7 @@ async function ensureCmSlug(id) {
   const sd = await api(`/en/sets/${encodeURIComponent(own)}`), grp = numGroup(d.localId);
   // adresse déduite d'une règle non confirmée pour cette extension ? (partie d'une autre, promo, numéros à lettres, série EX, signe dans le nom) → « ? » = à vérifier
   const serie = (setMeta(own) || [])[0] || '';
-  const doubt = !CM_VERIFIED.has(own) && (top !== own || !!MERGE_INTO[own] || grp !== '' || CM_PROMO_SERIES.has(serie) || /promo|black star/i.test(setName || '') || serie === 'ex' || /[&:]/.test(setName || '')) ? '?' : '';
+  const doubt = CM_VERIFIED.has(own) ? '' : '?';       // adresse calculée (pas relevée dans data/cm) : toujours signalée « non vérifiée »
   if (grp === '*') {                                                   // Zarbi : « A/28 »
     const ch = slugCm(lidShow(d.localId)); if (!ch) return;            // « ? » et « ! » : pas d'adresse connue → recherche
     const total = (sd.cards || []).filter((x) => numGroup(x.localId) === '*').length;
@@ -1942,6 +1951,8 @@ function openLightbox(items, index, L) {
     upd();
   }
   // fiche exacte de la carte avec les filtres : carte française, vendeur en France, Near Mint ou mieux
+  // repli : page Cardmarket de la carte par numéro de produit (test réel : Products?idProduct=… ouvre la bonne carte dans la bonne extension, parfois une autre version) ; sans numéro de produit : recherche
+  const cmFallbackUrl = (it) => { const e = priceCache[it.card.id], idp = e && e[3]; return idp ? `https://www.cardmarket.com/fr/Pokemon/Products?idProduct=${idp}` : cmSearchUrl(it); };
   const cmSearchUrl = (it) => 'https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=' + encodeURIComponent([it.name, lidShow(it.card.localId).replace(/[^A-Za-z0-9]/g, '')].filter(Boolean).join(' ')) + '&language=2&sellerCountry=12&minCondition=2';
   function cmUrl(it) {
     const F = 'language=2&sellerCountry=12&minCondition=2', slug = cmStatic[it.card.id] || (cmSlugs[it.card.id] || '').replace(/\?$/, '');
@@ -1954,14 +1965,14 @@ function openLightbox(items, index, L) {
       ' · ',
       h('a', { href: cmUrl(it), target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket (carte française, vendeurs France, NM) ↗'),
       ' · ',
-      h('a', { href: cmSearchUrl(it), target: '_blank', rel: 'noopener noreferrer' }, 'ou recherche Cardmarket ↗'),     // toujours valable si l'adresse directe est introuvable
-      /\?$/.test(cmSlugs[it.card.id] || '') && !cmStatic[it.card.id] ? h('span', { class: 'lb-help' }, ' Adresse déduite, non vérifiée : si la page est introuvable, utilisez « ou recherche Cardmarket ».') : null].filter(Boolean));
+      h('a', { href: cmFallbackUrl(it), target: '_blank', rel: 'noopener noreferrer' }, ((priceCache[it.card.id] || [])[3] ? 'ou page de la carte (choisir la version) ↗' : 'ou recherche Cardmarket ↗')),     // si l'adresse directe est introuvable
+      /\?$/.test(cmSlugs[it.card.id] || '') && !cmStatic[it.card.id] ? h('span', { class: 'lb-help' }, ' Adresse déduite, non vérifiée : si la page est introuvable, utilisez le second lien Cardmarket.') : null].filter(Boolean));
   }
   function show() {
     const it = items[i], c = it.card, info = infoOf(it);
     paintPrice(it); paintLinks(it); paintEbay(it);
     if (L === 'fr' && !cmSlugs[c.id] && !cmStatic[c.id]) ensureCmSlug(c.id).then(() => { if (items[i] === it && lb) paintLinks(it); }).catch(() => {});
-    if (!priceCache[c.id] && L === 'fr') fetchPrice(L, c.id).then(() => { savePrices(); if (items[i] === it && lb) paintPrice(it); }).catch(() => { if (items[i] === it && lb) priceEl.textContent = 'Prix indisponible pour le moment.'; });
+    if (!priceCache[c.id] && L === 'fr') fetchPrice(L, c.id).then(() => { savePrices(); if (items[i] === it && lb) { paintPrice(it); paintLinks(it); } }).catch(() => { if (items[i] === it && lb) priceEl.textContent = 'Prix indisponible pour le moment.'; });
     nameEl.textContent = it.name;
     subEl.textContent = `#${it.numLabel || lidShow(c.localId)} · ${it.setName || ''} · ${i + 1}/${items.length}`;
     rarEl.textContent = info && info.rar ? `Rareté : ${info.rar}` : '';
