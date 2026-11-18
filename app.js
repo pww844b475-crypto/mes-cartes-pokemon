@@ -687,7 +687,7 @@ async function ensureCmSlug(id) {
     const lid0 = lidShow(d.localId), lm0 = serie === 'ecard' && lid0.match(/^([A-Za-z]+)0*(\d+)$/);
     const numS = lm0 ? slugCm(lm0[1] + lm0[2]) : slugCm(d.localId); if (!numS) return;
     const same = (sd.cards || []).filter((x) => slugCm(x.name) === nameS);
-    if (same.length > 1) {
+    if (same.length > 1 && own !== '30th') {      // 30 ans (liens réels : …/Pikachu-30C040 parmi 30 Pikachu) : le code à 3 chiffres suffit, pas de V1/V2
       same.sort((a, b) => ((numGroup(a.localId) === '') - (numGroup(b.localId) === '')) || lidShow(a.localId).localeCompare(lidShow(b.localId), 'en', { numeric: true }));
       const k = same.findIndex((x) => x.id === id); if (k >= 0) nameS += `-V${k + 1}`;
       // Épée et Bouclier (liens réels fournis) : la dernière de 3 versions ou plus n'a pas de suffixe de numéro (…/Galarian-Moltres-V-V3, …/Umbreon-VMAX-V3)
