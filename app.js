@@ -2969,9 +2969,11 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
+const APP_VERSION = 'v82';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
-  if (window.caches) caches.keys().then((ks) => { const v = ks.find((k) => /^shell-v\d+$/.test(k)); verEl.textContent = 'Version de l’application : ' + (v ? v.replace('shell-', '') : 'inconnue') + ' (si ce numéro n’augmente pas après une mise à jour, fermez complètement l’application et rouvrez-la deux fois).'; }).catch(() => {});
+  verEl.textContent = 'Version de l’application : ' + APP_VERSION;
+  if (window.caches) caches.keys().then((ks) => { const v = ks.find((k) => /^shell-v\d+$/.test(k)); if (v && v !== 'shell-' + APP_VERSION) verEl.textContent += ' — mise à jour du cache en attente (' + v.replace('shell-', '') + ') : fermez complètement l’application et rouvrez-la.'; }).catch(() => {});
   const sw = h('input', { type: 'checkbox', role: 'switch', 'aria-label': 'Afficher l’écran d’ouverture au lancement' });
   sw.checked = splashOn();
   sw.addEventListener('change', () => {
