@@ -38,7 +38,29 @@ def desc(data):
     q = np.concatenate([np.clip(np.round(g.ravel() * 127 + 128), 0, 255), np.clip(np.round(hb * 255), 0, 255)]).astype(np.uint8)
     return q.tobytes()
 
+def local_desc(cid):
+    """Cartes sans image TCGdex : scans embarqués dans l'application (images/scans/cards/<id>.avif) ou scans locaux (data/scans.json)."""
+    f = f'images/scans/cards/{cid}.avif'
+    if not os.path.exists(f):
+        loc = json.load(open('data/scans.json'))['cards'].get(cid)
+        f = (loc['p'] + '/low.webp') if loc else None
+    if not f or not os.path.exists(f): return None
+    try: return desc(open(f, 'rb').read())
+    except Exception: return None
+
+def fill_local():
+    """Complète data/vis.bin : les cartes sans empreinte (image absente de TCGdex) reçoivent celle de leur scan embarqué."""
+    names = json.load(open('data/names.json')); index = json.load(open('data/vis-index.json')); buf = bytearray(open('data/vis.bin', 'rb').read()); n = 0
+    for sid, e in index.items():
+        for i, r in enumerate(names[sid][:e['n']]):
+            o = (e['o'] + i) * 120
+            if any(buf[o:o + 120]): continue
+            odd = len(r) > 2 and isinstance(r[2], str); d = local_desc(r[0] if odd else f'{sid}-{r[0]}')
+            if d: buf[o:o + 120] = d; n += 1
+    open('data/vis.bin', 'wb').write(bytes(buf)); print(f'{n} empreintes ajoutées depuis les scans embarqués')
+
 def main():
+    if sys.argv[1:] == ['--fill-local']: return fill_local()
     meta = json.load(open('data/sets-meta.json'))['sets']; names = json.load(open('data/names.json'))
     want = sys.argv[1:] or [s for s in names if s in meta]
     os.makedirs('data/vis', exist_ok=True)
@@ -54,7 +76,7 @@ def main():
                 if d:
                     try: return desc(d)
                     except Exception: pass
-            return bytes(120)
+            return local_desc(r[0] if odd else f'{sid}-{lid}') or bytes(120)
         with ThreadPoolExecutor(16) as ex: blobs = list(ex.map(one, rows))
         open(out, 'wb').write(b''.join(blobs))
         print(f'{sid} : {sum(1 for b in blobs if any(b))}/{len(rows)}', flush=True)
