@@ -1427,11 +1427,72 @@ async function photoCanvases(file) { // photo entière (réduite), bande du bas 
   if (bmp.close) bmp.close();
   return out;
 }
-async function ocrPhoto(file) {
-  const w = await getOcr(), cs = await photoCanvases(file); let text = '';
-  await w.setParameters({ tessedit_pageseg_mode: '6' });
-  for (const c of cs) text += '\n' + (await w.recognize(c)).data.text;      // page, numéro (bas), nom (haut, deux hauteurs)
-  return { text, full: cs[0] };
+/* Détection de la carte dans la photo : on cherche le rectangle de proportions 63×88 (une carte) dont le contour porte les bords les plus nets
+   (gradient de l'image réduite, intégrales par colonne / par ligne), d'abord en grossier puis affiné. Renvoie { x, y, w, h } en pixels de l'image d'origine, ou null. */
+const CARD_RATIO = 63 / 88, CARD_FRAC = 0.72;
+function edgeSearch(bmp, W, win) {
+  const H = Math.round(W * bmp.height / bmp.width);
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d', { willReadFrequently: true }); x.filter = 'blur(1px)'; x.drawImage(bmp, 0, 0, W, H);
+  const d = x.getImageData(0, 0, W, H).data, g = new Float32Array(W * H);
+  for (let i = 0; i < W * H; i++) g[i] = d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11;
+  // colP[x][y] : somme des |dI/dx| sur la colonne x jusqu'à la ligne y ; rowP[y][x] : somme des |dI/dy| sur la ligne y jusqu'à la colonne x
+  const colP = new Float32Array(W * (H + 1)), rowP = new Float32Array(H * (W + 1)); let tot = 0;
+  for (let xx = 0; xx < W; xx++) for (let yy = 0; yy < H; yy++) { const gx = xx > 0 && xx < W - 1 ? Math.abs(g[yy * W + xx + 1] - g[yy * W + xx - 1]) : 0; colP[xx * (H + 1) + yy + 1] = colP[xx * (H + 1) + yy] + gx; tot += gx; }
+  for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) { const gy = yy > 0 && yy < H - 1 ? Math.abs(g[(yy + 1) * W + xx] - g[(yy - 1) * W + xx]) : 0; rowP[yy * (W + 1) + xx + 1] = rowP[yy * (W + 1) + xx] + gy; tot += gy; }
+  const mean = tot / (2 * W * H);
+  const v = (xx, y0, y1) => { let b = 0; for (let k = -1; k <= 1; k++) { const q = Math.min(W - 1, Math.max(0, xx + k)); b = Math.max(b, colP[q * (H + 1) + y1] - colP[q * (H + 1) + y0]); } return b; };
+  const hz = (yy, x0, x1) => { let b = 0; for (let k = -1; k <= 1; k++) { const q = Math.min(H - 1, Math.max(0, yy + k)); b = Math.max(b, rowP[q * (W + 1) + x1] - rowP[q * (W + 1) + x0]); } return b; };
+  const hMin = win ? win.h0 : Math.round(H * 0.4), hMax = win ? win.h1 : Math.floor(Math.min(H, W / CARD_RATIO));
+  const perH = [];                          // meilleur rectangle pour chaque hauteur
+  for (let h = hMin; h <= hMax; h++) {
+    const w = Math.round(h * CARD_RATIO); if (w >= W || h >= H) continue;
+    const xa = win ? win.x0 : 0, xb = win ? win.x1 : W - w - 1, ya = win ? win.y0 : 0, yb = win ? win.y1 : H - h - 1;
+    let bh = null;
+    for (let x0 = Math.max(0, xa); x0 <= Math.min(W - w - 1, xb); x0++) for (let y0 = Math.max(0, ya); y0 <= Math.min(H - h - 1, yb); y0++) {
+      const sc = (v(x0, y0, y0 + h) + v(x0 + w, y0, y0 + h) + hz(y0, x0, x0 + w) + hz(y0 + h, x0, x0 + w)) / (2 * (h + w));
+      if (!bh || sc > bh.sc) bh = { sc, x0, y0, w, h };
+    }
+    if (bh) perH.push(bh);
+  }
+  if (!perH.length) return null;
+  const top = Math.max(...perH.map((r) => r.sc));
+  // le contour de la carte est le plus GRAND rectangle dont le bord est presque aussi net que le meilleur (évite le cadre de l'illustration à l'intérieur)
+  const chosen = [...perH].reverse().find((r) => r.sc >= top * (win ? 0.8 : CARD_FRAC)) || perH.find((r) => r.sc === top);
+  return { ...chosen, top, W, H, mean };
+}
+function detectCardBox(bmp) {
+  try {
+    const a = edgeSearch(bmp, 80); if (!a || a.top < a.mean * 1.6 || a.top < 8) return null;      // contour trop peu marqué (image vide, fond uni…)
+    const k = 3, b = edgeSearch(bmp, 80 * k, { x0: a.x0 * k - 8, x1: a.x0 * k + 8, y0: a.y0 * k - 8, y1: a.y0 * k + 8, h0: a.h * k - 8, h1: a.h * k + 8 }) || null;
+    const r = b || { x0: a.x0 * k, y0: a.y0 * k, w: a.w * k, h: a.h * k, W: a.W * k, H: a.H * k };
+    return { x: r.x0 / r.W * bmp.width, y: r.y0 / r.H * bmp.height, w: r.w / r.W * bmp.width, h: r.h / r.H * bmp.height };
+  } catch { return null; }
+}
+async function ocrPhoto(file, accept) {
+  const w = await getOcr(), bmp = await createImageBitmap(file); let text = '', photo = null;
+  const box = detectCardBox(bmp);
+  if (box) {                          // la carte est repérée : on lit le nom (haut) et le numéro / l'extension (bas), agrandis ; bien plus fiable que la photo entière
+    const ks = Math.min(2.5, 1500 / box.w);
+    const crop = (fx0, fy0, fx1, fy1, kk = ks) => { const c = document.createElement('canvas'); const sx = box.x + box.w * fx0, sy = box.y + box.h * fy0, sw = box.w * (fx1 - fx0), sh = box.h * (fy1 - fy0); c.width = Math.round(sw * kk); c.height = Math.round(sh * kk); c.getContext('2d').drawImage(bmp, sx, sy, sw, sh, 0, 0, c.width, c.height); return c; };
+    photo = crop(0, 0, 1, 1, Math.min(1, 1000 / box.h));      // la carte seule (pour le classement visuel)
+    // bandes généreuses (le repérage du cadre peut être décalé de quelques % en hauteur) : nom en haut, numéro / extension en bas
+    await w.setParameters({ tessedit_pageseg_mode: '7' });
+    const okc = (c) => c.width >= 240 && c.height >= 40;      // une bande minuscule fait protester le lecteur
+    const nb = crop(0.08, 0.0, 0.76, 0.14); if (okc(nb)) text += '\n' + (await w.recognize(nb)).data.text;
+    await w.setParameters({ tessedit_pageseg_mode: '6' });
+    for (const c of [crop(0.03, 0.84, 0.7, 1, ks * 1.2), crop(0.03, 0.88, 0.97, 1, ks)]) if (okc(c)) text += '\n' + (await w.recognize(c)).data.text;
+  }
+  let sure = false; try { sure = !!(box && accept && accept(text)); } catch { sure = false; }
+  if (!sure) {                         // résultat pas assez sûr (cadre mal repéré…) : on repart des passes complètes sur la photo entière, sans le texte des bandes
+    text = '';
+    const cs = await photoCanvases(file);
+    await w.setParameters({ tessedit_pageseg_mode: '6' });
+    for (const c of cs) text += '\n' + (await w.recognize(c)).data.text;      // page, numéro (bas), nom (haut, deux hauteurs)
+    if (!photo) photo = cs[0];
+  }
+  if (bmp.close) bmp.close();
+  return { text, full: photo, cropped: !!box };
 }
 /* ---------- Scan : classement visuel des candidats ----------
    Beaucoup de cartes portent le même nom (Pikachu : des centaines) ; quand le numéro imprimé n'est pas lisible, on compare l'illustration de la photo
@@ -1462,11 +1523,11 @@ function visDesc(src, box) {
 function visSim(a, b) { let dot = 0, inter = 0; for (let i = 0; i < 108; i++) dot += a.g[i] * b.g[i]; for (let i = 0; i < 12; i++) inter += Math.min(a.hb[i], b.hb[i]); return dot * 0.6 + inter * 0.4; }
 const loadCorsImage = (src) => new Promise((res) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
 // → identifiants réordonnés (les cartes dont le numéro correspond gardent un bonus) ; en cas d'échec, l'ordre d'origine
-async function rerankVisual(idx, ids, hits, photo) {
+async function rerankVisual(idx, ids, hits, photo, cropped) {
   try {
     if (!idx.byId) idx.byId = new Map(idx.recs.map((r) => [r.card.id, r]));
-    const W = photo.width, H = photo.height, pd = [1, 0.85, 0.7].map((sc) => {
-      const ch = sc, cw = Math.min(1, sc * 0.716 * H / W), x0 = 0.5 - cw / 2, y0 = 0.5 - ch / 2;
+    const W = photo.width, H = photo.height, pd = (cropped ? [1] : [1, 0.85, 0.7]).map((sc) => {      // carte détectée : cadrage exact ; sinon 3 cadrages possibles
+      const ch = sc, cw = cropped ? 1 : Math.min(1, sc * 0.716 * H / W), x0 = 0.5 - cw / 2, y0 = 0.5 - ch / 2;
       return visDesc(photo, [x0 + cw * VIS_ART[0], y0 + ch * VIS_ART[1], x0 + cw * VIS_ART[2], y0 + ch * VIS_ART[3]]);
     });
     const top = ids.slice(0, 100), score = new Map();
@@ -1488,7 +1549,9 @@ async function rerankVisual(idx, ids, hits, photo) {
 function parseCardText(text) {
   const t = text.replace(/[Il|]/g, '1').toUpperCase();
   const nums = [...t.matchAll(/(^|[^A-Z])([A-Z]{0,3})\s?(\d{1,3})\s*[\/\\]\s*([A-Z]{0,3})\s?(\d{2,3})/g)].map((m) => ({ pre: m[2], n: parseInt(m[3], 10), tpre: m[4], total: parseInt(m[5], 10) }));   // le préfixe (H, TG, GG, SV…) ne doit pas être la fin d'un mot
-  const pick = nums.find((x) => x.n > 0 && x.total >= 10 && x.n <= x.total + 40 && (x.pre === x.tpre || !x.tpre)) || null;
+  const okN = nums.filter((x) => x.n > 0 && x.total >= 10 && x.n <= x.total + 40 && (x.pre === x.tpre || !x.tpre));
+  const len = (x) => String(x.n).length + String(x.total).length;
+  const pick = okN.length ? okN.reduce((b, x) => (len(x) > len(b) ? x : b), okN[0]) : null;      // « 067/128 » (lu en grand) l'emporte sur « 7/12 » (lecture tronquée)
   const cm = pick ? null : t.match(/(^|[^A-Z0-9])([A-Z!?])\s?\/\s?(\d{2,3})(?![0-9])/);      // Zarbi : « A/28 », « ?/28 »
   return { ch: cm ? cm[2] : '', chTotal: cm ? parseInt(cm[3], 10) : null, n: pick ? pick.n : null, pre: pick ? pick.pre : '', total: pick ? pick.total : null, tpre: pick ? pick.tpre : '', norm: ' ' + norm(text).replace(/[^a-z0-9]+/g, ' ') + ' ' };
 }
@@ -1503,19 +1566,25 @@ const nameBase = (n) => norm(n).replace(/[^a-z0-9]+/g, ' ').trim().split(' ').fi
 // → liste d'identifiants de cartes, de la plus probable à la moins probable
 function matchScan(idx, p) {
   const out = [];
+  const toks = p.norm.trim().split(' ').filter(Boolean), abSids = new Set();      // extensions dont l'abréviation imprimée (« 30C », « SSP »…) figure dans le texte lu (une ou deux lettres parasites tolérées)
+  for (const [sid, m] of Object.entries(setsMeta.sets)) { const ab = String(m[2] || '').toLowerCase(); if (ab.length >= 3 || /\d/.test(ab)) { if (toks.some((t) => t === ab || (t.startsWith(ab) && t.length - ab.length <= 2))) abSids.add(sid); } }
   const lm = (r) => String(r.card.localId).match(/^([A-Za-z]*)0*(\d+)$/);
   const rate = (r, sc) => {
     const m = lm(r);        // « H01 » → groupe H, numéro 1 ; « 1 » → groupe vide, numéro 1
     const numHit = p.n != null && !!m && m[1].toUpperCase() === (p.tpre ? p.pre : '') && parseInt(m[2], 10) === p.n;   // total sans lettre (« 103/130 ») : carte à numéro simple ; lettres parasites avant le numéro ignorées
     const chHit = !!p.ch && lidShow(r.card.localId).toUpperCase() === p.ch;
     const totHit = chHit ? (idx.prefix.get(r.sid) && idx.prefix.get(r.sid).get('*')) === p.chTotal : p.total != null && (p.tpre ? (idx.prefix.get(r.sid) && idx.prefix.get(r.sid).get(p.tpre)) === p.total : idx.official.get(r.sid) === p.total);
-    out.push({ id: r.card.id, score: sc + ((numHit || chHit) ? 200 : 0) + (totHit ? 40 : 0), numHit: numHit || chHit });
+    out.push({ id: r.card.id, score: sc + ((numHit || chHit) ? 200 : 0) + (totHit ? 40 : 0) + (abSids.has(r.sid) ? 120 : 0), numHit: numHit || chHit, strict: (numHit || chHit) && totHit, ab: abSids.has(r.sid) });
   };
   for (const r of idx.recs) {
     const full = norm(r.card.name).replace(/[^a-z0-9]+/g, ' ').trim();
     const base = full.split(' ').filter((w) => w !== 'mega')[0] || '';       // « Mentali-GX » → « mentali » (le suffixe est souvent mal lu)
     if (full.length >= 5 && p.norm.includes(' ' + full + ' ')) rate(r, 100 + full.length);
     else if (base.length >= 5 && p.norm.includes(' ' + base + ' ')) rate(r, base.length);
+  }
+  if (p.n != null && p.total != null) {  // le nom n'est pas toujours lu : toute carte dont le numéro ET le total (nombre de cartes de l'extension) correspondent est candidate
+    const have = new Set(out.map((x) => x.id));
+    for (const r of idx.recs) if (!have.has(r.card.id)) { rate(r, 0); const x = out[out.length - 1]; if (x.strict) x.inj = true; else out.pop(); }
   }
   if (!out.length) {                    // rien d'exact : nom approché (une ou deux lettres mal lues)
     const words = [...new Set(p.norm.split(' ').filter((w) => w.length >= 5 && /^[a-z]/.test(w)))];
@@ -1527,9 +1596,14 @@ function matchScan(idx, p) {
     }
     near.sort((x, y) => x[1] - y[1]).slice(0, 6).forEach(([b, d, list]) => list.forEach((i) => rate(idx.recs[i], b.length - 12 * d)));
   }
-  const best = out.some((x) => x.numHit) ? out.filter((x) => x.numHit) : out;
+  const byId = new Map(); for (const x of out) { const o = byId.get(x.id); if (!o || x.score > o.score) byId.set(x.id, x); }
+  out.length = 0; out.push(...byId.values());
+  // les candidats trouvés par le seul numéro (nom non lu) ne servent que si aucun nom n'a été reconnu : un nom lu reste prioritaire
+  const named = out.filter((x) => !x.inj), pool = named.length ? named : out;
+  const best = pool.some((x) => x.numHit) ? pool.filter((x) => x.numHit) : pool;
   const ids = best.map((x, i) => [x, i]).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 120).map(([x]) => x.id);   // à score égal : extension la plus récente d'abord
   ids.hits = new Set(best.filter((x) => x.numHit).map((x) => x.id));
+  ids.conf = best.some((x) => x.numHit && (!x.inj || x.ab));     // numéro retrouvé avec un nom lu ou l'extension imprimée reconnue : résultat sûr
   return ids;
 }
 
@@ -1711,9 +1785,9 @@ async function showSearchInner(L, my, preset = {}) {
     scanBtn.disabled = true; summary.textContent = 'Analyse de la photo… (la première fois, quelques secondes)';
     const ldScan = loader.start('Analyse de la photo');
     try {
-      const { text, full } = await ocrPhoto(file); if (my !== tok) return;
+      const { text, full, cropped } = await ocrPhoto(file, (t) => matchScan(idx, parseCardText(t)).conf); if (my !== tok) return;
       let ids = matchScan(idx, parseCardText(text));
-      if (ids.length > 1) { const hits = ids.hits; ids = await rerankVisual(idx, ids, hits, full); if (my !== tok) return; }
+      if (ids.length > 1) { const hits = ids.hits; ids = await rerankVisual(idx, ids, hits, full, cropped); if (my !== tok) return; }
       if (!ids.length) { f.ids = f.rank = null; run(); toast('Carte non reconnue. Photo de face, bien éclairée, nom et numéro lisibles ; ou tapez son nom.'); }
       else {
         q.value = ''; f.ids = new Set(ids); f.rank = new Map(ids.map((id, i) => [id, i])); run();
