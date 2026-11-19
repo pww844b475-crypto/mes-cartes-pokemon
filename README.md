@@ -237,3 +237,10 @@ Sous le prix, deux liens eBay.fr (même recherche « nom + numéro », vendeurs 
 ## Carrousel de l'accueil sans zone vide, recherche par rareté
 - Le défilement de l'accueil anime maintenant le `scrollLeft` d'un vrai conteneur (`startMarquee`) au lieu d'une bande CSS de plusieurs milliers de pixels que Safari (iPad) ne peignait qu'en partie (zone vide à gauche). Un doigt posé ou la souris met en pause, ça repart 2 s après ; on peut aussi le faire défiler à la main.
 - La recherche (accueil, recherche complète, page d'extension) comprend aussi la rareté : « noctali holo rare », « pikachu illustration spéciale », « hyper rare dracaufeu ». La rareté est affichée dans les résultats de l'accueil.
+
+## Scanner : cartes holo / brillantes
+Mesure sur 26 vraies cartes holo (ultra rares, alt arts, brillantes…) dont les images TCGdex ont été transformées en « photos » avec arc-en-ciel de foil, reflets blancs, flou, bruit, rotation (reflets forts = « hard », moyens = « mild ») :
+- `visDesc` ignore les pixels quasi blancs (reflets) et `dePlane` retire de chaque canal un dégradé linéaire (l'arc-en-ciel) côté photo **et** côté référence ; la teinte n'entre plus dans la ressemblance (elle était détruite par la foil). Bonne carte en tête par l'illustration seule : 4/26 → 9/26 (hard), 19/26 → 20/26 (mild) ; dans les 3 premières : 4 → 12 (hard).
+- Seuils de `judgeVisual` recalés (≥ 0,5 et écart ≥ 0,10, ou ≥ 0,93) : sur ces 52 photos, 21 reconnues d'emblée et toutes justes, contre 14 dont 3 fausses avant (ex. une fausse carte annoncée en 1 s). Les cartes non reconnues passent par la lecture du texte puis la liste des candidats.
+- De bout en bout (illustration + texte + classement) : bonne carte en tête 18/26 (hard) et 23/26 (mild) ; dans les 3 premières 20/26 (hard). Les photos de test sont simulées : ce n'est pas une mesure sur de vraies photos d'iPhone. Les outils de test sont dans le dossier de travail de la session, pas dans le dépôt.
+- Limite connue : quand la foil est très forte, le texte est illisible et la reconnaissance échoue (8/26 en « hard »).
