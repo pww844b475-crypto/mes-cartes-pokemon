@@ -747,6 +747,10 @@ function buildCarousel(title, items, all, opts = {}) {
 
 /* ---------- Carrousel « en éventail » (cartes possédées) : la carte du centre est grande, la précédente et la suivante se devinent de chaque côté ---------- */
 // items : [{ card, name, sub, price, onopen(index) }] ; défilement tactile avec accroche sur chaque carte
+// appui long : le doigt est resté posé au moins 450 ms avant le « clic » (utilisé par l'ajout rapide)
+let pressAt = 0;
+addEventListener('pointerdown', () => { pressAt = performance.now(); }, true);
+const longPress = () => performance.now() - pressAt >= 450;
 function buildCoverflow(title, items, onOpen) {
   const cap = h('p', { class: 'cf-cap', 'aria-live': 'polite' }, h('b', { class: 'cf-name' }), h('span', { class: 'cf-sub' }));
   const count = h('p', { class: 'cf-count' });
@@ -1160,16 +1164,17 @@ async function showSetInner(L, setId, my) {
   const picked = new Set();
   const visible = () => tiles.filter((x) => !x.el.hidden && !x.el.closest('[hidden]'));
   const pickedVisible = () => visible().filter((x) => picked.has(x));
+  const quickAdd = (t) => {                          // un exemplaire de plus (1re version si la carte en a plusieurs)
+    const key = hasVersions(t.info) ? t.info.vars[0].key : null;
+    const cur = key == null ? qtyTotal(t.value) : (isMulti(t.value) ? (t.value[key] || 0) : 0);
+    if (cur >= MAXQ) { toast('Quantité maximale atteinte.'); return; }
+    t.set(key, cur + 1);
+    t.el.classList.remove('qflash'); void t.el.offsetWidth; t.el.classList.add('qflash');
+    toast(`+1 ${t.name}`);
+  };
   const zoom = (t) => {
     if (selMode) { togglePick(t); return; }          // en mode sélection, toucher la photo sélectionne la carte
-    if (quickMode) {                                 // ajout rapide : un exemplaire de plus, sans ouvrir la carte (1re version si la carte en a plusieurs)
-      const key = hasVersions(t.info) ? t.info.vars[0].key : null;
-      const cur = key == null ? qtyTotal(t.value) : (isMulti(t.value) ? (t.value[key] || 0) : 0);
-      if (cur >= MAXQ) { toast('Quantité maximale atteinte.'); return; }
-      t.set(key, cur + 1);
-      t.el.classList.remove('qflash'); void t.el.offsetWidth; t.el.classList.add('qflash');
-      return;
-    }
+    if (quickMode && !longPress()) { quickAdd(t); return; }     // ajout rapide : toucher bref = +1 ; appui long = fiche (prix, eBay…)
     const vis = visible();
     openLightbox(vis, Math.max(0, vis.indexOf(t)), L);
   };
@@ -1357,7 +1362,7 @@ async function showSetInner(L, setId, my) {
     if (!vis.length) { cfSlot.replaceChildren(); return; }
     const items = vis.map((t) => { const e = priceCache[t.card.id]; return { card: t.card, name: t.card.name, sub: '#' + lidShow(t.card.localId) + (qtyTotal(t.mine[t.card.id]) > 0 ? ' · possédée' : ''), price: blend(t.card.id, e ? (e[0] ?? e[1]) : null) }; });
     const keep = cfSlot.querySelector('.cf-track') ? cfSlot.querySelector('.cf-track').scrollLeft : 0;
-    cfSlot.replaceChildren(buildCoverflow(`${vis.length.toLocaleString('fr-FR')} carte${vis.length > 1 ? 's' : ''}`, items, (i) => openLightbox(vis, i, L)));
+    cfSlot.replaceChildren(buildCoverflow(`${vis.length.toLocaleString('fr-FR')} carte${vis.length > 1 ? 's' : ''}`, items, (i) => { if (quickMode && !longPress()) { quickAdd(vis[i]); paintCf(); } else openLightbox(vis, i, L); }));
     const tr = cfSlot.querySelector('.cf-track'); if (tr && keep) requestAnimationFrame(() => { tr.scrollLeft = keep; });
   }
   const applyView = () => {
@@ -3034,7 +3039,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v84';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v85';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;

@@ -711,3 +711,6 @@ html { background: var(--bg); min-height: 100%; }
 .quick .card .media { cursor: copy; }
 @keyframes qflash { 0% { box-shadow: 0 0 0 3px #4cd08a, 0 0 18px #4cd08a; } 100% { box-shadow: 0 0 0 0 transparent; } }
 .card.qflash { animation: qflash .6s ease-out; }
+.quick .card .media, .quick .cf-card { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.quick .cflow .cf-card { cursor: copy; }
+.tools2 .tbtn[aria-pressed="true"] { background: #f4b942; color: #14202e; box-shadow: 0 0 0 2px #fff inset; }
