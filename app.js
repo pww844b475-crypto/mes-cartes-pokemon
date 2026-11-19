@@ -353,7 +353,8 @@ const io = 'IntersectionObserver' in window
 
 // Logos absents de TCGdex (nouvelles sorties, promos) : copies locales (source : pokecardex.com), réduites en WebP
 const LOCAL_LOGOS = new Set(['me06', 'base1', 'sve', 'mee', 'mep', '30th', 'svp']);
-const setLogoUrl = (id, data) => (data && data.logo ? data.logo + '.webp' : LOCAL_LOGOS.has(id) ? `images/set-logos/${id}.webp` : data && data.symbol ? data.symbol + '.webp' : null);
+const LOGO_OVERRIDE = new Set(['swsh3', 'me05']);      // logo TCGdex à fond blanc opaque (swsh3) ou introuvable (me05) : copie locale prioritaire
+const setLogoUrl = (id, data) => (LOGO_OVERRIDE.has(id) ? `images/set-logos/${id}.webp` : data && data.logo ? data.logo + '.webp' : LOCAL_LOGOS.has(id) ? `images/set-logos/${id}.webp` : data && data.symbol ? data.symbol + '.webp' : null);
 function lazyImg(src, alt, onfail) {
   const i = h('img', { alt, decoding: 'async', draggable: 'false' });
   i.dataset.src = src;
@@ -739,7 +740,7 @@ function buildCarousel(title, items, all, opts = {}) {
   // opts.auto : défilement continu en boucle (accueil) : les cartes sont répétées une fois et la bande glisse de la moitié de sa largeur
   const auto = !!opts.auto && items.length >= 5;
   const track = auto
-    ? h('div', { class: 'car-track auto', role: 'list', style: `--n:${items.length}` }, h('div', { class: 'car-belt' }, items.map((it) => cardEl(it, false)), items.map((it) => cardEl(it, true))))
+    ? h('div', { class: 'car-track auto', role: 'list', style: `--n:${items.length}` }, h('div', { class: 'car-belt', style: opts.phase ? `animation-delay:-${opts.phase.toFixed(2)}s` : null }, items.map((it) => cardEl(it, false)), items.map((it) => cardEl(it, true))))
     : h('div', { class: 'car-track', role: 'list' }, items.map((it) => cardEl(it, false)));
   return h('section', { class: 'carou', 'aria-label': title }, h('div', { class: 'car-head' }, h('h2', {}, title), all ? h('button', { type: 'button', class: 'car-all', onclick: all }, 'Voir tout') : null), track);
 }
@@ -944,6 +945,7 @@ async function showListInner(my) {
   const valbox = h('div', { class: 'valbox' }, h('button', { type: 'button', class: 'vt', 'aria-label': 'Détail de la valeur par rareté', onclick: () => openOwned(L, valRows, () => recalc(false)) }, h('span', { class: 'vl' }, 'Valeur estimée'), valNum, valSub), refreshBtn);
   const carSlot = h('div', { class: 'carslot', hidden: true });
   let carTimer = 0;
+  let carSig = '', carT0 = 0;
   async function paintCarousel() {
     const rows = valRows.map((r) => [r, rowUnitMax(r)]).filter(([, u]) => u != null).sort((a, b) => b[1] - a[1]).slice(0, 20);
     if (!rows.length) { carSlot.hidden = true; carSlot.replaceChildren(); return; }
@@ -952,7 +954,12 @@ async function showListInner(my) {
     const byId = new Map(recs.map((r) => [r.id, r]));
     const items = rows.map(([r, u]) => { const rec = byId.get(r.id); return rec ? { card: { id: r.id, localId: rec.lidRaw, name: rec.nm, image: tcgImage(L, rec.sid, rec.lidRaw, rec.noImg) }, name: rec.nm, price: u, onclick: () => go(L, r.sid) } : null; }).filter(Boolean);
     applyScans(items.map((i) => i.card));
-    carSlot.replaceChildren(buildCarousel('Mes cartes les plus chères', items, () => { listScroll = scrollY; location.hash = '#chercher/top'; }, { auto: true }));
+    // le défilement ne doit ni recommencer ni sauter à chaque mise à jour de prix : on ne reconstruit que si la liste a vraiment changé, et la bande repart de sa position
+    const sig = items.map((i) => i.card.id + ':' + i.price.toFixed(2)).join('|');
+    if (sig === carSig && carSlot.firstChild) return;
+    const first = !carSig; carSig = sig; if (first) carT0 = performance.now();
+    const phase = ((performance.now() - carT0) / 1000) % (items.length * 3.4);
+    carSlot.replaceChildren(buildCarousel('Mes cartes les plus chères', items, () => { listScroll = scrollY; location.hash = '#chercher/top'; }, { auto: true, phase }));
     carSlot.hidden = !items.length;
   }
   const paint = (prog) => {
@@ -1149,12 +1156,20 @@ async function showSetInner(L, setId, my) {
     saveOwned(); refresh(); apply();
   };
   const tiles = [];
-  let selMode = false;
+  let selMode = false, quickMode = false;
   const picked = new Set();
   const visible = () => tiles.filter((x) => !x.el.hidden && !x.el.closest('[hidden]'));
   const pickedVisible = () => visible().filter((x) => picked.has(x));
   const zoom = (t) => {
     if (selMode) { togglePick(t); return; }          // en mode sélection, toucher la photo sélectionne la carte
+    if (quickMode) {                                 // ajout rapide : un exemplaire de plus, sans ouvrir la carte (1re version si la carte en a plusieurs)
+      const key = hasVersions(t.info) ? t.info.vars[0].key : null;
+      const cur = key == null ? qtyTotal(t.value) : (isMulti(t.value) ? (t.value[key] || 0) : 0);
+      if (cur >= MAXQ) { toast('Quantité maximale atteinte.'); return; }
+      t.set(key, cur + 1);
+      t.el.classList.remove('qflash'); void t.el.offsetWidth; t.el.classList.add('qflash');
+      return;
+    }
     const vis = visible();
     openLightbox(vis, Math.max(0, vis.indexOf(t)), L);
   };
@@ -1253,10 +1268,16 @@ async function showSetInner(L, setId, my) {
     h('button', { type: 'button', class: 'tbtn', onclick: () => { picked.forEach((t) => t.el.classList.remove('picked')); picked.clear(); updateSel(); } }, 'Aucune'),
     h('button', { type: 'button', class: 'tbtn', onclick: openBulk }, '➕ Ajouter'));
   function setSelMode(on) {
+    if (on && quickMode) quickBtn.click();
     selMode = on; selBtn.setAttribute('aria-pressed', String(selMode)); selBar.hidden = !selMode; main.classList.toggle('selecting', selMode);
     if (!selMode) { picked.forEach((t) => t.el.classList.remove('picked')); picked.clear(); }
     updateSel();
   }
+  const quickBtn = h('button', { type: 'button', class: 'tbtn', 'aria-pressed': 'false', 'aria-label': 'Ajout rapide : toucher une carte en ajoute un exemplaire', title: 'Ajout rapide : chaque toucher sur une carte en ajoute un exemplaire', onclick: () => {
+    quickMode = !quickMode; if (quickMode && selMode) setSelMode(false);
+    quickBtn.setAttribute('aria-pressed', String(quickMode)); main.classList.toggle('quick', quickMode);
+    if (quickMode) toast('Ajout rapide : touchez une carte pour en ajouter un exemplaire.');
+  } }, '⚡');
   const selBtn = h('button', { type: 'button', class: 'tbtn', 'aria-pressed': 'false', 'aria-label': 'Mode sélection de cartes', title: 'Sélectionner des cartes', onclick: () => setSelMode(!selMode) }, '☑︎');
   // --- ajout par rareté : on choisit une rareté, on coche soi-même les cartes voulues, puis on valide ---
   function openRarityPick(startRar) {
@@ -1303,7 +1324,7 @@ async function showSetInner(L, setId, my) {
     h('div', { class: 'tools2' },
       rarList.length ? rarSel : null,
       rarList.length ? h('button', { type: 'button', class: 'tbtn', 'aria-label': 'Récapitulatif par rareté', title: 'Récapitulatif par rareté', onclick: openRarities }, '📊') : null,
-      selBtn,
+      selBtn, quickBtn,
       h('button', { type: 'button', class: 'tbtn wide', 'aria-label': 'Ajout groupé', onclick: openBulk }, '➕ Ajout groupé')),
     selBar);
 
@@ -2101,7 +2122,13 @@ function loadCardInfo(L, setId) {
   if (!infoCache.has(k)) {
     infoCache.set(k, fetch(`data/cards/${encodeURIComponent(setId)}.json`).then((r) => (r.ok ? r.json() : null)).then((j) => {
       const m = new Map();
-      if (j && j.c) for (const [id, [ri, vi]] of Object.entries(j.c)) m.set(id, { rar: ri >= 0 ? rarName(j.rar[ri]) : null, vars: withKeys(vi.map((i) => descOf(j.var[i]))) });
+      if (j && j.c) for (const [id, [ri, vi]] of Object.entries(j.c)) {
+        const vars = withKeys(vi.map((i) => descOf(j.var[i])));
+        let rar = ri >= 0 ? rarName(j.rar[ri]) : null;
+        // TCGdex appelle « Rare » les rares holo comme les non-holo des séries anciennes : si toutes les versions sont holo, c'est une « Rare Holo »
+        if (rar === 'Rare' && vars.length && vars.every((v) => /holo/i.test(v.type || ''))) rar = 'Rare Holo';
+        m.set(id, { rar, vars });
+      }
       return m;
     }).catch(() => new Map()));
   }
@@ -3007,7 +3034,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v83';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v84';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;

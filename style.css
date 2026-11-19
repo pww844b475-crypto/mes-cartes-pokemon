@@ -706,3 +706,8 @@ html { background: var(--bg); min-height: 100%; }
 .live-bar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 10px; justify-content: center; padding: 12px calc(var(--safe-r) + 16px) calc(var(--safe-b) + 16px) calc(var(--safe-l) + 16px); background: linear-gradient(#0000, #000b); }
 .live-bar .btn { flex: 1; max-width: 200px; margin: 0; }
 @media (prefers-reduced-motion: reduce) { .live-line { animation: none; top: 50%; } }
+
+/* ajout rapide : le toucher sur une photo ajoute un exemplaire */
+.quick .card .media { cursor: copy; }
+@keyframes qflash { 0% { box-shadow: 0 0 0 3px #4cd08a, 0 0 18px #4cd08a; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.card.qflash { animation: qflash .6s ease-out; }
