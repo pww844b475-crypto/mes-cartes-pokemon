@@ -2459,8 +2459,8 @@ function openLightbox(items, index, L) {
   const SHOW_CM_LINKS = () => store.get('cartes.cmLinks') === '1';      // interrupteur caché (réglage 'cartes.cmLinks' = '1')
   function paintLinks(it) {
     const c = it.card, lid = lidShow(c.localId).replace(/[^A-Za-z0-9]/g, '');
-    // « Phyllali 17/90 » (numéro imprimé complet) évite les autres Phyllali ; sans total connu : nom + numéro + extension. Cartes gradées et lots exclus.
-    const term = [it.name, /^\d+$/.test(lid) && it.official ? `${lid}/${it.official}` : [lid, it.setName].filter(Boolean).join(' '), '-PSA -CGC -CCC -PCA -BGS -graded -gradé -lot -lots'].filter(Boolean).join(' ');
+    // « Phyllali 17/90 » : nom + numéro imprimé complet ; sans total connu : nom + numéro + extension.
+    const term = [it.name, /^\d+$/.test(lid) && it.official ? `${lid}/${it.official}` : [lid, it.setName].filter(Boolean).join(' ')].filter(Boolean).join(' ');
     linksEl.replaceChildren(...[
       h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term) + '&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1', target: '_blank', rel: 'noopener noreferrer' }, 'Ventes terminées sur eBay.fr ↗'),
       SHOW_CM_LINKS() ? ' · ' : null,
@@ -3087,7 +3087,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v88';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v90';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;
