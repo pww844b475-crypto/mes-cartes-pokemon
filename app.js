@@ -765,9 +765,11 @@ async function loadHomeCards(sets, blocks) {
   const setName = new Map(sets.map((x) => [x.id, x.name || x.id]));
   const order = blocks.flatMap((b) => b.items.flatMap((g) => g.members.map((m) => m.id))).filter((id) => names[id]);
   const recs = [];
+  const infos = new Map(await Promise.all(order.map(async (sid) => [sid, await loadCardInfo('fr', sid)])));      // raretés : « pikachu illustration rare », « holo », « hyper »…
   for (const sid of order) for (const row of names[sid]) {
     const odd = typeof row[2] === 'string', lid = lidShow(odd ? row[1] : row[0]), nm = odd ? row[2] : row[1], id = odd ? row[0] : sid + '-' + (odd ? row[1] : row[0]);
-    recs.push({ sid, id, nm, lid, lidRaw: odd ? row[1] : row[0], noImg: odd ? row[3] === 0 : row[2] === 0, setName: setName.get(sid) || sid, text: norm(`${nm} ${lid} ${id} ${setName.get(sid) || ''}`) });
+    const rar = ((infos.get(sid) || new Map()).get(id) || {}).rar || '';
+    recs.push({ sid, id, nm, lid, rar, lidRaw: odd ? row[1] : row[0], noImg: odd ? row[3] === 0 : row[2] === 0, setName: setName.get(sid) || sid, text: norm(`${nm} ${lid} ${id} ${setName.get(sid) || ''} ${rar}`) });
   }
   return (homeCards = recs);
 }
@@ -784,6 +786,33 @@ function rowUnitMax(r) {
   return best;
 }
 // items : [{ card, name, price, onclick }] ; all : action du bouton « Voir tout »
+// Défilement continu de l'accueil : on fait défiler un vrai conteneur (scrollLeft) au lieu d'animer une bande de plusieurs milliers de pixels
+// (Safari iPad ne peignait pas toute la bande : zone vide à gauche). Le doigt ou la souris met en pause ; 2 s après, ça repart.
+function startMarquee(track, phase) {
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const SPEED = 98;                                  // pixels par seconde (≈ une carte toutes les 3,4 s)
+  let pos = null, last = 0, holdUntil = 0, down = false;
+  const half = () => (track.scrollWidth / 2) || 1;
+  const hold = (ms) => { holdUntil = performance.now() + ms; };
+  track.addEventListener('pointerdown', () => { down = true; });
+  const up = () => { down = false; hold(2000); pos = null; };
+  track.addEventListener('pointerup', up); track.addEventListener('pointercancel', up);
+  track.addEventListener('touchend', up, { passive: true });
+  track.addEventListener('wheel', () => { hold(2000); pos = null; }, { passive: true });
+  track.addEventListener('mouseenter', () => { down = true; }); track.addEventListener('mouseleave', () => { down = false; hold(500); pos = null; });
+  track.addEventListener('scroll', () => { const hf = half(); if (track.scrollLeft >= hf) track.scrollLeft -= hf; }, { passive: true });
+  const tick = (t) => {
+    if (!track.isConnected) return;                  // carrousel remplacé ou page quittée : la boucle s'arrête
+    const dt = last ? Math.min(0.1, (t - last) / 1000) : 0; last = t;
+    if (!document.hidden && !down && t >= holdUntil && track.clientWidth > 0) {
+      if (pos == null) pos = track.scrollLeft || (phase * SPEED) % half();
+      pos += SPEED * dt; if (pos >= half()) pos -= half();
+      track.scrollLeft = pos;
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
 function buildCarousel(title, items, all, opts = {}) {
   const cardEl = (it, dup) => {
     const holder = h('button', { type: 'button', class: 'car-card' + (dup ? ' car-dup' : ''), role: 'listitem', 'aria-label': `${it.name} : ${eur(it.price)}`, onclick: it.onclick, ...(dup ? { 'aria-hidden': 'true', tabindex: '-1' } : {}) });
@@ -795,8 +824,9 @@ function buildCarousel(title, items, all, opts = {}) {
   // opts.auto : défilement continu en boucle (accueil) : les cartes sont répétées une fois et la bande glisse de la moitié de sa largeur
   const auto = !!opts.auto && items.length >= 5;
   const track = auto
-    ? h('div', { class: 'car-track auto', role: 'list', style: `--n:${items.length}` }, h('div', { class: 'car-belt', style: opts.phase ? `animation-delay:-${opts.phase.toFixed(2)}s` : null }, items.map((it) => cardEl(it, false)), items.map((it) => cardEl(it, true))))
+    ? h('div', { class: 'car-track auto', role: 'list' }, h('div', { class: 'car-belt' }, items.map((it) => cardEl(it, false)), items.map((it) => cardEl(it, true))))
     : h('div', { class: 'car-track', role: 'list' }, items.map((it) => cardEl(it, false)));
+  if (auto) startMarquee(track, opts.phase || 0);
   return h('section', { class: 'carou', 'aria-label': title }, h('div', { class: 'car-head' }, h('h2', {}, title), all ? h('button', { type: 'button', class: 'car-all', onclick: all }, 'Voir tout') : null), track);
 }
 
@@ -915,7 +945,7 @@ async function showList(my) {   // l'écran de chargement animé s'affiche si l'
 }
 async function showListInner(my) {
   const L = lang;
-  const q = h('input', { class: 'search', type: 'search', placeholder: 'Extension, Pokémon, carte, numéro…', 'aria-label': 'Rechercher une extension, un Pokémon ou une carte', enterkeyhint: 'search', autocomplete: 'off' });
+  const q = h('input', { class: 'search', type: 'search', placeholder: 'Extension, Pokémon, carte, numéro, rareté…', 'aria-label': 'Rechercher une extension, un Pokémon ou une carte', enterkeyhint: 'search', autocomplete: 'off' });
   const top = h('header', { class: 'top' },
     h('div', { class: 'row brandrow' }, h('h1', { class: 'brand' }, h('img', { src: 'icons/logo-banner.webp', alt: '', width: 1000, height: 251, decoding: 'async', draggable: 'false' }), h('span', { class: 'sr' }, 'Pijakollection')), q),   // la recherche est à côté du logo (dessous sur un petit écran)
     langSwitch(L, (id) => { listScroll = 0; go(id); }));
@@ -1111,7 +1141,7 @@ async function showListInner(my) {
     hitsBox.replaceChildren(
       h('h2', {}, `Cartes : ${found.length.toLocaleString('fr-FR')} trouvée${found.length > 1 ? 's' : ''} en français`),
       h('ul', { class: 'hitlist' }, shownHits.map((r) => h('li', {}, h('button', { type: 'button', class: 'hit', onclick: () => { listScroll = scrollY; location.hash = '#chercher/q/' + encodeURIComponent(q.value.trim()); } },
-        h('span', { class: 'hn' }, r.nm), h('span', { class: 'hl' }, `#${r.lid} · ${r.setName}`))))),
+        h('span', { class: 'hn' }, r.nm), h('span', { class: 'hl' }, `#${r.lid} · ${r.setName}${r.rar ? ' · ' + r.rar : ''}`))))),
       h('button', { type: 'button', class: 'btn hits-all', onclick: () => { listScroll = scrollY; location.hash = '#chercher/q/' + encodeURIComponent(q.value.trim()); } }, `Voir ${found.length > 1 ? `les ${found.length.toLocaleString('fr-FR')} cartes` : 'la carte'} avec images et prix`));
     hitsBox.hidden = false;
   };
@@ -1140,7 +1170,7 @@ async function showSet(L, setId, my) {
 async function showSetInner(L, setId, my) {
   const back = h('button', { class: 'iconbtn', type: 'button', onclick: () => go(L), 'aria-label': 'Retour aux extensions' }, '‹ Extensions');
   const title = h('h1', {}, setId);
-  const q = h('input', { class: 'search', type: 'search', placeholder: 'Nom ou numéro de carte…', 'aria-label': 'Rechercher une carte', enterkeyhint: 'search', autocomplete: 'off' });
+  const q = h('input', { class: 'search', type: 'search', placeholder: 'Nom, numéro ou rareté…', 'aria-label': 'Rechercher une carte', enterkeyhint: 'search', autocomplete: 'off' });
   const top = h('header', { class: 'top' }, h('div', { class: 'row' }, back, title), q);
   const main = h('main', {}, spinner());
   $app.replaceChildren(top, main);
@@ -1472,7 +1502,7 @@ async function buildSearchIndex(L, sets) {
     applyScans(cards);
     for (const c of cards) {
       const i = info.get(c.id) || null;
-      recs.push({ card: c, sid, gid, setName: m.name || sid, info: i, text: norm(`${c.name} ${lidShow(c.localId)} ${c.id}`) });
+      recs.push({ card: c, sid, gid, setName: m.name || sid, info: i, text: norm(`${c.name} ${lidShow(c.localId)} ${c.id} ${i && i.rar ? i.rar : ''}`) });
       if (i && i.rar) rars.set(i.rar, (rars.get(i.rar) || 0) + 1);
       if (i) for (const v of i.vars) { const e = vers.get(v.key) || { label: v.label, n: 0 }; e.n++; vers.set(v.key, e); }
     }
@@ -1720,29 +1750,38 @@ async function ocrBitmap(bmp, score, onStep, quick, onVisual) {
    Beaucoup de cartes portent le même nom (Pikachu : des centaines) ; quand le numéro imprimé n'est pas lisible, on compare l'illustration de la photo
    (couleurs de la zone centrale, à 3 échelles de cadrage) à celle de chaque candidat (image TCGdex en basse définition). */
 const VIS_ART = [0.08, 0.11, 0.92, 0.54];
+// Holo / brillantes : l'arc-en-ciel de la foil ajoute un dégradé de couleur sur toute la carte et les reflets blancs effacent des zones. On retire donc de chaque
+// canal un « plan » (dégradé linéaire) avant de comparer, côté photo ET côté référence, et les pixels quasi blancs (reflets) de la photo sont ignorés.
+// Mesuré sur 26 cartes holo simulées avec reflets forts : bonne carte en tête 4 → 9 fois, dans les 3 premières 4 → 12 ; sans reflets 19 → 20.
+const GRID_X = [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5];
+function dePlane(g) {
+  const o = new Float32Array(108);
+  for (let ch = 0; ch < 3; ch++) {
+    let m = 0, sx = 0, sy = 0; for (let i = 0; i < 36; i++) m += g[i * 3 + ch]; m /= 36;
+    for (let cy = 0; cy < 6; cy++) for (let cx = 0; cx < 6; cx++) { const v = g[(cy * 6 + cx) * 3 + ch] - m; sx += v * GRID_X[cx]; sy += v * GRID_X[cy]; }
+    sx /= 105; sy /= 105;
+    for (let cy = 0; cy < 6; cy++) for (let cx = 0; cx < 6; cx++) o[(cy * 6 + cx) * 3 + ch] = g[(cy * 6 + cx) * 3 + ch] - m - sx * GRID_X[cx] - sy * GRID_X[cy];
+  }
+  let n = 0; for (let i = 0; i < 108; i++) n += o[i] * o[i]; n = Math.sqrt(n) + 1e-6; for (let i = 0; i < 108; i++) o[i] /= n;
+  return o;
+}
 function visDesc(src, box) {
   const w = src.width || src.naturalWidth, hh = src.height || src.naturalHeight;
   const c = document.createElement('canvas'); c.width = 24; c.height = 24;
   const x = c.getContext('2d', { willReadFrequently: true });
   x.drawImage(src, box[0] * w, box[1] * hh, (box[2] - box[0]) * w, (box[3] - box[1]) * hh, 0, 0, 24, 24);
-  const d = x.getImageData(0, 0, 24, 24).data, g = new Float32Array(108), hb = new Float32Array(12);
-  for (let cy = 0; cy < 6; cy++) for (let cx = 0; cx < 6; cx++) for (let ch = 0; ch < 3; ch++) {
-    let sum = 0; for (let y = 0; y < 4; y++) for (let xx = 0; xx < 4; xx++) sum += d[((cy * 4 + y) * 24 + cx * 4 + xx) * 4 + ch];
-    g[(cy * 6 + cx) * 3 + ch] = sum / 16 / 255;
+  const d = x.getImageData(0, 0, 24, 24).data, g = new Float32Array(108), valid = new Uint8Array(36);
+  let nv = 0;
+  for (let cy = 0; cy < 6; cy++) for (let cx = 0; cx < 6; cx++) {
+    let cnt = 0; const sum = [0, 0, 0];
+    for (let y = 0; y < 4; y++) for (let xx = 0; xx < 4; xx++) { const p = ((cy * 4 + y) * 24 + cx * 4 + xx) * 4; if (Math.min(d[p], d[p + 1], d[p + 2]) > 215) continue; cnt++; for (let ch = 0; ch < 3; ch++) sum[ch] += d[p + ch]; }
+    const k = cy * 6 + cx; if (cnt >= 6) { valid[k] = 1; nv++; for (let ch = 0; ch < 3; ch++) g[k * 3 + ch] = sum[ch] / cnt / 255; }
   }
-  for (let ch = 0; ch < 3; ch++) { let m = 0; for (let i = 0; i < 36; i++) m += g[i * 3 + ch]; m /= 36; for (let i = 0; i < 36; i++) g[i * 3 + ch] -= m; }
-  let n = 0; for (let i = 0; i < 108; i++) n += g[i] * g[i]; n = Math.sqrt(n) + 1e-6; for (let i = 0; i < 108; i++) g[i] /= n;
-  let hs = 0;
-  for (let i = 0; i < d.length; i += 4) {
-    const r = d[i] / 255, gg = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), df = mx - mn;
-    if (df < 1e-6 || mx < 1e-6) continue;
-    let hue = mx === r ? ((gg - b) / df) % 6 : mx === gg ? (b - r) / df + 2 : (r - gg) / df + 4; hue = (hue < 0 ? hue + 6 : hue) / 6;
-    const wgt = (df / mx) * mx; hb[Math.min(11, Math.floor(hue * 12))] += wgt; hs += wgt;
-  }
-  for (let i = 0; i < 12; i++) hb[i] /= hs + 1e-6;
-  return { g, hb };
+  if (nv < 12) { valid.fill(1); nv = 36; for (let k = 0; k < 36; k++) { const cy = Math.floor(k / 6), cx = k % 6; for (let ch = 0; ch < 3; ch++) { let s = 0; for (let y = 0; y < 4; y++) for (let xx = 0; xx < 4; xx++) s += d[((cy * 4 + y) * 24 + cx * 4 + xx) * 4 + ch]; g[k * 3 + ch] = s / 16 / 255; } } }
+  for (let ch = 0; ch < 3; ch++) { let m = 0; for (let k = 0; k < 36; k++) if (valid[k]) m += g[k * 3 + ch]; m /= nv; for (let k = 0; k < 36; k++) g[k * 3 + ch] = valid[k] ? g[k * 3 + ch] - m : 0; }
+  return { g: dePlane(g) };
 }
-function visSim(a, b) { let dot = 0, inter = 0; for (let i = 0; i < 108; i++) dot += a.g[i] * b.g[i]; for (let i = 0; i < 12; i++) inter += Math.min(a.hb[i], b.hb[i]); return dot * 0.6 + inter * 0.4; }
+function visSim(a, b) { let dot = 0; for (let i = 0; i < 108; i++) dot += a.g[i] * b.g[i]; return dot; }
 /* Empreintes visuelles précalculées (data/vis.bin : 120 octets par carte ; outil tools/build-vis.py) : plus aucune image à télécharger au moment du scan,
    donc rien qui dépende des droits d'accès (CORS) du serveur d'images, et un classement instantané, même hors connexion. */
 let visPromise = null;
@@ -1755,8 +1794,11 @@ function visOf(vis, r) {      // empreinte d'une fiche de la recherche, ou null 
   const e = vis.index[r.sid]; if (!e || r.card.vi == null) return null;
   const o = (e.o + r.card.vi) * 120; if (o + 120 > vis.bytes.length) return null;
   const b = vis.bytes.subarray(o, o + 120); let any = 0; for (let i = 0; i < 120; i++) any |= b[i]; if (!any) return null;
-  const g = new Float32Array(108), hb = new Float32Array(12); for (let i = 0; i < 108; i++) g[i] = (b[i] - 128) / 127; for (let i = 0; i < 12; i++) hb[i] = b[108 + i] / 255;
-  return { g, hb };
+  const n = vis.bytes.length / 120, k = o / 120;
+  if (!vis.dp) { vis.dp = new Float32Array(n * 108); vis.has = new Uint8Array(n); }      // « plan » retiré une seule fois par carte (20 000 × 108 flottants ≈ 8 Mo, alloués au premier scan)
+  const view = vis.dp.subarray(k * 108, k * 108 + 108);
+  if (!vis.has[k]) { const g = new Float32Array(108); for (let i = 0; i < 108; i++) g[i] = (b[i] - 128) / 127; view.set(dePlane(g)); vis.has[k] = 1; }
+  return { g: view };
 }
 function photoDescs(photo, cropped) {
   const W = photo.width, H = photo.height;
@@ -1782,10 +1824,10 @@ async function rerankVisual(idx, ids, hits, photo, cropped) {
   } catch { return ids; }
 }
 // Jugement d'un classement visuel [[id, ressemblance]…] : la carte de tête est-elle identifiée ? « family » = cartes quasi identiques (même illustration, autres extensions)
-function judgeVisual(vs, minSim = 0.7) {
+function judgeVisual(vs, minSim = 0.5) {
   if (!vs.length || vs[0][1] < minSim) return null;
   const family = vs.filter(([, sc]) => sc >= vs[0][1] - 0.02), other = vs.find(([, sc]) => sc < vs[0][1] - 0.02), margin = other ? vs[0][1] - other[1] : 1;
-  return margin >= 0.04 || vs[0][1] >= 0.88 ? { ids: vs.map(([id]) => id), family: family.map(([id]) => id), sim: vs[0][1], margin } : null;
+  return margin >= 0.1 || vs[0][1] >= 0.93 ? { ids: vs.map(([id]) => id), family: family.map(([id]) => id), sim: vs[0][1], margin } : null;
 }
 // recherche visuelle dans toutes les cartes (quand ni le nom ni le numéro n'ont pu être lus) → les n cartes qui ressemblent le plus à la photo
 async function visualSearch(idx, photo, cropped, n = 20) {
@@ -1873,7 +1915,7 @@ async function showSearch(L, my, preset = {}) {
 }
 async function showSearchInner(L, my, preset = {}) {
   const back = h('button', { class: 'iconbtn', type: 'button', onclick: () => go(L), 'aria-label': 'Retour aux extensions' }, '‹ Extensions');
-  const q = h('input', { class: 'search', type: 'search', placeholder: 'Nom ou numéro de carte…', 'aria-label': 'Rechercher une carte dans toute la collection', enterkeyhint: 'search', autocomplete: 'off' });
+  const q = h('input', { class: 'search', type: 'search', placeholder: 'Nom, numéro ou rareté…', 'aria-label': 'Rechercher une carte dans toute la collection', enterkeyhint: 'search', autocomplete: 'off' });
   const top = h('header', { class: 'top' }, h('div', { class: 'row' }, back, h('h1', {}, 'Rechercher des cartes')), q);
   const main = h('main', {}, spinner());
   $app.replaceChildren(top, main);
@@ -2067,7 +2109,7 @@ async function showSearchInner(L, my, preset = {}) {
     const ldScan = loader.start('Analyse de la photo');
     try {
       const { text, full, cropped, score: readScore, preIds } = await ocrPhoto(file, (t) => { const r = matchScan(idx, parseCardText(t)); return r.score; }, (m) => { summary.textContent = 'Analyse de la photo · ' + m; },
-        async (photo) => { const j = judgeVisual(await visualSearch(idx, photo, true, 8), 0.72); return j && j.family.length === 1 ? j.ids : null; }); if (my !== tok) return;
+        async (photo) => { const j = judgeVisual(await visualSearch(idx, photo, true, 8), 0.5); return j && j.family.length === 1 ? j.ids : null; }); if (my !== tok) return;
       if (preIds) { readNote.textContent = 'Reconnue par l’illustration.'; readNote.hidden = false; await finishScan(preIds, 3, full, cropped); return; }
       { const pr = parseCardText(text); readNote.textContent = 'Lecture : ' + (pr.n != null && pr.total != null ? `n° ${pr.n}/${pr.total} · ` : 'numéro non lu · ') + (text.replace(/[^A-Za-zÀ-ÿ0-9\/ ]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90) || 'rien'); readNote.hidden = false; }      // pour comprendre un échec
       await finishScan(matchScan(idx, parseCardText(text)), readScore, full, cropped);
@@ -2126,7 +2168,7 @@ async function showSearchInner(L, my, preset = {}) {
         black = sum / (256 * 3) < 5 ? black + 1 : 0; if (black >= 6) { ended = true; c.width = c.height = 0; continue; }
       }
       const vs = await visualSearch(idx, c, true, 8); if (stopped) return;
-      const j = judgeVisual(vs, 0.7);
+      const j = judgeVisual(vs, 0.5);
       readout.textContent = vs.length ? `Ressemblance : ${Math.round(vs[0][1] * 100)} %${j ? ' · carte repérée' : ''}` : '';
       if (!j) { streak = 0; lastTop = null; msg.textContent = 'Placez la carte dans le cadre, bien à plat et éclairée.'; c.width = c.height = 0; continue; }
       streak = j.ids[0] === lastTop ? streak + 1 : 1; lastTop = j.ids[0];
@@ -3098,7 +3140,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v92';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v94';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;
