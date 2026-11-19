@@ -517,12 +517,29 @@ async function fetchPrice(L, id) {
   if (fx && L === 'fr') { priceCache[id] = [numOrNull(fx[0]), numOrNull(fx[1]), Date.parse(priceFix.updated + 'T12:00:00') || Date.now(), numOrNull(fx[2])]; return; }
   const path = `/${L}/cards/${encodeURIComponent(id)}`;
   let c = null;
-  try { const d = await api(path); mem.delete(path); c = d.pricing && d.pricing.cardmarket; } catch (e) { if (!/HTTP 404/.test(e.message || '')) throw e; }
-  priceCache[id] = c ? [numOrNull(c.trend) ?? numOrNull(c.avg) ?? numOrNull(c.low), numOrNull(c['trend-holo']) ?? numOrNull(c['avg-holo']) ?? numOrNull(c['low-holo']), Date.now(), numOrNull(c.idProduct)] : [null, null, Date.now(), null];   // [prix, prix holo, date, identifiant produit Cardmarket]
+  let pv = {}, tg = {};      // prix propre à chaque version (1re Édition, sans ombre, reverse…) : TCGdex les relie à des produits Cardmarket distincts
+  try {
+    const d = await api(path); mem.delete(path); c = d.pricing && d.pricing.cardmarket;
+    const tp = d.pricing && d.pricing.tcgplayer;      // TCGplayer (dollars) : prix du marché par finition ; converti en euros à l'affichage, jamais montré en dollars
+    if (tp) for (const [f, o] of Object.entries(tp)) { const u = o && typeof o === 'object' ? (numOrNull(o.marketPrice) ?? numOrNull(o.midPrice)) : null; if (u != null) tg[f.toLowerCase().replace(/[^a-z0-9]/g, '')] = u; }
+    const vd = d.variants_detailed || [], stampedProd = new Set(vd.filter((x) => x.stamp && x.stamp.length && x.pricing && x.pricing.cardmarket).map((x) => x.pricing.cardmarket.idProduct));
+    for (const x of vd) {
+      const m = x.pricing && x.pricing.cardmarket; if (!m) continue;
+      if (!(x.stamp && x.stamp.length) && stampedProd.has(m.idProduct)) continue;     // version sans tampon rattachée au même produit que la 1re Édition : prix non fiable (≠ 1re Édition) → prix de base
+      const k = vKey(descOf([x.type || 'Normal', x.size, x.foil, x.subtype, x.stamp]));
+      const n = numOrNull(m.trend) ?? numOrNull(m.avg) ?? numOrNull(m.low), hv = numOrNull(m['trend-holo']) ?? numOrNull(m['avg-holo']) ?? numOrNull(m['low-holo']);
+      if ((n != null || hv != null) && !(k in pv)) pv[k] = [n, hv];
+    }
+  } catch (e) { if (!/HTTP 404/.test(e.message || '')) throw e; }
+  priceCache[id] = c ? [numOrNull(c.trend) ?? numOrNull(c.avg) ?? numOrNull(c.low), numOrNull(c['trend-holo']) ?? numOrNull(c['avg-holo']) ?? numOrNull(c['low-holo']), Date.now(), numOrNull(c.idProduct), pv, tg] : [null, null, Date.now(), null, pv, tg];   // [prix, prix holo, date, identifiant produit Cardmarket]
 }
 // Prix Cardmarket de la fiche : « tendance » = tirage normal de la carte (y compris une carte Holo), « tendance holo » = tirage Reverse.
 // Version Reverse → prix reverse (repli : prix normal) ; toute autre version (Normal, Holo…) → prix normal (repli : prix reverse).
-const cmUnit = (e, key) => ((key && /^reverse(\/|$)/.test(key)) ? (e[1] ?? e[0]) : (e[0] ?? e[1]));
+const cmUnit = (e, key) => {
+  const v = key && e[4] && e[4][key], rev = !!(key && /^reverse(\/|$)/.test(key));
+  if (v && (v[0] != null || v[1] != null)) return rev ? (v[1] ?? v[0]) : (v[0] ?? v[1]);      // prix de cette version précise
+  return rev ? (e[1] ?? e[0]) : (e[0] ?? e[1]);
+};
 // Vente eBay.fr relevée à la main (dernière vente réussie) : { idCarte: [prix] } (d'anciennes saisies de 1 à 3 prix sont lues : leur moyenne compte) ; combinée à celle de Cardmarket
 function sanitizeEbay(o) {
   const out = {};
@@ -538,7 +555,32 @@ try { ebayPrices = sanitizeEbay(JSON.parse(store.get(K.ebay) || '{}')); } catch 
 const saveEbay = () => store.set(K.ebay, JSON.stringify(ebayPrices));
 const ebayAvg = (id) => { const a = ebayPrices[id]; return a && a.length ? a.reduce((x, y) => x + y, 0) / a.length : null; };
 const blend = (id, cm) => { const eb = ebayAvg(id); return eb == null ? cm : cm == null ? eb : (cm + eb) / 2; };
-const unitPrice = (e, key, id) => blend(id, e ? cmUnit(e, key) : null);
+// Source des prix (Réglages) : Cardmarket (euros), TCGplayer (dollars convertis en euros) ou la moyenne des deux
+const PRICE_SRC = [['cm', 'Cardmarket (euros)'], ['tcg', 'TCGplayer (converti en euros)'], ['avg', 'Moyenne des deux']];
+const priceSrc = () => { const v = store.get('cartes.src'); return PRICE_SRC.some(([k]) => k === v) ? v : 'cm'; };
+let fx = { r: 0.86, t: 0, live: false };      // taux USD → EUR : valeur de repli, remplacée par le taux du jour (BCE via frankfurter.dev) s'il est joignable
+try { const o = JSON.parse(store.get('cartes.fx') || 'null'); if (o && o.r > 0.3 && o.r < 3) fx = { r: o.r, t: o.t || 0, live: true }; } catch { /* ignoré */ }
+const fxReady = (async () => {
+  if (fx.live && Date.now() - fx.t < 12 * 3600e3) return;
+  try {
+    const r = await fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR'); const j = r.ok ? await r.json() : null;
+    const v = j && j.rates && j.rates.EUR; if (typeof v === 'number' && v > 0.3 && v < 3) { fx = { r: v, t: Date.now(), live: true }; store.set('cartes.fx', JSON.stringify({ r: v, t: fx.t })); }
+  } catch { /* hors ligne : dernier taux connu ou valeur de repli */ }
+})();
+// finition TCGplayer correspondant à la version (clés normalisées : holofoil, reverseholofoil, 1steditionholofoil, normal…)
+function tcgUnit(e, key) {
+  const t = e[5]; if (!t) return null; const ks = Object.keys(t); if (!ks.length) return null;
+  const first = !!(key && /m:1re/.test(key)), rev = !!(key && /^reverse(\/|$)/.test(key)), holo = !!(key && /^holo(\/|$)/.test(key));
+  const want = rev ? ['reverseholofoil', 'reversenormal'] : first ? [holo ? '1steditionholofoil' : '1steditionnormal'] : holo ? ['holofoil', 'unlimitedholofoil', 'unlimitednormal', 'normal'] : ['normal', 'unlimitednormal', 'holofoil', 'unlimitedholofoil'];
+  for (const w of want) if (t[w] != null) return t[w];
+  return first ? null : t[ks[0]];
+}
+function srcUnit(e, key) {
+  const src = priceSrc(), cm = cmUnit(e, key); if (src === 'cm') return cm;
+  const u = tcgUnit(e, key), tc = u == null ? null : u * fx.r;
+  return src === 'tcg' ? (tc ?? cm) : (tc != null && cm != null ? (tc + cm) / 2 : (tc ?? cm));
+}
+const unitPrice = (e, key, id) => blend(id, e ? srcUnit(e, key) : null);
 async function ownedRows(L) {
   const rows = [];
   for (const [sid, m] of Object.entries(owned[L])) {
@@ -567,7 +609,8 @@ function summarize(rows) {
   return out;
 }
 async function ensurePrices(L, rows, refresh, onProgress) {
-  const ids = [...new Set(rows.filter(isValued).map((r) => r.id))].filter((id) => refresh || !priceCache[id]);
+  await fxReady;
+  const ids = [...new Set(rows.filter(isValued).map((r) => r.id))].filter((id) => refresh || !priceCache[id] || (priceCache[id].length < 6 && !(priceFix && priceFix.cards[id])));   // anciens relevés sans prix par version : redemandés une fois
   let done = 0, i = 0;
   const ld = ids.length ? loader.start('Mise à jour des prix') : null;
   const worker = async () => {
@@ -608,12 +651,15 @@ function openOwned(L, rows, onToggle) {
   if (s.pending) notes.push(h('div', { class: 'note warn' }, `Prix en cours de chargement pour ${plural(s.pending, 'carte', 'cartes')}. Rouvrez cette fenêtre dans un instant.`));
   if (s.skipped) notes.push(h('div', { class: 'note' }, `${plural(s.skipped, 'carte n’est', 'cartes ne sont')} pas estimée${s.skipped > 1 ? 's' : ''} (raretés de moindre valeur) : ${s.skipped > 1 ? 'elles ne comptent' : 'elle ne compte'} pas dans le total. Décochez l’option ci-dessous pour tout estimer.`));
   if (s.noPrice) notes.push(h('div', { class: 'note' }, `${plural(s.noPrice, 'carte n’a', 'cartes n’ont')} pas de prix Cardmarket connu : ${s.noPrice > 1 ? 'elles sont comptées' : 'elle est comptée'} pour 0 €.`));
+  const srcSel = h('select', { class: 'field', 'aria-label': 'Source des prix' }, PRICE_SRC.map(([k, l]) => h('option', { value: k }, l)));
+  srcSel.value = priceSrc(); srcSel.addEventListener('change', () => { store.set('cartes.src', srcSel.value); closeSheet(); if (onToggle) onToggle(); });
   const vo = h('input', { type: 'checkbox', checked: valueOnly(), 'aria-label': 'Estimer seulement les cartes de valeur' });
   vo.addEventListener('change', () => { store.set('cartes.valueOnly', vo.checked ? '1' : '0'); closeSheet(); if (onToggle) onToggle(); });
   openSheet(
     h('h2', {}, 'Mes cartes possédées'),
     rows.length ? h('p', {}, 'Cochez les raretés à additionner. Touchez › pour voir les cartes d’une rareté.') : h('p', {}, 'Vous ne possédez encore aucune carte.'),
     h('div', { class: 'orows' }, rowsEl), totalEl, ...notes,
+    h('label', { class: 'lbl' }, 'Source des prix', srcSel),
     h('label', { class: 'orow-l' }, vo, h('span', { class: 'rn' }, 'Estimer seulement les cartes de valeur (Illustration rare, Illustration spéciale rare, Hyper rare)')),
     h('p', { class: 'lb-help' }, `Prix Cardmarket (tendance, en euros) fournis par TCGdex : tous vendeurs et toutes langues confondus, pas seulement les vendeurs français.${s.oldest ? ' Prix relevés le ' + new Date(s.oldest).toLocaleDateString('fr-FR') + '.' : ''}`),
     rows.length ? h('button', { class: 'btn', type: 'button', onclick: () => { closeSheet(); location.hash = '#chercher/own'; } }, 'Voir toutes mes cartes') : null,
@@ -747,6 +793,10 @@ function buildCarousel(title, items, all, opts = {}) {
 
 /* ---------- Carrousel « en éventail » (cartes possédées) : la carte du centre est grande, la précédente et la suivante se devinent de chaque côté ---------- */
 // items : [{ card, name, sub, price, onopen(index) }] ; défilement tactile avec accroche sur chaque carte
+// appui long : le doigt est resté posé au moins 450 ms avant le « clic » (utilisé par l'ajout rapide)
+let pressAt = 0;
+addEventListener('pointerdown', () => { pressAt = performance.now(); }, true);
+const longPress = () => performance.now() - pressAt >= 450;
 function buildCoverflow(title, items, onOpen) {
   const cap = h('p', { class: 'cf-cap', 'aria-live': 'polite' }, h('b', { class: 'cf-name' }), h('span', { class: 'cf-sub' }));
   const count = h('p', { class: 'cf-count' });
@@ -967,7 +1017,7 @@ async function showListInner(my) {
     const sm = summarize(valRows);
     mineBtn.querySelector('.mn').textContent = String(sm.cards);
     valNum.textContent = eur(sm.total);
-    valSub.textContent = prog ? `Calcul des prix… ${prog}` : sm.pending ? 'Prix indisponibles pour le moment (connexion ?)' : `${valueOnly() ? 'Cartes de valeur · ' : ''}Cardmarket · tendance · tous vendeurs${sm.oldest ? ' · relevé le ' + new Date(sm.oldest).toLocaleDateString('fr-FR') : ''}`;
+    valSub.textContent = prog ? `Calcul des prix… ${prog}` : sm.pending ? 'Prix indisponibles pour le moment (connexion ?)' : `${valueOnly() ? 'Cartes de valeur · ' : ''}${{ cm: 'Cardmarket · tendance · tous vendeurs', tcg: 'TCGplayer · prix du marché (converti en €)', avg: 'Cardmarket + TCGplayer (converti en €)' }[priceSrc()]}${sm.oldest ? ' · relevé le ' + new Date(sm.oldest).toLocaleDateString('fr-FR') : ''}`;
   };
   // à chaque ouverture de l'application (une fois par lancement) : proposer d'actualiser les prix
   const askSlot = h('div', { class: 'askslot' });
@@ -1160,16 +1210,17 @@ async function showSetInner(L, setId, my) {
   const picked = new Set();
   const visible = () => tiles.filter((x) => !x.el.hidden && !x.el.closest('[hidden]'));
   const pickedVisible = () => visible().filter((x) => picked.has(x));
+  const quickAdd = (t) => {                          // un exemplaire de plus (1re version si la carte en a plusieurs)
+    const key = hasVersions(t.info) ? t.info.vars[0].key : null;
+    const cur = key == null ? qtyTotal(t.value) : (isMulti(t.value) ? (t.value[key] || 0) : 0);
+    if (cur >= MAXQ) { toast('Quantité maximale atteinte.'); return; }
+    t.set(key, cur + 1);
+    t.el.classList.remove('qflash'); void t.el.offsetWidth; t.el.classList.add('qflash');
+    toast(`+1 ${t.name}`);
+  };
   const zoom = (t) => {
     if (selMode) { togglePick(t); return; }          // en mode sélection, toucher la photo sélectionne la carte
-    if (quickMode) {                                 // ajout rapide : un exemplaire de plus, sans ouvrir la carte (1re version si la carte en a plusieurs)
-      const key = hasVersions(t.info) ? t.info.vars[0].key : null;
-      const cur = key == null ? qtyTotal(t.value) : (isMulti(t.value) ? (t.value[key] || 0) : 0);
-      if (cur >= MAXQ) { toast('Quantité maximale atteinte.'); return; }
-      t.set(key, cur + 1);
-      t.el.classList.remove('qflash'); void t.el.offsetWidth; t.el.classList.add('qflash');
-      return;
-    }
+    if (quickMode && !longPress()) { quickAdd(t); return; }     // ajout rapide : toucher bref = +1 ; appui long = fiche (prix, eBay…)
     const vis = visible();
     openLightbox(vis, Math.max(0, vis.indexOf(t)), L);
   };
@@ -1355,9 +1406,9 @@ async function showSetInner(L, setId, my) {
     const vis = sections.flatMap((x) => x.tiles).filter((t) => !t.el.hidden);
     cfSlot.hidden = !vis.length;
     if (!vis.length) { cfSlot.replaceChildren(); return; }
-    const items = vis.map((t) => { const e = priceCache[t.card.id]; return { card: t.card, name: t.card.name, sub: '#' + lidShow(t.card.localId) + (qtyTotal(t.mine[t.card.id]) > 0 ? ' · possédée' : ''), price: blend(t.card.id, e ? (e[0] ?? e[1]) : null) }; });
+    const items = vis.map((t) => { const e = priceCache[t.card.id]; return { card: t.card, name: t.card.name, sub: '#' + lidShow(t.card.localId) + (qtyTotal(t.mine[t.card.id]) > 0 ? ' · possédée' : ''), price: blend(t.card.id, e ? srcUnit(e, null) : null) }; });
     const keep = cfSlot.querySelector('.cf-track') ? cfSlot.querySelector('.cf-track').scrollLeft : 0;
-    cfSlot.replaceChildren(buildCoverflow(`${vis.length.toLocaleString('fr-FR')} carte${vis.length > 1 ? 's' : ''}`, items, (i) => openLightbox(vis, i, L)));
+    cfSlot.replaceChildren(buildCoverflow(`${vis.length.toLocaleString('fr-FR')} carte${vis.length > 1 ? 's' : ''}`, items, (i) => { if (quickMode && !longPress()) { quickAdd(vis[i]); paintCf(); } else openLightbox(vis, i, L); }));
     const tr = cfSlot.querySelector('.cf-track'); if (tr && keep) requestAnimationFrame(() => { tr.scrollLeft = keep; });
   }
   const applyView = () => {
@@ -1931,7 +1982,7 @@ async function showSearchInner(L, my, preset = {}) {
   const ownedMode = () => f.own === 'own' || f.own === 'dbl';
   function priceOfRec(r) {
     if (ownedMode()) { const u = rowUnitMax({ id: r.card.id, v: mines.get(r.sid)[r.card.id] }); if (u != null) return u; }
-    const e = priceCache[r.card.id]; return blend(r.card.id, e ? (e[0] ?? e[1]) : null);
+    const e = priceCache[r.card.id]; return blend(r.card.id, e ? srcUnit(e, null) : null);
   }
   function paintCar() {
     {                                   // éventail pour toute liste de cartes (la carte du centre, la précédente et la suivante visibles de chaque côté)
@@ -2239,7 +2290,7 @@ function makeTile(card, mine, onChange, ctx) {
     get info() { return info; },
     setInfo(i) { info = i; build(); sync(); },
     get value() { return mine[id]; },
-    paintPrice() { const e = priceCache[id], u = blend(id, e ? (e[0] ?? e[1]) : null); price.hidden = u == null; if (u != null) price.textContent = '≈ ' + eur(u); },
+    paintPrice() { const e = priceCache[id], u = blend(id, e ? srcUnit(e, null) : null); price.hidden = u == null; if (u != null) price.textContent = '≈ ' + eur(u); },
     set(key, q) { setQty(mine, id, key, q); sync(); onChange(); },
     setQuiet(key, q) { setQty(mine, id, key, q); sync(); },                       // sans enregistrer (actions groupées)
     restore(v) { if (v === undefined) delete mine[id]; else mine[id] = isMulti(v) ? { ...v } : v; sync(); },
@@ -2386,7 +2437,7 @@ function openLightbox(items, index, L) {
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } e.stopPropagation(); });
     inp.addEventListener('focus', () => inp.select());
     const res = h('p', { class: 'lb-help' });
-    const upd = () => { const eb = ebayAvg(id); const e = priceCache[id]; const cm = e ? (e[0] ?? e[1]) : null;
+    const upd = () => { const eb = ebayAvg(id); const e = priceCache[id]; const cm = e ? srcUnit(e, null) : null;
       res.textContent = eb == null ? 'Notez le prix de la dernière vente réussie : il est combiné à celui de Cardmarket.' : `Dernière vente eBay.fr : ${eur(eb)}${cm != null ? ` · avec Cardmarket (${eur(cm)}) : ${eur((eb + cm) / 2)}` : ''}`; };
     inp.addEventListener('change', () => {
       const v = parseFloat(inp.value.replace(',', '.'));
@@ -3034,7 +3085,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v84';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v87';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;
