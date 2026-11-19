@@ -1750,29 +1750,38 @@ async function ocrBitmap(bmp, score, onStep, quick, onVisual) {
    Beaucoup de cartes portent le même nom (Pikachu : des centaines) ; quand le numéro imprimé n'est pas lisible, on compare l'illustration de la photo
    (couleurs de la zone centrale, à 3 échelles de cadrage) à celle de chaque candidat (image TCGdex en basse définition). */
 const VIS_ART = [0.08, 0.11, 0.92, 0.54];
+// Holo / brillantes : l'arc-en-ciel de la foil ajoute un dégradé de couleur sur toute la carte et les reflets blancs effacent des zones. On retire donc de chaque
+// canal un « plan » (dégradé linéaire) avant de comparer, côté photo ET côté référence, et les pixels quasi blancs (reflets) de la photo sont ignorés.
+// Mesuré sur 26 cartes holo simulées avec reflets forts : bonne carte en tête 4 → 9 fois, dans les 3 premières 4 → 12 ; sans reflets 19 → 20.
+const GRID_X = [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5];
+function dePlane(g) {
+  const o = new Float32Array(108);
+  for (let ch = 0; ch < 3; ch++) {
+    let m = 0, sx = 0, sy = 0; for (let i = 0; i < 36; i++) m += g[i * 3 + ch]; m /= 36;
+    for (let cy = 0; cy < 6; cy++) for (let cx = 0; cx < 6; cx++) { const v = g[(cy * 6 + cx) * 3 + ch] - m; sx += v * GRID_X[cx]; sy += v * GRID_X[cy]; }
+    sx /= 105; sy /= 105;
+    for (let cy = 0; cy < 6; cy++) for (let cx = 0; cx < 6; cx++) o[(cy * 6 + cx) * 3 + ch] = g[(cy * 6 + cx) * 3 + ch] - m - sx * GRID_X[cx] - sy * GRID_X[cy];
+  }
+  let n = 0; for (let i = 0; i < 108; i++) n += o[i] * o[i]; n = Math.sqrt(n) + 1e-6; for (let i = 0; i < 108; i++) o[i] /= n;
+  return o;
+}
 function visDesc(src, box) {
   const w = src.width || src.naturalWidth, hh = src.height || src.naturalHeight;
   const c = document.createElement('canvas'); c.width = 24; c.height = 24;
   const x = c.getContext('2d', { willReadFrequently: true });
   x.drawImage(src, box[0] * w, box[1] * hh, (box[2] - box[0]) * w, (box[3] - box[1]) * hh, 0, 0, 24, 24);
-  const d = x.getImageData(0, 0, 24, 24).data, g = new Float32Array(108), hb = new Float32Array(12);
-  for (let cy = 0; cy < 6; cy++) for (let cx = 0; cx < 6; cx++) for (let ch = 0; ch < 3; ch++) {
-    let sum = 0; for (let y = 0; y < 4; y++) for (let xx = 0; xx < 4; xx++) sum += d[((cy * 4 + y) * 24 + cx * 4 + xx) * 4 + ch];
-    g[(cy * 6 + cx) * 3 + ch] = sum / 16 / 255;
+  const d = x.getImageData(0, 0, 24, 24).data, g = new Float32Array(108), valid = new Uint8Array(36);
+  let nv = 0;
+  for (let cy = 0; cy < 6; cy++) for (let cx = 0; cx < 6; cx++) {
+    let cnt = 0; const sum = [0, 0, 0];
+    for (let y = 0; y < 4; y++) for (let xx = 0; xx < 4; xx++) { const p = ((cy * 4 + y) * 24 + cx * 4 + xx) * 4; if (Math.min(d[p], d[p + 1], d[p + 2]) > 215) continue; cnt++; for (let ch = 0; ch < 3; ch++) sum[ch] += d[p + ch]; }
+    const k = cy * 6 + cx; if (cnt >= 6) { valid[k] = 1; nv++; for (let ch = 0; ch < 3; ch++) g[k * 3 + ch] = sum[ch] / cnt / 255; }
   }
-  for (let ch = 0; ch < 3; ch++) { let m = 0; for (let i = 0; i < 36; i++) m += g[i * 3 + ch]; m /= 36; for (let i = 0; i < 36; i++) g[i * 3 + ch] -= m; }
-  let n = 0; for (let i = 0; i < 108; i++) n += g[i] * g[i]; n = Math.sqrt(n) + 1e-6; for (let i = 0; i < 108; i++) g[i] /= n;
-  let hs = 0;
-  for (let i = 0; i < d.length; i += 4) {
-    const r = d[i] / 255, gg = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), df = mx - mn;
-    if (df < 1e-6 || mx < 1e-6) continue;
-    let hue = mx === r ? ((gg - b) / df) % 6 : mx === gg ? (b - r) / df + 2 : (r - gg) / df + 4; hue = (hue < 0 ? hue + 6 : hue) / 6;
-    const wgt = (df / mx) * mx; hb[Math.min(11, Math.floor(hue * 12))] += wgt; hs += wgt;
-  }
-  for (let i = 0; i < 12; i++) hb[i] /= hs + 1e-6;
-  return { g, hb };
+  if (nv < 12) { valid.fill(1); nv = 36; for (let k = 0; k < 36; k++) { const cy = Math.floor(k / 6), cx = k % 6; for (let ch = 0; ch < 3; ch++) { let s = 0; for (let y = 0; y < 4; y++) for (let xx = 0; xx < 4; xx++) s += d[((cy * 4 + y) * 24 + cx * 4 + xx) * 4 + ch]; g[k * 3 + ch] = s / 16 / 255; } } }
+  for (let ch = 0; ch < 3; ch++) { let m = 0; for (let k = 0; k < 36; k++) if (valid[k]) m += g[k * 3 + ch]; m /= nv; for (let k = 0; k < 36; k++) g[k * 3 + ch] = valid[k] ? g[k * 3 + ch] - m : 0; }
+  return { g: dePlane(g) };
 }
-function visSim(a, b) { let dot = 0, inter = 0; for (let i = 0; i < 108; i++) dot += a.g[i] * b.g[i]; for (let i = 0; i < 12; i++) inter += Math.min(a.hb[i], b.hb[i]); return dot * 0.6 + inter * 0.4; }
+function visSim(a, b) { let dot = 0; for (let i = 0; i < 108; i++) dot += a.g[i] * b.g[i]; return dot; }
 /* Empreintes visuelles précalculées (data/vis.bin : 120 octets par carte ; outil tools/build-vis.py) : plus aucune image à télécharger au moment du scan,
    donc rien qui dépende des droits d'accès (CORS) du serveur d'images, et un classement instantané, même hors connexion. */
 let visPromise = null;
@@ -1785,8 +1794,11 @@ function visOf(vis, r) {      // empreinte d'une fiche de la recherche, ou null 
   const e = vis.index[r.sid]; if (!e || r.card.vi == null) return null;
   const o = (e.o + r.card.vi) * 120; if (o + 120 > vis.bytes.length) return null;
   const b = vis.bytes.subarray(o, o + 120); let any = 0; for (let i = 0; i < 120; i++) any |= b[i]; if (!any) return null;
-  const g = new Float32Array(108), hb = new Float32Array(12); for (let i = 0; i < 108; i++) g[i] = (b[i] - 128) / 127; for (let i = 0; i < 12; i++) hb[i] = b[108 + i] / 255;
-  return { g, hb };
+  const n = vis.bytes.length / 120, k = o / 120;
+  if (!vis.dp) { vis.dp = new Float32Array(n * 108); vis.has = new Uint8Array(n); }      // « plan » retiré une seule fois par carte (20 000 × 108 flottants ≈ 8 Mo, alloués au premier scan)
+  const view = vis.dp.subarray(k * 108, k * 108 + 108);
+  if (!vis.has[k]) { const g = new Float32Array(108); for (let i = 0; i < 108; i++) g[i] = (b[i] - 128) / 127; view.set(dePlane(g)); vis.has[k] = 1; }
+  return { g: view };
 }
 function photoDescs(photo, cropped) {
   const W = photo.width, H = photo.height;
@@ -1812,10 +1824,10 @@ async function rerankVisual(idx, ids, hits, photo, cropped) {
   } catch { return ids; }
 }
 // Jugement d'un classement visuel [[id, ressemblance]…] : la carte de tête est-elle identifiée ? « family » = cartes quasi identiques (même illustration, autres extensions)
-function judgeVisual(vs, minSim = 0.7) {
+function judgeVisual(vs, minSim = 0.5) {
   if (!vs.length || vs[0][1] < minSim) return null;
   const family = vs.filter(([, sc]) => sc >= vs[0][1] - 0.02), other = vs.find(([, sc]) => sc < vs[0][1] - 0.02), margin = other ? vs[0][1] - other[1] : 1;
-  return margin >= 0.04 || vs[0][1] >= 0.88 ? { ids: vs.map(([id]) => id), family: family.map(([id]) => id), sim: vs[0][1], margin } : null;
+  return margin >= 0.1 || vs[0][1] >= 0.93 ? { ids: vs.map(([id]) => id), family: family.map(([id]) => id), sim: vs[0][1], margin } : null;
 }
 // recherche visuelle dans toutes les cartes (quand ni le nom ni le numéro n'ont pu être lus) → les n cartes qui ressemblent le plus à la photo
 async function visualSearch(idx, photo, cropped, n = 20) {
@@ -2097,7 +2109,7 @@ async function showSearchInner(L, my, preset = {}) {
     const ldScan = loader.start('Analyse de la photo');
     try {
       const { text, full, cropped, score: readScore, preIds } = await ocrPhoto(file, (t) => { const r = matchScan(idx, parseCardText(t)); return r.score; }, (m) => { summary.textContent = 'Analyse de la photo · ' + m; },
-        async (photo) => { const j = judgeVisual(await visualSearch(idx, photo, true, 8), 0.72); return j && j.family.length === 1 ? j.ids : null; }); if (my !== tok) return;
+        async (photo) => { const j = judgeVisual(await visualSearch(idx, photo, true, 8), 0.5); return j && j.family.length === 1 ? j.ids : null; }); if (my !== tok) return;
       if (preIds) { readNote.textContent = 'Reconnue par l’illustration.'; readNote.hidden = false; await finishScan(preIds, 3, full, cropped); return; }
       { const pr = parseCardText(text); readNote.textContent = 'Lecture : ' + (pr.n != null && pr.total != null ? `n° ${pr.n}/${pr.total} · ` : 'numéro non lu · ') + (text.replace(/[^A-Za-zÀ-ÿ0-9\/ ]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90) || 'rien'); readNote.hidden = false; }      // pour comprendre un échec
       await finishScan(matchScan(idx, parseCardText(text)), readScore, full, cropped);
@@ -2156,7 +2168,7 @@ async function showSearchInner(L, my, preset = {}) {
         black = sum / (256 * 3) < 5 ? black + 1 : 0; if (black >= 6) { ended = true; c.width = c.height = 0; continue; }
       }
       const vs = await visualSearch(idx, c, true, 8); if (stopped) return;
-      const j = judgeVisual(vs, 0.7);
+      const j = judgeVisual(vs, 0.5);
       readout.textContent = vs.length ? `Ressemblance : ${Math.round(vs[0][1] * 100)} %${j ? ' · carte repérée' : ''}` : '';
       if (!j) { streak = 0; lastTop = null; msg.textContent = 'Placez la carte dans le cadre, bien à plat et éclairée.'; c.width = c.height = 0; continue; }
       streak = j.ids[0] === lastTop ? streak + 1 : 1; lastTop = j.ids[0];
