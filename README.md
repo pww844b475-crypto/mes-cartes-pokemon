@@ -224,3 +224,6 @@ Réglages de l'estimation (« Mes cartes possédées » → *Source des prix*). 
 
 ## Recherche eBay plus précise
 Le lien « Ventes terminées sur eBay.fr » cherche maintenant « nom + numéro imprimé complet » (ex. `Phyllali 17/90`) au lieu de « Phyllali 17 ». Sans total officiel connu, il ajoute le nom de l'extension.
+
+## Correction de prix : Phyllali Indomptable 17/90
+TCGdex rattache cette carte au produit Cardmarket 882914 (145,85 €), un doublon plus récent de la même extension ; le produit d'origine est 279270 (tendance 4,50 €, reverse 22,38 €, vérifié dans le catalogue public de Cardmarket, cohérent avec les ventes eBay). Ajouté à `data/price-fix.json`. D'autres doublons existent (même nom, même extension, plusieurs produits) : à signaler carte par carte.
