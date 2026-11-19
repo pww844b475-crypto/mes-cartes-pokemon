@@ -2472,6 +2472,8 @@ function openLightbox(items, index, L) {
     const term = [it.name, /^\d+$/.test(lid) && it.official ? `${lid}/${it.official}` : [lid, it.setName].filter(Boolean).join(' ')].filter(Boolean).join(' ');
     linksEl.replaceChildren(...[
       h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term) + '&LH_Sold=1&LH_Complete=1&LH_PrefLoc=1', target: '_blank', rel: 'noopener noreferrer' }, 'Ventes terminées sur eBay.fr ↗'),
+      ' · ',
+      h('a', { href: 'https://www.ebay.fr/sch/i.html?_nkw=' + encodeURIComponent(term) + '&LH_PrefLoc=1', target: '_blank', rel: 'noopener noreferrer' }, 'Annonces en cours sur eBay.fr ↗'),
       SHOW_CM_LINKS() ? ' · ' : null,
       SHOW_CM_LINKS() ? h('a', { href: cmUrl(it), target: '_blank', rel: 'noopener noreferrer' }, 'Cardmarket (carte française, vendeurs France, NM) ↗') : null,
       SHOW_CM_LINKS() ? ' ' : null,
@@ -3096,7 +3098,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v91';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v92';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;
