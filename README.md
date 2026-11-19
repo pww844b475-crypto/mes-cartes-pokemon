@@ -218,3 +218,6 @@ TCGdex rattache toutes les versions d'un même Pokémon de **Règne Delta (me06)
 
 ## Estimation : prix propre à chaque version
 Avant, une carte n'avait qu'un prix (celui de la première fiche Cardmarket) : une 1re Édition ou une « sans ombre » était comptée au prix de l'illimité (ex. Alakazam base1 : 59,64 € au lieu de 341,73 € en 1re Édition). `fetchPrice` lit maintenant `variants_detailed[].pricing.cardmarket` de TCGdex et mémorise un prix par version (5e élément de `priceCache`) ; `cmUnit` l'utilise. Une version sans tampon rattachée par TCGdex au même produit que la 1re Édition garde le prix de base (non fiable autrement). Les anciens relevés sont redemandés une fois.
+
+## Source des prix : Cardmarket, TCGplayer converti, ou moyenne
+Réglages de l'estimation (« Mes cartes possédées » → *Source des prix*). TCGplayer vient de TCGdex (`pricing.tcgplayer`, gratuit, sans clé), en dollars ; il est converti en euros avec le taux du jour (BCE via `api.frankfurter.dev`, mémorisé 12 h ; repli 0,86 hors ligne) et **le dollar n'est jamais affiché**. Finition choisie selon la version (reverse, 1re Édition, holo, normal) ; sans prix TCGplayer pour la version, repli sur Cardmarket. Défaut : Cardmarket. Pokemon Price Tracker n'est pas utilisé : clé d'API obligatoire (exposée dans une appli publique) et 100 requêtes/jour.
