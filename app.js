@@ -517,12 +517,27 @@ async function fetchPrice(L, id) {
   if (fx && L === 'fr') { priceCache[id] = [numOrNull(fx[0]), numOrNull(fx[1]), Date.parse(priceFix.updated + 'T12:00:00') || Date.now(), numOrNull(fx[2])]; return; }
   const path = `/${L}/cards/${encodeURIComponent(id)}`;
   let c = null;
-  try { const d = await api(path); mem.delete(path); c = d.pricing && d.pricing.cardmarket; } catch (e) { if (!/HTTP 404/.test(e.message || '')) throw e; }
-  priceCache[id] = c ? [numOrNull(c.trend) ?? numOrNull(c.avg) ?? numOrNull(c.low), numOrNull(c['trend-holo']) ?? numOrNull(c['avg-holo']) ?? numOrNull(c['low-holo']), Date.now(), numOrNull(c.idProduct)] : [null, null, Date.now(), null];   // [prix, prix holo, date, identifiant produit Cardmarket]
+  let pv = {};      // prix propre à chaque version (1re Édition, sans ombre, reverse…) : TCGdex les relie à des produits Cardmarket distincts
+  try {
+    const d = await api(path); mem.delete(path); c = d.pricing && d.pricing.cardmarket;
+    const vd = d.variants_detailed || [], stampedProd = new Set(vd.filter((x) => x.stamp && x.stamp.length && x.pricing && x.pricing.cardmarket).map((x) => x.pricing.cardmarket.idProduct));
+    for (const x of vd) {
+      const m = x.pricing && x.pricing.cardmarket; if (!m) continue;
+      if (!(x.stamp && x.stamp.length) && stampedProd.has(m.idProduct)) continue;     // version sans tampon rattachée au même produit que la 1re Édition : prix non fiable (≠ 1re Édition) → prix de base
+      const k = vKey(descOf([x.type || 'Normal', x.size, x.foil, x.subtype, x.stamp]));
+      const n = numOrNull(m.trend) ?? numOrNull(m.avg) ?? numOrNull(m.low), hv = numOrNull(m['trend-holo']) ?? numOrNull(m['avg-holo']) ?? numOrNull(m['low-holo']);
+      if ((n != null || hv != null) && !(k in pv)) pv[k] = [n, hv];
+    }
+  } catch (e) { if (!/HTTP 404/.test(e.message || '')) throw e; }
+  priceCache[id] = c ? [numOrNull(c.trend) ?? numOrNull(c.avg) ?? numOrNull(c.low), numOrNull(c['trend-holo']) ?? numOrNull(c['avg-holo']) ?? numOrNull(c['low-holo']), Date.now(), numOrNull(c.idProduct), pv] : [null, null, Date.now(), null, pv];   // [prix, prix holo, date, identifiant produit Cardmarket]
 }
 // Prix Cardmarket de la fiche : « tendance » = tirage normal de la carte (y compris une carte Holo), « tendance holo » = tirage Reverse.
 // Version Reverse → prix reverse (repli : prix normal) ; toute autre version (Normal, Holo…) → prix normal (repli : prix reverse).
-const cmUnit = (e, key) => ((key && /^reverse(\/|$)/.test(key)) ? (e[1] ?? e[0]) : (e[0] ?? e[1]));
+const cmUnit = (e, key) => {
+  const v = key && e[4] && e[4][key], rev = !!(key && /^reverse(\/|$)/.test(key));
+  if (v && (v[0] != null || v[1] != null)) return rev ? (v[1] ?? v[0]) : (v[0] ?? v[1]);      // prix de cette version précise
+  return rev ? (e[1] ?? e[0]) : (e[0] ?? e[1]);
+};
 // Vente eBay.fr relevée à la main (dernière vente réussie) : { idCarte: [prix] } (d'anciennes saisies de 1 à 3 prix sont lues : leur moyenne compte) ; combinée à celle de Cardmarket
 function sanitizeEbay(o) {
   const out = {};
@@ -567,7 +582,7 @@ function summarize(rows) {
   return out;
 }
 async function ensurePrices(L, rows, refresh, onProgress) {
-  const ids = [...new Set(rows.filter(isValued).map((r) => r.id))].filter((id) => refresh || !priceCache[id]);
+  const ids = [...new Set(rows.filter(isValued).map((r) => r.id))].filter((id) => refresh || !priceCache[id] || (priceCache[id].length < 5 && !(priceFix && priceFix.cards[id])));   // anciens relevés sans prix par version : redemandés une fois
   let done = 0, i = 0;
   const ld = ids.length ? loader.start('Mise à jour des prix') : null;
   const worker = async () => {
@@ -3039,7 +3054,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v85';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v86';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;
