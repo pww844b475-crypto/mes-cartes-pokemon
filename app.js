@@ -765,9 +765,11 @@ async function loadHomeCards(sets, blocks) {
   const setName = new Map(sets.map((x) => [x.id, x.name || x.id]));
   const order = blocks.flatMap((b) => b.items.flatMap((g) => g.members.map((m) => m.id))).filter((id) => names[id]);
   const recs = [];
+  const infos = new Map(await Promise.all(order.map(async (sid) => [sid, await loadCardInfo('fr', sid)])));      // raretés : « pikachu illustration rare », « holo », « hyper »…
   for (const sid of order) for (const row of names[sid]) {
     const odd = typeof row[2] === 'string', lid = lidShow(odd ? row[1] : row[0]), nm = odd ? row[2] : row[1], id = odd ? row[0] : sid + '-' + (odd ? row[1] : row[0]);
-    recs.push({ sid, id, nm, lid, lidRaw: odd ? row[1] : row[0], noImg: odd ? row[3] === 0 : row[2] === 0, setName: setName.get(sid) || sid, text: norm(`${nm} ${lid} ${id} ${setName.get(sid) || ''}`) });
+    const rar = ((infos.get(sid) || new Map()).get(id) || {}).rar || '';
+    recs.push({ sid, id, nm, lid, rar, lidRaw: odd ? row[1] : row[0], noImg: odd ? row[3] === 0 : row[2] === 0, setName: setName.get(sid) || sid, text: norm(`${nm} ${lid} ${id} ${setName.get(sid) || ''} ${rar}`) });
   }
   return (homeCards = recs);
 }
@@ -784,6 +786,33 @@ function rowUnitMax(r) {
   return best;
 }
 // items : [{ card, name, price, onclick }] ; all : action du bouton « Voir tout »
+// Défilement continu de l'accueil : on fait défiler un vrai conteneur (scrollLeft) au lieu d'animer une bande de plusieurs milliers de pixels
+// (Safari iPad ne peignait pas toute la bande : zone vide à gauche). Le doigt ou la souris met en pause ; 2 s après, ça repart.
+function startMarquee(track, phase) {
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const SPEED = 98;                                  // pixels par seconde (≈ une carte toutes les 3,4 s)
+  let pos = null, last = 0, holdUntil = 0, down = false;
+  const half = () => (track.scrollWidth / 2) || 1;
+  const hold = (ms) => { holdUntil = performance.now() + ms; };
+  track.addEventListener('pointerdown', () => { down = true; });
+  const up = () => { down = false; hold(2000); pos = null; };
+  track.addEventListener('pointerup', up); track.addEventListener('pointercancel', up);
+  track.addEventListener('touchend', up, { passive: true });
+  track.addEventListener('wheel', () => { hold(2000); pos = null; }, { passive: true });
+  track.addEventListener('mouseenter', () => { down = true; }); track.addEventListener('mouseleave', () => { down = false; hold(500); pos = null; });
+  track.addEventListener('scroll', () => { const hf = half(); if (track.scrollLeft >= hf) track.scrollLeft -= hf; }, { passive: true });
+  const tick = (t) => {
+    if (!track.isConnected) return;                  // carrousel remplacé ou page quittée : la boucle s'arrête
+    const dt = last ? Math.min(0.1, (t - last) / 1000) : 0; last = t;
+    if (!document.hidden && !down && t >= holdUntil && track.clientWidth > 0) {
+      if (pos == null) pos = track.scrollLeft || (phase * SPEED) % half();
+      pos += SPEED * dt; if (pos >= half()) pos -= half();
+      track.scrollLeft = pos;
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
 function buildCarousel(title, items, all, opts = {}) {
   const cardEl = (it, dup) => {
     const holder = h('button', { type: 'button', class: 'car-card' + (dup ? ' car-dup' : ''), role: 'listitem', 'aria-label': `${it.name} : ${eur(it.price)}`, onclick: it.onclick, ...(dup ? { 'aria-hidden': 'true', tabindex: '-1' } : {}) });
@@ -795,8 +824,9 @@ function buildCarousel(title, items, all, opts = {}) {
   // opts.auto : défilement continu en boucle (accueil) : les cartes sont répétées une fois et la bande glisse de la moitié de sa largeur
   const auto = !!opts.auto && items.length >= 5;
   const track = auto
-    ? h('div', { class: 'car-track auto', role: 'list', style: `--n:${items.length}` }, h('div', { class: 'car-belt', style: opts.phase ? `animation-delay:-${opts.phase.toFixed(2)}s` : null }, items.map((it) => cardEl(it, false)), items.map((it) => cardEl(it, true))))
+    ? h('div', { class: 'car-track auto', role: 'list' }, h('div', { class: 'car-belt' }, items.map((it) => cardEl(it, false)), items.map((it) => cardEl(it, true))))
     : h('div', { class: 'car-track', role: 'list' }, items.map((it) => cardEl(it, false)));
+  if (auto) startMarquee(track, opts.phase || 0);
   return h('section', { class: 'carou', 'aria-label': title }, h('div', { class: 'car-head' }, h('h2', {}, title), all ? h('button', { type: 'button', class: 'car-all', onclick: all }, 'Voir tout') : null), track);
 }
 
@@ -915,7 +945,7 @@ async function showList(my) {   // l'écran de chargement animé s'affiche si l'
 }
 async function showListInner(my) {
   const L = lang;
-  const q = h('input', { class: 'search', type: 'search', placeholder: 'Extension, Pokémon, carte, numéro…', 'aria-label': 'Rechercher une extension, un Pokémon ou une carte', enterkeyhint: 'search', autocomplete: 'off' });
+  const q = h('input', { class: 'search', type: 'search', placeholder: 'Extension, Pokémon, carte, numéro, rareté…', 'aria-label': 'Rechercher une extension, un Pokémon ou une carte', enterkeyhint: 'search', autocomplete: 'off' });
   const top = h('header', { class: 'top' },
     h('div', { class: 'row brandrow' }, h('h1', { class: 'brand' }, h('img', { src: 'icons/logo-banner.webp', alt: '', width: 1000, height: 251, decoding: 'async', draggable: 'false' }), h('span', { class: 'sr' }, 'Pijakollection')), q),   // la recherche est à côté du logo (dessous sur un petit écran)
     langSwitch(L, (id) => { listScroll = 0; go(id); }));
@@ -1111,7 +1141,7 @@ async function showListInner(my) {
     hitsBox.replaceChildren(
       h('h2', {}, `Cartes : ${found.length.toLocaleString('fr-FR')} trouvée${found.length > 1 ? 's' : ''} en français`),
       h('ul', { class: 'hitlist' }, shownHits.map((r) => h('li', {}, h('button', { type: 'button', class: 'hit', onclick: () => { listScroll = scrollY; location.hash = '#chercher/q/' + encodeURIComponent(q.value.trim()); } },
-        h('span', { class: 'hn' }, r.nm), h('span', { class: 'hl' }, `#${r.lid} · ${r.setName}`))))),
+        h('span', { class: 'hn' }, r.nm), h('span', { class: 'hl' }, `#${r.lid} · ${r.setName}${r.rar ? ' · ' + r.rar : ''}`))))),
       h('button', { type: 'button', class: 'btn hits-all', onclick: () => { listScroll = scrollY; location.hash = '#chercher/q/' + encodeURIComponent(q.value.trim()); } }, `Voir ${found.length > 1 ? `les ${found.length.toLocaleString('fr-FR')} cartes` : 'la carte'} avec images et prix`));
     hitsBox.hidden = false;
   };
@@ -1140,7 +1170,7 @@ async function showSet(L, setId, my) {
 async function showSetInner(L, setId, my) {
   const back = h('button', { class: 'iconbtn', type: 'button', onclick: () => go(L), 'aria-label': 'Retour aux extensions' }, '‹ Extensions');
   const title = h('h1', {}, setId);
-  const q = h('input', { class: 'search', type: 'search', placeholder: 'Nom ou numéro de carte…', 'aria-label': 'Rechercher une carte', enterkeyhint: 'search', autocomplete: 'off' });
+  const q = h('input', { class: 'search', type: 'search', placeholder: 'Nom, numéro ou rareté…', 'aria-label': 'Rechercher une carte', enterkeyhint: 'search', autocomplete: 'off' });
   const top = h('header', { class: 'top' }, h('div', { class: 'row' }, back, title), q);
   const main = h('main', {}, spinner());
   $app.replaceChildren(top, main);
@@ -1472,7 +1502,7 @@ async function buildSearchIndex(L, sets) {
     applyScans(cards);
     for (const c of cards) {
       const i = info.get(c.id) || null;
-      recs.push({ card: c, sid, gid, setName: m.name || sid, info: i, text: norm(`${c.name} ${lidShow(c.localId)} ${c.id}`) });
+      recs.push({ card: c, sid, gid, setName: m.name || sid, info: i, text: norm(`${c.name} ${lidShow(c.localId)} ${c.id} ${i && i.rar ? i.rar : ''}`) });
       if (i && i.rar) rars.set(i.rar, (rars.get(i.rar) || 0) + 1);
       if (i) for (const v of i.vars) { const e = vers.get(v.key) || { label: v.label, n: 0 }; e.n++; vers.set(v.key, e); }
     }
@@ -1873,7 +1903,7 @@ async function showSearch(L, my, preset = {}) {
 }
 async function showSearchInner(L, my, preset = {}) {
   const back = h('button', { class: 'iconbtn', type: 'button', onclick: () => go(L), 'aria-label': 'Retour aux extensions' }, '‹ Extensions');
-  const q = h('input', { class: 'search', type: 'search', placeholder: 'Nom ou numéro de carte…', 'aria-label': 'Rechercher une carte dans toute la collection', enterkeyhint: 'search', autocomplete: 'off' });
+  const q = h('input', { class: 'search', type: 'search', placeholder: 'Nom, numéro ou rareté…', 'aria-label': 'Rechercher une carte dans toute la collection', enterkeyhint: 'search', autocomplete: 'off' });
   const top = h('header', { class: 'top' }, h('div', { class: 'row' }, back, h('h1', {}, 'Rechercher des cartes')), q);
   const main = h('main', {}, spinner());
   $app.replaceChildren(top, main);
@@ -3098,7 +3128,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v92';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v93';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;

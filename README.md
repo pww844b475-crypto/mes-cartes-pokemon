@@ -233,3 +233,7 @@ Pour certaines cartes seulement holo (Noctali H29 Aquapolis : tendance 0,02 € 
 
 ## eBay : annonces en cours
 Sous le prix, deux liens eBay.fr (même recherche « nom + numéro », vendeurs en France) : « Ventes terminées » (prix réellement payés) et « Annonces en cours » (offres actuelles).
+
+## Carrousel de l'accueil sans zone vide, recherche par rareté
+- Le défilement de l'accueil anime maintenant le `scrollLeft` d'un vrai conteneur (`startMarquee`) au lieu d'une bande CSS de plusieurs milliers de pixels que Safari (iPad) ne peignait qu'en partie (zone vide à gauche). Un doigt posé ou la souris met en pause, ça repart 2 s après ; on peut aussi le faire défiler à la main.
+- La recherche (accueil, recherche complète, page d'extension) comprend aussi la rareté : « noctali holo rare », « pikachu illustration spéciale », « hyper rare dracaufeu ». La rareté est affichée dans les résultats de l'accueil.
