@@ -511,27 +511,36 @@ const priceFixReady = fetch('data/price-fix.json').then((r) => (r.ok ? r.json() 
   for (const [id, fx] of Object.entries(j.cards)) { const e = priceCache[id]; if (e && e[3] !== fx[2]) { priceCache[id] = [numOrNull(fx[0]), numOrNull(fx[1]), Date.parse(j.updated + 'T12:00:00') || Date.now(), numOrNull(fx[2])]; ch = true; } }
   if (ch) savePrices();
 }).catch(() => {});
+// « tendance » Cardmarket aberrante (ex. 0,02 € alors que l'offre la moins chère est à 25 € : cartes seulement holo dont la ligne « non foil » est vide) → on la remplace
+function trendOf(m, holoOnly) {
+  const t = numOrNull(m.trend), low = numOrNull(m.low), a30 = numOrNull(m.avg30), a = numOrNull(m.avg);
+  const bad = t != null && ((low != null && t < low * 0.5) || (a30 != null && a30 > 5 && t < a30 * 0.1));
+  if (!bad) return t ?? a ?? low;
+  return a30 ?? a ?? numOrNull(m['trend-holo']) ?? low;       // moyenne des ventes sur 30 jours (vraies ventes), sinon moyenne, sinon prix foil
+}
 async function fetchPrice(L, id) {
   await priceFixReady;
   const fx = priceFix && priceFix.cards[id];
   if (fx && L === 'fr') { priceCache[id] = [numOrNull(fx[0]), numOrNull(fx[1]), Date.parse(priceFix.updated + 'T12:00:00') || Date.now(), numOrNull(fx[2])]; return; }
   const path = `/${L}/cards/${encodeURIComponent(id)}`;
   let c = null;
-  let pv = {}, tg = {};      // prix propre à chaque version (1re Édition, sans ombre, reverse…) : TCGdex les relie à des produits Cardmarket distincts
+  let pv = {}, tg = {}, holoOnlyCard = false;      // prix propre à chaque version (1re Édition, sans ombre, reverse…) : TCGdex les relie à des produits Cardmarket distincts
   try {
     const d = await api(path); mem.delete(path); c = d.pricing && d.pricing.cardmarket;
+    holoOnlyCard = !!(d.variants_detailed && d.variants_detailed.length && d.variants_detailed.every((x) => /holo/i.test(x.type || '')));
     const tp = d.pricing && d.pricing.tcgplayer;      // TCGplayer (dollars) : prix du marché par finition ; converti en euros à l'affichage, jamais montré en dollars
     if (tp) for (const [f, o] of Object.entries(tp)) { const u = o && typeof o === 'object' ? (numOrNull(o.marketPrice) ?? numOrNull(o.midPrice)) : null; if (u != null) tg[f.toLowerCase().replace(/[^a-z0-9]/g, '')] = u; }
     const vd = d.variants_detailed || [], stampedProd = new Set(vd.filter((x) => x.stamp && x.stamp.length && x.pricing && x.pricing.cardmarket).map((x) => x.pricing.cardmarket.idProduct));
+    const holoOnly = vd.length > 0 && vd.every((x) => /holo/i.test(x.type || ''));
     for (const x of vd) {
       const m = x.pricing && x.pricing.cardmarket; if (!m) continue;
       if (!(x.stamp && x.stamp.length) && stampedProd.has(m.idProduct)) continue;     // version sans tampon rattachée au même produit que la 1re Édition : prix non fiable (≠ 1re Édition) → prix de base
       const k = vKey(descOf([x.type || 'Normal', x.size, x.foil, x.subtype, x.stamp]));
-      const n = numOrNull(m.trend) ?? numOrNull(m.avg) ?? numOrNull(m.low), hv = numOrNull(m['trend-holo']) ?? numOrNull(m['avg-holo']) ?? numOrNull(m['low-holo']);
+      const n = trendOf(m, holoOnly), hv = numOrNull(m['trend-holo']) ?? numOrNull(m['avg-holo']) ?? numOrNull(m['low-holo']);
       if ((n != null || hv != null) && !(k in pv)) pv[k] = [n, hv];
     }
   } catch (e) { if (!/HTTP 404/.test(e.message || '')) throw e; }
-  priceCache[id] = c ? [numOrNull(c.trend) ?? numOrNull(c.avg) ?? numOrNull(c.low), numOrNull(c['trend-holo']) ?? numOrNull(c['avg-holo']) ?? numOrNull(c['low-holo']), Date.now(), numOrNull(c.idProduct), pv, tg] : [null, null, Date.now(), null, pv, tg];   // [prix, prix holo, date, identifiant produit Cardmarket]
+  priceCache[id] = c ? [trendOf(c, holoOnlyCard), numOrNull(c['trend-holo']) ?? numOrNull(c['avg-holo']) ?? numOrNull(c['low-holo']), Date.now(), numOrNull(c.idProduct), pv, tg, 1] : [null, null, Date.now(), null, pv, tg, 1];   // [prix, prix holo, date, identifiant produit Cardmarket]
 }
 // Prix Cardmarket de la fiche : « tendance » = tirage normal de la carte (y compris une carte Holo), « tendance holo » = tirage Reverse.
 // Version Reverse → prix reverse (repli : prix normal) ; toute autre version (Normal, Holo…) → prix normal (repli : prix reverse).
@@ -610,7 +619,7 @@ function summarize(rows) {
 }
 async function ensurePrices(L, rows, refresh, onProgress) {
   await fxReady;
-  const ids = [...new Set(rows.filter(isValued).map((r) => r.id))].filter((id) => refresh || !priceCache[id] || (priceCache[id].length < 6 && !(priceFix && priceFix.cards[id])));   // anciens relevés sans prix par version : redemandés une fois
+  const ids = [...new Set(rows.filter(isValued).map((r) => r.id))].filter((id) => refresh || !priceCache[id] || (priceCache[id].length < 7 && !(priceFix && priceFix.cards[id])));   // anciens relevés sans prix par version : redemandés une fois
   let done = 0, i = 0;
   const ld = ids.length ? loader.start('Mise à jour des prix') : null;
   const worker = async () => {
@@ -3087,7 +3096,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v90';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v91';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;

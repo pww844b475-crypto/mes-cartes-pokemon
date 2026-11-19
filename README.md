@@ -227,3 +227,6 @@ Le lien « Ventes terminées sur eBay.fr » cherche maintenant « nom + numéro 
 
 ## Correction de prix : Phyllali Indomptable 17/90
 TCGdex rattache cette carte au produit Cardmarket 882914 (145,85 €), un doublon plus récent de la même extension ; le produit d'origine est 279270 (tendance 4,50 €, reverse 22,38 €, vérifié dans le catalogue public de Cardmarket, cohérent avec les ventes eBay). Ajouté à `data/price-fix.json`. D'autres doublons existent (même nom, même extension, plusieurs produits) : à signaler carte par carte.
+
+## Prix aberrants (tendance Cardmarket vide)
+Pour certaines cartes seulement holo (Noctali H29 Aquapolis : tendance 0,02 € alors que l'offre la moins chère est à 25 €), la « tendance » est inutilisable. `trendOf` la détecte (tendance < la moitié de l'offre la moins chère, ou < 10 % de la moyenne 30 j) et utilise alors la moyenne des ventes sur 30 jours (168,66 € pour Noctali H29). Sur 882 cartes e-Card / Base / Néo, 10 sont concernées (dont Mewtwo brillant Néo Destiny : 0,02 € → 1 262 €). Les anciens relevés sont redemandés une fois.
