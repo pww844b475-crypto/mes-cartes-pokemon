@@ -1177,7 +1177,7 @@ async function showSet(L, setId, my) {
   try { await showSetInner(L, setId, my); } finally { ld.done(); }
 }
 async function showSetInner(L, setId, my) {
-  const back = h('button', { class: 'iconbtn', type: 'button', onclick: () => go(L), 'aria-label': 'Retour aux extensions' }, '‹ Extensions');
+  const back = h('button', { class: 'iconbtn', type: 'button', onclick: () => go(L), 'aria-label': 'Retour à l’accueil' }, '🏠 Accueil');
   const title = h('h1', {}, setId);
   const q = h('input', { class: 'search', type: 'search', placeholder: 'Nom, numéro ou rareté…', 'aria-label': 'Rechercher une carte', enterkeyhint: 'search', autocomplete: 'off' });
   const top = h('header', { class: 'top' }, h('div', { class: 'row' }, back, title), q);
@@ -1923,7 +1923,7 @@ async function showSearch(L, my, preset = {}) {
   try { await showSearchInner(L, my, preset); } finally { ld.done(); }
 }
 async function showSearchInner(L, my, preset = {}) {
-  const back = h('button', { class: 'iconbtn', type: 'button', onclick: () => go(L), 'aria-label': 'Retour aux extensions' }, '‹ Extensions');
+  const back = h('button', { class: 'iconbtn', type: 'button', onclick: () => go(L), 'aria-label': 'Retour à l’accueil' }, '🏠 Accueil');
   const q = h('input', { class: 'search', type: 'search', placeholder: 'Nom, numéro ou rareté…', 'aria-label': 'Rechercher une carte dans toute la collection', enterkeyhint: 'search', autocomplete: 'off' });
   const top = h('header', { class: 'top' }, h('div', { class: 'row' }, back, h('h1', {}, 'Rechercher des cartes')), q);
   const main = h('main', {}, spinner());
@@ -2938,7 +2938,7 @@ function confirmDeleteFriend(f) {
 /* ---------- Vue : amis ---------- */
 function showFriends() {
   const top = h('header', { class: 'top' }, h('div', { class: 'row' },
-    h('button', { class: 'iconbtn', type: 'button', onclick: () => go(lang), 'aria-label': 'Retour aux extensions' }, '‹ Extensions'), h('h1', {}, 'Amis')));
+    h('button', { class: 'iconbtn', type: 'button', onclick: () => go(lang), 'aria-label': 'Retour à l’accueil' }, '🏠 Accueil'), h('h1', {}, 'Amis')));
   const list = Object.values(friends).sort((a, b) => a.name.localeCompare(b.name, 'fr'));
   const cards = list.map((f) => h('li', { class: 'friend' },
     h('div', { class: 'fname' }, f.name, f.pseudo && norm(f.pseudo) !== norm(f.name) ? h('span', { class: 'sub2' }, ` (pseudo : ${f.pseudo})`) : null),
@@ -2972,7 +2972,7 @@ async function showCompare(fid, L, my) {
   if (!f) { toast('Ami introuvable.'); location.hash = '#amis'; return; }
   if (LANG_IDS.includes(L)) { lang = L; store.set(K.lang, L); }
   const top = h('header', { class: 'top' },
-    h('div', { class: 'row' }, h('button', { class: 'iconbtn', type: 'button', onclick: () => { location.hash = '#amis'; }, 'aria-label': 'Retour aux amis' }, '‹ Amis'), h('h1', {}, `Comparer avec ${f.name}`)),
+    h('div', { class: 'row' }, h('button', { class: 'iconbtn', type: 'button', onclick: () => go(lang), 'aria-label': 'Retour à l’accueil' }, '🏠'), h('button', { class: 'iconbtn', type: 'button', onclick: () => { location.hash = '#amis'; }, 'aria-label': 'Retour aux amis' }, '‹ Amis'), h('h1', {}, `Comparer avec ${f.name}`)),
     langSwitch(L, (id) => { location.hash = `#comparer/${encodeURIComponent(fid)}/${id}`; }));
   const main = h('main', {}, spinner());
   $app.replaceChildren(top, main);
@@ -3149,7 +3149,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v100';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v101';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 // Test d'affichage : un cadre coloré collé aux bords de la zone que l'appli reçoit du système, et les mesures. Une capture d'écran montre où s'arrête vraiment la fenêtre.
 function showFrameTest() {
   closeSheet();
