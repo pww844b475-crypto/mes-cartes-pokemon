@@ -711,3 +711,24 @@ html { background: var(--bg); min-height: 100%; }
 .quick .card .media, .quick .cf-card { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .quick .cflow .cf-card { cursor: copy; }
 .tools2 .tbtn[aria-pressed="true"] { background: #f4b942; color: #14202e; box-shadow: 0 0 0 2px #fff inset; }
+
+/* ---- remplir tout l'écran (iPhone/iPad pliable, grands écrans) : pas de largeur maximale, rangées bord à bord, vignettes plus grandes, en-tête translucide ---- */
+main { max-width: none; }
+.carou, .cflow { margin-left: calc(-1 * (var(--safe-l) + 12px)); margin-right: calc(-1 * (var(--safe-r) + 12px)); border-radius: 0; }
+.carou { padding-left: calc(var(--safe-l) + 14px); padding-right: 0; }
+.carou .car-head { padding-right: calc(var(--safe-r) + 14px); }
+.car-track { padding-right: calc(var(--safe-r) + 14px); scroll-padding-left: calc(var(--safe-l) + 14px); }
+.cflow .cf-title, .cflow .cf-cap { padding-left: var(--safe-l); padding-right: var(--safe-r); }
+@media (min-width: 700px) {
+  .car-card { flex-basis: min(clamp(170px, 17vw, 300px), 34vh); }
+  .cf-track { --cw: min(32vw, 330px, 40vh); }
+}
+@media (min-width: 1000px) {
+  .cards { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 16px; }
+  .view-cartes .cards { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .view-liste .cards { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1300px) { .sets { grid-template-columns: repeat(4, 1fr); } .setgrid .sets { grid-template-columns: repeat(5, 1fr); } .view-liste .cards { grid-template-columns: repeat(4, 1fr); } }
+@supports (background: color-mix(in srgb, red 50%, transparent)) {
+  .top { background: color-mix(in srgb, var(--brand) 84%, transparent); -webkit-backdrop-filter: blur(16px) saturate(1.2); backdrop-filter: blur(16px) saturate(1.2); }
+}
