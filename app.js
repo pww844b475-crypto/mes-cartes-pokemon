@@ -3149,7 +3149,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v101';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v102';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 // Test d'affichage : un cadre coloré collé aux bords de la zone que l'appli reçoit du système, et les mesures. Une capture d'écran montre où s'arrête vraiment la fenêtre.
 function showFrameTest() {
   closeSheet();
@@ -3168,6 +3168,28 @@ function showFrameTest() {
   };
   const ov = h('div', { class: 'frametest', role: 'dialog', 'aria-label': 'Test d’affichage', onclick: () => { ov.remove(); window.removeEventListener('resize', upd); } }, h('i', { class: 'ft-l' }), h('i', { class: 'ft-r' }), info);
   document.body.append(ov); upd(); window.addEventListener('resize', upd);
+}
+// Guide pas à pas : copier l'adresse d'une page d'essai (à coller dans Safari, puis « Sur l'écran d'accueil »)
+function openEssais() {
+  const base = new URL('essai/', location.href).href;
+  const rows = [[1, 'comme l’application (témoin)'], [2, 'barre d’état « default »'], [3, 'sans viewport-fit'], [4, 'manifeste « fullscreen »']].map(([n, d]) => {
+    const url = base + n + '.html';
+    const input = h('input', { type: 'text', readonly: true, value: url, class: 'field', 'aria-label': `Adresse de l’essai ${n}`, onfocus: (e) => e.target.select() });
+    const btn = h('button', { class: 'btn sec', type: 'button', onclick: async () => {
+      try { await navigator.clipboard.writeText(url); toast(`Adresse de l’essai ${n} copiée.`); } catch { input.focus(); input.select(); toast('Maintenez le doigt sur l’adresse, puis « Copier ».'); }
+    } }, `📋 Copier l’essai ${n}`);
+    return h('div', { class: 'essai-row' }, h('p', {}, h('b', {}, `Essai ${n}`), ` : ${d}`), input, btn);
+  });
+  openSheet(
+    h('h2', {}, 'Pages d’essai'),
+    h('ol', { class: 'essai-steps' },
+      h('li', {}, 'Touchez « Copier l’essai 1 » ci-dessous.'),
+      h('li', {}, 'Ouvrez l’application Safari (la boussole bleue), touchez la barre d’adresse, collez, puis « OK » / Aller.'),
+      h('li', {}, 'Une page avec des cadres colorés s’affiche. Touchez le bouton Partager (carré avec une flèche vers le haut), puis « Sur l’écran d’accueil », puis « Ajouter ».'),
+      h('li', {}, 'Revenez à l’écran d’accueil de l’iPhone, ouvrez la nouvelle icône « Essai 1 » et faites une capture d’écran.'),
+      h('li', {}, 'Recommencez avec les essais 2, 3 et 4, puis envoyez-moi les captures. Ensuite supprimez ces icônes (elles ne contiennent pas vos cartes).')),
+    ...rows,
+    h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
 }
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
@@ -3192,6 +3214,7 @@ function openSettings() {
     h('button', { class: 'btn sec', type: 'button', onclick: () => { closeSheet(); document.documentElement.classList.remove('no-splash'); showSplash(); } }, '▶︎ Revoir l’écran d’ouverture'),
     verEl,
     h('button', { class: 'btn sec', type: 'button', onclick: () => showFrameTest() }, '📐 Test d’affichage plein écran (pour diagnostiquer la bande vide)'),
+    h('button', { class: 'btn sec', type: 'button', onclick: () => openEssais() }, '🧪 Pages d’essai pour la bande vide (guide pas à pas)'),
     h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
 }
 
