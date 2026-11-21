@@ -3140,10 +3140,15 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v96';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v97';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;
+  try {        // dimensions réelles de la fenêtre et marges système (pour comprendre une éventuelle bande vide sur les côtés)
+    const pr = document.createElement('div'); pr.style.cssText = 'position:fixed;visibility:hidden;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
+    document.body.append(pr); const cs = getComputedStyle(pr), ins = [cs.paddingTop, cs.paddingRight, cs.paddingBottom, cs.paddingLeft].map((x) => Math.round(parseFloat(x) || 0)); pr.remove();
+    verEl.textContent += ` · fenêtre ${innerWidth}×${innerHeight} · écran ${screen.width}×${screen.height} · marges système (haut/droite/bas/gauche) ${ins.join('/')}${isStandalone ? ' · application installée' : ''}`;
+  } catch { /* ignoré */ }
   if (window.caches) caches.keys().then((ks) => { const v = ks.find((k) => /^shell-v\d+$/.test(k)); if (v && v !== 'shell-' + APP_VERSION) verEl.textContent += ' — mise à jour du cache en attente (' + v.replace('shell-', '') + ') : fermez complètement l’application et rouvrez-la.'; }).catch(() => {});
   const sw = h('input', { type: 'checkbox', role: 'switch', 'aria-label': 'Afficher l’écran d’ouverture au lancement' });
   sw.checked = splashOn();
