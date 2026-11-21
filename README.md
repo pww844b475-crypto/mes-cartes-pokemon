@@ -270,3 +270,6 @@ v102 : Réglages → « Pages d'essai pour la bande vide » : guide pas à pas a
 
 ## Copyright (v103)
 Fichier `LICENSE` (tous droits réservés) et mention en bas de Réglages. Les marques et images de cartes restent la propriété de leurs titulaires. Une licence n'empêche pas techniquement la copie d'un site public : elle donne un recours en cas de réutilisation.
+
+## Cartes : tableau de bord (v104)
+La page « Cartes » (icône du dock) s'ouvre sur trois tuiles : cartes possédées et exemplaires (touchez = toutes mes cartes), valeur estimée (touchez = détail par rareté), doubles (touchez = voir / quitter les doubles). Vient ensuite « Par rareté » : chaque bouton montre « possédées / total de la rareté ». Puis l'éventail et la grille.

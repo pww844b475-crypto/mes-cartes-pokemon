@@ -1925,7 +1925,7 @@ async function showSearch(L, my, preset = {}) {
 async function showSearchInner(L, my, preset = {}) {
   const back = h('button', { class: 'iconbtn', type: 'button', onclick: () => go(L), 'aria-label': 'Retour à l’accueil' }, '🏠 Accueil');
   const q = h('input', { class: 'search', type: 'search', placeholder: 'Nom, numéro ou rareté…', 'aria-label': 'Rechercher une carte dans toute la collection', enterkeyhint: 'search', autocomplete: 'off' });
-  const top = h('header', { class: 'top' }, h('div', { class: 'row' }, back, h('h1', {}, 'Rechercher des cartes')), q);
+  const top = h('header', { class: 'top' }, h('div', { class: 'row' }, back, h('h1', {}, preset.own ? 'Mes cartes' : 'Rechercher des cartes')), q);
   const main = h('main', {}, spinner());
   $app.replaceChildren(top, main);
   scrollTo(0, 0);
@@ -1998,7 +1998,7 @@ async function showSearchInner(L, my, preset = {}) {
   function updateChips() {
     const items = [];
     if (f.ids) items.push(['Résultat du scan', () => { f.ids = f.rank = null; }]);
-    if (f.own !== 'all') items.push([POSS.find((x) => x[0] === f.own)[1], () => { f.own = 'all'; }]);
+    if (f.own !== 'all' && !(preset.own && f.own === 'own')) items.push([POSS.find((x) => x[0] === f.own)[1], () => { f.own = preset.own ? 'own' : 'all'; }]);      // sur « Mes cartes », « Possédées » va de soi
     if (f.gid) items.push([gname.get(f.gid) || f.gid, () => { f.gid = ''; }]);
     if (f.rar) items.push([f.rar, () => { f.rar = ''; }]);
     if (f.ver) items.push([idx.vers.get(f.ver)?.label || f.ver, () => { f.ver = ''; }]);
@@ -2017,14 +2017,29 @@ async function showSearchInner(L, my, preset = {}) {
     tiles.length = 0; grid.replaceChildren(); shown = 0; more();
     none.hidden = idle || matches.length > 0; none.textContent = 'Aucune carte ne correspond.';
     updateChips(); updateSummary(); if (sheetSync) sheetSync();
-    paintRarPick(); paintCar(); fetchTopPrices();
+    paintDash(); paintRarPick(); paintCar(); fetchTopPrices();
   }
 
   // carrousel des cartes les plus chères parmi les résultats (prix Cardmarket estimés ; ceux déjà connus, les autres sont relevés en arrière-plan)
   // boutons de rareté, directement sur la page « mes cartes » (un toucher = afficher seulement cette rareté ; retoucher = toutes)
   const rarPick = h('div', { class: 'rpick', role: 'group', 'aria-label': 'Raretés', hidden: true });
+  const rarHead = h('h2', { class: 'dash-h', hidden: true }, 'Par rareté');
+  // tableau de bord de « mes cartes » : cartes possédées, valeur estimée, doubles (un toucher = filtre ou détail)
+  const dash = h('div', { class: 'dash', hidden: true });
+  function paintDash() {
+    if (f.own !== 'own' && f.own !== 'dbl') { dash.hidden = true; return; }
+    const rows = [];
+    for (const r of idx.recs) { const v = mines.get(r.sid)[r.card.id], qn = qtyTotal(v); if (qn > 0) rows.push({ sid: r.sid, id: r.card.id, v, qty: qn, rar: (r.info && r.info.rar) || null }); }
+    const sm = summarize(rows), dbl = rows.filter((r) => qtyMax(r.v) >= 2).length;
+    const tile = (cls, big, label, onclick, aria) => h('button', { type: 'button', class: 'dtile ' + cls, 'aria-label': aria, onclick }, h('b', {}, big), h('span', {}, label));
+    dash.replaceChildren(
+      tile('d1', sm.cards.toLocaleString('fr-FR'), `cartes · ${plural(sm.copies, 'exemplaire', 'exemplaires')}`, () => { f.own = 'own'; f.rar = ''; run(); }, 'Voir toutes mes cartes'),
+      tile('d2', eur(sm.total), sm.pending ? 'valeur (prix en cours…)' : 'valeur estimée', () => openOwned(L, rows, () => paintDash()), 'Détail de la valeur par rareté'),
+      tile('d3', String(dbl), dbl > 1 ? 'cartes en double' : 'carte en double', () => { f.own = f.own === 'dbl' ? 'own' : 'dbl'; run(); }, 'Voir mes doubles'));
+    dash.hidden = false;
+  }
   function paintRarPick() {
-    if (f.own !== 'own') { rarPick.hidden = true; rarPick.replaceChildren(); return; }
+    if (f.own !== 'own') { rarPick.hidden = true; rarHead.hidden = true; rarPick.replaceChildren(); return; }
     const cnt = new Map();
     for (const r of idx.recs) {
       const info = r.info; if (!info || !info.rar) continue;
@@ -2033,10 +2048,10 @@ async function showSearchInner(L, my, preset = {}) {
     }
     const list = [...cnt.keys()].sort((a, b) => rarityRank(a) - rarityRank(b) || a.localeCompare(b, 'fr'));
     const total = [...cnt.values()].reduce((n, c) => n + c, 0);
-    const btn = (label, sym, tier, n, on, set) => h('button', { type: 'button', class: 'rpb' + (on ? ' on' : ''), 'aria-pressed': String(on), title: `${label} : ${n}`, onclick: () => { f.rar = set; run(); } },
-      h('span', { class: 'rps', 'aria-hidden': 'true' }, sym), h('span', { class: 'rpn' }, label), h('b', {}, String(n)));
-    rarPick.replaceChildren(btn('Toutes', '✦', 'aucune', total, !f.rar, ''), ...list.map((r) => btn(r, rarityIcon(r, 26), rarityTier(r), cnt.get(r), f.rar === r, r)));
-    rarPick.hidden = !list.length;
+    const btn = (label, sym, tier, n, on, set, tot) => h('button', { type: 'button', class: 'rpb' + (on ? ' on' : ''), 'aria-pressed': String(on), title: `${label} : ${n}${tot ? ' sur ' + tot : ''}`, onclick: () => { f.rar = set; run(); } },
+      h('span', { class: 'rps', 'aria-hidden': 'true' }, sym), h('span', { class: 'rpn' }, label), h('b', {}, String(n), tot ? h('small', {}, '/' + tot.toLocaleString('fr-FR')) : null));
+    rarPick.replaceChildren(btn('Toutes', '✦', 'aucune', total, !f.rar, '', 0), ...list.map((r) => btn(r, rarityIcon(r, 26), rarityTier(r), cnt.get(r), f.rar === r, r, idx.rars.get(r))));
+    rarPick.hidden = !list.length; rarHead.hidden = rarPick.hidden;
   }
   const carSlot = h('div', { class: 'carslot', hidden: true });
   const ownedMode = () => f.own === 'own' || f.own === 'dbl';
@@ -2061,7 +2076,7 @@ async function showSearchInner(L, my, preset = {}) {
     if (!cand.length) return;
     const stamp = ++carFetch; let i = 0;
     const worker = async () => { while (i < cand.length && stamp === carFetch && my === tok) { const r = cand[i++]; try { await fetchPrice(L, r.card.id); } catch { /* hors ligne */ } if (stamp === carFetch && my === tok && (i % 5 === 0 || i === cand.length)) { paintCar(); } } };
-    Promise.all(Array.from({ length: 4 }, worker)).then(() => { savePrices(); if (stamp === carFetch && my === tok) paintCar(); });
+    Promise.all(Array.from({ length: 4 }, worker)).then(() => { savePrices(); if (stamp === carFetch && my === tok) { paintCar(); paintDash(); } });
   }
   const sortBtn = h('button', { type: 'button', class: 'tbtn', 'aria-pressed': 'false', 'aria-label': 'Trier par prix décroissant', title: 'Trier par prix décroissant', onclick: () => { f.sort = f.sort === 'price' ? '' : 'price'; run(); } }, '↓ Prix');
 
@@ -2204,7 +2219,7 @@ async function showSearchInner(L, my, preset = {}) {
   let timer = null;
   q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 120); });
   moreBtn.addEventListener('click', more);
-  main.replaceChildren(summary, readNote, rarPick, carSlot, grid, moreBtn, none);
+  main.replaceChildren(dash, summary, readNote, rarHead, rarPick, carSlot, grid, moreBtn, none);
   run();
   if (pendingScan) { const file = pendingScan; pendingScan = null; history.replaceState(null, '', '#chercher'); if (file === 'live') openLiveScan(); else runScan(file); }
 }
@@ -3149,7 +3164,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v103';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v105';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 // Test d'affichage : un cadre coloré collé aux bords de la zone que l'appli reçoit du système, et les mesures. Une capture d'écran montre où s'arrête vraiment la fenêtre.
 function showFrameTest() {
   closeSheet();
