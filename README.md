@@ -247,3 +247,5 @@ Mesure sur 26 vraies cartes holo (ultra rares, alt arts, brillantes…) dont les
 
 ## Écran rempli (iPhone/iPad pliable, grands écrans)
 Plus de largeur maximale (1200 px) : le contenu occupe tout l'écran. Les rangées de l'accueil (carrousel, éventail) vont d'un bord à l'autre (la carte suivante dépasse à droite) en respectant les zones système ; vignettes plus grandes (carrousel jusqu'à 300 px, grilles dès 1000 px, 4 à 5 colonnes dès 1300 px) ; l'en-tête est translucide (flou) : le contenu passe dessous, y compris sous la barre d'état. Vérifié en simulation à 390, 1000 et 1800 px de large (rangée bord à bord, aucun défilement horizontal de la page).
+
+**Mise à jour v96 (écran rempli)** : sur un grand écran (≥ 900 × 600 px) les marges latérales des zones système ne réservent plus de bande vide (`--safe-l/--safe-r` = 0) : fonds, carrousel et grilles vont jusqu'au bord et passent sous la puce heure/wifi. L'en-tête, la fiche d'une carte et le scanner gardent leurs marges (`--sys-l/--sys-r`) pour que les commandes ne soient pas masquées. Téléphone en paysage : marges conservées (encoche).
