@@ -267,3 +267,12 @@ Réglages → « Test d'affichage plein écran » : cadre rouge/vert/jaune coll�
 - `essai/1.html` à `essai/4.html` : quatre petites pages à ajouter à l'écran d'accueil (Partager → Sur l'écran d'accueil) pour comparer : 1 = comme l'application ; 2 = barre d'état « default » ; 3 = sans `viewport-fit` ; 4 = manifeste « fullscreen ». Chacune affiche le cadre et les mesures ; celle dont le cadre touche le bord droit indique le réglage à adopter. À supprimer ensuite de l'écran d'accueil.
 
 v102 : Réglages → « Pages d'essai pour la bande vide » : guide pas à pas avec un bouton « Copier » par page d'essai (l'adresse est calculée à partir de celle de l'application).
+
+## Copyright (v103)
+Fichier `LICENSE` (tous droits réservés) et mention en bas de Réglages. Les marques et images de cartes restent la propriété de leurs titulaires. Une licence n'empêche pas techniquement la copie d'un site public : elle donne un recours en cas de réutilisation.
+
+## Cartes : tableau de bord (v104)
+La page « Cartes » (icône du dock) s'ouvre sur trois tuiles : cartes possédées et exemplaires (touchez = toutes mes cartes), valeur estimée (touchez = détail par rareté), doubles (touchez = voir / quitter les doubles). Vient ensuite « Par rareté » : chaque bouton montre « possédées / total de la rareté ». Puis l'éventail et la grille.
+
+**v106** : sur « Mes cartes » on peut cocher plusieurs raretés à la fois (un toucher ajoute ou retire ; « Toutes » efface) ; chaque rareté choisie est aussi une puce retirable.
+**v107** : les 30 cartes de la Collection Classique 30ᵉ Anniversaire (`30th-c`, rareté « Sans Rareté » chez TCGdex) sont rangées sous la rareté « Collection Classique », comme celles de `cel25cc`.

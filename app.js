@@ -1925,7 +1925,7 @@ async function showSearch(L, my, preset = {}) {
 async function showSearchInner(L, my, preset = {}) {
   const back = h('button', { class: 'iconbtn', type: 'button', onclick: () => go(L), 'aria-label': 'Retour à l’accueil' }, '🏠 Accueil');
   const q = h('input', { class: 'search', type: 'search', placeholder: 'Nom, numéro ou rareté…', 'aria-label': 'Rechercher une carte dans toute la collection', enterkeyhint: 'search', autocomplete: 'off' });
-  const top = h('header', { class: 'top' }, h('div', { class: 'row' }, back, h('h1', {}, 'Rechercher des cartes')), q);
+  const top = h('header', { class: 'top' }, h('div', { class: 'row' }, back, h('h1', {}, preset.own ? 'Mes cartes' : 'Rechercher des cartes')), q);
   const main = h('main', {}, spinner());
   $app.replaceChildren(top, main);
   scrollTo(0, 0);
@@ -1946,12 +1946,12 @@ async function showSearchInner(L, my, preset = {}) {
   const mines = new Map();
   for (const r of idx.recs) if (!mines.has(r.sid)) mines.set(r.sid, owned[L][r.sid] || nullObj());
   if (preset.q) q.value = preset.q;                  // requête venue de l'accueil
-  const f = { own: preset.own ? 'own' : 'all', gid: '', rar: preset.rar && idx.rars.has(preset.rar) ? preset.rar : '', ver: '', ids: null, rank: null, sort: preset.sort || '' };
+  const f = { own: preset.own ? 'own' : 'all', gid: '', rar: preset.rar && idx.rars.has(preset.rar) ? preset.rar : '', ver: '', ids: null, rank: null, sort: preset.sort || '', rarMulti: new Set() };      // rar : une rareté (menu Filtres) ; rarMulti : plusieurs raretés cochées sur « Mes cartes »
   const POSS = [['all', 'Toutes'], ['own', 'Possédées'], ['miss', 'Manquantes'], ['dbl', 'Doubles']];
   const gname = new Map(); for (const b of idx.blocks) for (const g of b.items) gname.set(g.id, g.set.name || g.id);
   const rarList = [...idx.rars.keys()].sort((a, b) => rarityRank(a) - rarityRank(b) || a.localeCompare(b, 'fr'));
   const verList = [...idx.vers.entries()].sort((a, b) => b[1].n - a[1].n);
-  const activeCount = () => (f.own !== 'all') + !!f.gid + !!f.rar + !!f.ver + !!f.ids;
+  const activeCount = () => (f.own !== 'all') + !!f.gid + !!f.rar + (f.rarMulti.size > 0) + !!f.ver + !!f.ids;
 
   const match = (r, n) => {
     if (f.ids && !f.ids.has(r.card.id)) return false;
@@ -1959,6 +1959,7 @@ async function showSearchInner(L, my, preset = {}) {
     if (n && !matchTokens(r.text, n)) return false;      // plusieurs mots : « pikachu 25 »
     const info = r.info;
     if (f.rar && !(info && info.rar === f.rar)) return false;
+    if (f.rarMulti.size && !(info && f.rarMulti.has(info.rar))) return false;
     if (f.ver && !(info && info.vars.some((v) => v.key === f.ver))) return false;
     if (f.own !== 'all') {
       const v = mines.get(r.sid)[r.card.id];
@@ -1998,9 +1999,10 @@ async function showSearchInner(L, my, preset = {}) {
   function updateChips() {
     const items = [];
     if (f.ids) items.push(['Résultat du scan', () => { f.ids = f.rank = null; }]);
-    if (f.own !== 'all') items.push([POSS.find((x) => x[0] === f.own)[1], () => { f.own = 'all'; }]);
+    if (f.own !== 'all' && !(preset.own && f.own === 'own')) items.push([POSS.find((x) => x[0] === f.own)[1], () => { f.own = preset.own ? 'own' : 'all'; }]);      // sur « Mes cartes », « Possédées » va de soi
     if (f.gid) items.push([gname.get(f.gid) || f.gid, () => { f.gid = ''; }]);
     if (f.rar) items.push([f.rar, () => { f.rar = ''; }]);
+    for (const rr of f.rarMulti) items.push([rr, () => { f.rarMulti.delete(rr); }]);
     if (f.ver) items.push([idx.vers.get(f.ver)?.label || f.ver, () => { f.ver = ''; }]);
     chips.replaceChildren(...items.map(([label, clear]) => h('button', { type: 'button', class: 'fchip', 'aria-label': `Retirer le filtre : ${label}`, onclick: () => { clear(); run(); } }, label, h('span', { 'aria-hidden': 'true' }, ' ✕'))));
     chips.hidden = !items.length;
@@ -2017,14 +2019,35 @@ async function showSearchInner(L, my, preset = {}) {
     tiles.length = 0; grid.replaceChildren(); shown = 0; more();
     none.hidden = idle || matches.length > 0; none.textContent = 'Aucune carte ne correspond.';
     updateChips(); updateSummary(); if (sheetSync) sheetSync();
-    paintRarPick(); paintCar(); fetchTopPrices();
+    paintDash(); paintRarPick(); paintCar(); fetchTopPrices();
   }
 
   // carrousel des cartes les plus chères parmi les résultats (prix Cardmarket estimés ; ceux déjà connus, les autres sont relevés en arrière-plan)
   // boutons de rareté, directement sur la page « mes cartes » (un toucher = afficher seulement cette rareté ; retoucher = toutes)
   const rarPick = h('div', { class: 'rpick', role: 'group', 'aria-label': 'Raretés', hidden: true });
+  const rarHead = h('h2', { class: 'dash-h', hidden: true }, 'Par rareté');
+  // tableau de bord de « mes cartes » : cartes possédées, valeur estimée, doubles (un toucher = filtre ou détail)
+  const dash = h('div', { class: 'dash', hidden: true });
+  function paintDash() {
+    if (f.own !== 'own' && f.own !== 'dbl') { dash.hidden = true; return; }
+    const rows = [];
+    for (const r of idx.recs) { const v = mines.get(r.sid)[r.card.id], qn = qtyTotal(v); if (qn > 0) rows.push({ sid: r.sid, id: r.card.id, v, qty: qn, rar: (r.info && r.info.rar) || null }); }
+    const sm = summarize(rows), dbl = rows.filter((r) => qtyMax(r.v) >= 2).length;
+    const tile = (cls, big, label, onclick, aria) => h('button', { type: 'button', class: 'dtile ' + cls, 'aria-label': aria, onclick }, h('b', {}, big), h('span', {}, label));
+    dash.replaceChildren(
+      tile('d1', sm.cards.toLocaleString('fr-FR'), `cartes · ${plural(sm.copies, 'exemplaire', 'exemplaires')}`, () => { f.own = 'own'; f.rar = ''; f.rarMulti.clear(); run(); }, 'Voir toutes mes cartes'),
+      tile('d2', eur(sm.total), sm.pending ? 'valeur (prix en cours…)' : 'valeur estimée', () => openOwned(L, rows, () => paintDash()), 'Détail de la valeur par rareté'),
+      tile('d3', String(dbl), dbl > 1 ? 'cartes en double' : 'carte en double', () => { f.own = f.own === 'dbl' ? 'own' : 'dbl'; run(); }, 'Voir mes doubles'));
+    dash.hidden = false;
+  }
+  // un toucher ajoute ou retire une rareté (on peut en cumuler plusieurs) ; « Toutes » les efface
+  function pickRar(r) {
+    if (!r) { f.rar = ''; f.rarMulti.clear(); }
+    else { if (f.rar) { f.rarMulti = new Set([f.rar]); f.rar = ''; } if (f.rarMulti.has(r)) f.rarMulti.delete(r); else f.rarMulti.add(r); }
+    run();
+  }
   function paintRarPick() {
-    if (f.own !== 'own') { rarPick.hidden = true; rarPick.replaceChildren(); return; }
+    if (f.own !== 'own') { rarPick.hidden = true; rarHead.hidden = true; rarPick.replaceChildren(); return; }
     const cnt = new Map();
     for (const r of idx.recs) {
       const info = r.info; if (!info || !info.rar) continue;
@@ -2033,10 +2056,10 @@ async function showSearchInner(L, my, preset = {}) {
     }
     const list = [...cnt.keys()].sort((a, b) => rarityRank(a) - rarityRank(b) || a.localeCompare(b, 'fr'));
     const total = [...cnt.values()].reduce((n, c) => n + c, 0);
-    const btn = (label, sym, tier, n, on, set) => h('button', { type: 'button', class: 'rpb' + (on ? ' on' : ''), 'aria-pressed': String(on), title: `${label} : ${n}`, onclick: () => { f.rar = set; run(); } },
-      h('span', { class: 'rps', 'aria-hidden': 'true' }, sym), h('span', { class: 'rpn' }, label), h('b', {}, String(n)));
-    rarPick.replaceChildren(btn('Toutes', '✦', 'aucune', total, !f.rar, ''), ...list.map((r) => btn(r, rarityIcon(r, 26), rarityTier(r), cnt.get(r), f.rar === r, r)));
-    rarPick.hidden = !list.length;
+    const btn = (label, sym, tier, n, on, set, tot) => h('button', { type: 'button', class: 'rpb' + (on ? ' on' : ''), 'aria-pressed': String(on), title: `${label} : ${n}${tot ? ' sur ' + tot : ''}`, onclick: () => { pickRar(set); } },
+      h('span', { class: 'rps', 'aria-hidden': 'true' }, sym), h('span', { class: 'rpn' }, label), h('b', {}, String(n), tot ? h('small', {}, '/' + tot.toLocaleString('fr-FR')) : null));
+    rarPick.replaceChildren(btn('Toutes', '✦', 'aucune', total, !f.rar && !f.rarMulti.size, '', 0), ...list.map((r) => btn(r, rarityIcon(r, 26), rarityTier(r), cnt.get(r), f.rar === r || f.rarMulti.has(r), r, idx.rars.get(r))));
+    rarPick.hidden = !list.length; rarHead.hidden = rarPick.hidden;
   }
   const carSlot = h('div', { class: 'carslot', hidden: true });
   const ownedMode = () => f.own === 'own' || f.own === 'dbl';
@@ -2061,7 +2084,7 @@ async function showSearchInner(L, my, preset = {}) {
     if (!cand.length) return;
     const stamp = ++carFetch; let i = 0;
     const worker = async () => { while (i < cand.length && stamp === carFetch && my === tok) { const r = cand[i++]; try { await fetchPrice(L, r.card.id); } catch { /* hors ligne */ } if (stamp === carFetch && my === tok && (i % 5 === 0 || i === cand.length)) { paintCar(); } } };
-    Promise.all(Array.from({ length: 4 }, worker)).then(() => { savePrices(); if (stamp === carFetch && my === tok) paintCar(); });
+    Promise.all(Array.from({ length: 4 }, worker)).then(() => { savePrices(); if (stamp === carFetch && my === tok) { paintCar(); paintDash(); } });
   }
   const sortBtn = h('button', { type: 'button', class: 'tbtn', 'aria-pressed': 'false', 'aria-label': 'Trier par prix décroissant', title: 'Trier par prix décroissant', onclick: () => { f.sort = f.sort === 'price' ? '' : 'price'; run(); } }, '↓ Prix');
 
@@ -2072,7 +2095,7 @@ async function showSearchInner(L, my, preset = {}) {
       idx.blocks.map((b) => h('optgroup', { label: b.name }, b.items.map((g) => h('option', { value: g.id }, g.set.name || g.id)))));
     const rSel = h('select', { class: 'field', 'aria-label': 'Rareté' }, h('option', { value: '' }, 'Toutes les raretés'), rarList.map((r) => h('option', { value: r }, `${r} (${idx.rars.get(r).toLocaleString('fr-FR')})`)));
     const vSel = h('select', { class: 'field', 'aria-label': 'Version' }, h('option', { value: '' }, 'Toutes les versions'), verList.map(([k, e]) => h('option', { value: k }, `${e.label} (${e.n.toLocaleString('fr-FR')})`)));
-    gSel.addEventListener('change', () => { f.gid = gSel.value; run(); }); rSel.addEventListener('change', () => { f.rar = rSel.value; run(); }); vSel.addEventListener('change', () => { f.ver = vSel.value; run(); });
+    gSel.addEventListener('change', () => { f.gid = gSel.value; run(); }); rSel.addEventListener('change', () => { f.rar = rSel.value; f.rarMulti.clear(); run(); }); vSel.addEventListener('change', () => { f.ver = vSel.value; run(); });
     const seeBtn = h('button', { class: 'btn', type: 'button', onclick: closeSheet }, 'Voir les cartes');
     sheetSync = () => {
       segBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(POSS[i][0] === f.own)));
@@ -2085,7 +2108,7 @@ async function showSearchInner(L, my, preset = {}) {
       h('label', { class: 'lbl' }, 'Extension', gSel), h('label', { class: 'lbl' }, 'Rareté', rSel), h('label', { class: 'lbl' }, 'Version', vSel),
       h('p', { class: 'lb-help' }, 'Avec une version choisie, « Possédées » et « Manquantes » portent sur cette version précise.'),
       seeBtn,
-      h('button', { class: 'btn sec', type: 'button', onclick: () => { f.own = 'all'; f.gid = f.rar = f.ver = ''; f.ids = f.rank = null; run(); } }, 'Réinitialiser les filtres'));
+      h('button', { class: 'btn sec', type: 'button', onclick: () => { f.own = 'all'; f.gid = f.rar = f.ver = ''; f.rarMulti.clear(); f.ids = f.rank = null; run(); } }, 'Réinitialiser les filtres'));
     new MutationObserver((_, ob) => { if (!ov.isConnected) { sheetSync = null; ob.disconnect(); } }).observe(document.body, { childList: true });
     sheetSync();
   }
@@ -2204,7 +2227,7 @@ async function showSearchInner(L, my, preset = {}) {
   let timer = null;
   q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 120); });
   moreBtn.addEventListener('click', more);
-  main.replaceChildren(summary, readNote, rarPick, carSlot, grid, moreBtn, none);
+  main.replaceChildren(dash, summary, readNote, rarHead, rarPick, carSlot, grid, moreBtn, none);
   run();
   if (pendingScan) { const file = pendingScan; pendingScan = null; history.replaceState(null, '', '#chercher'); if (file === 'live') openLiveScan(); else runScan(file); }
 }
@@ -2237,6 +2260,7 @@ function loadCardInfo(L, setId) {
         const vars = withKeys(vi.map((i) => descOf(j.var[i])));
         let rar = ri >= 0 ? rarName(j.rar[ri]) : null;
         // TCGdex appelle « Rare » les rares holo comme les non-holo des séries anciennes : si toutes les versions sont holo, c'est une « Rare Holo »
+        if (setId === '30th-c' && (!rar || rar === 'Sans Rareté')) rar = 'Collection Classique';      // les 30 cartes de la Collection Classique 30ᵉ Anniversaire (TCGdex : « Sans Rareté »), comme celles de cel25cc
         if (rar === 'Rare' && vars.length && vars.every((v) => /holo/i.test(v.type || ''))) rar = 'Rare Holo';
         m.set(id, { rar, vars });
       }
@@ -3149,7 +3173,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v102';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v107';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 // Test d'affichage : un cadre coloré collé aux bords de la zone que l'appli reçoit du système, et les mesures. Une capture d'écran montre où s'arrête vraiment la fenêtre.
 function showFrameTest() {
   closeSheet();
@@ -3215,6 +3239,8 @@ function openSettings() {
     verEl,
     h('button', { class: 'btn sec', type: 'button', onclick: () => showFrameTest() }, '📐 Test d’affichage plein écran (pour diagnostiquer la bande vide)'),
     h('button', { class: 'btn sec', type: 'button', onclick: () => openEssais() }, '🧪 Pages d’essai pour la bande vide (guide pas à pas)'),
+    h('p', { class: 'copyright' }, '© 2026 Pijako — Pijakollection. Tous droits réservés : le code, le graphisme et les icônes de cette application ne peuvent être copiés, modifiés ni réutilisés sans autorisation écrite de leur auteur.'),
+    h('p', { class: 'copyright' }, 'Pokémon et les noms, images et illustrations de cartes sont des marques et des œuvres de The Pokémon Company, Nintendo, Creatures et GAME FREAK ; ils n’appartiennent pas à l’auteur de l’application. Données des cartes : TCGdex. Prix : Cardmarket et TCGplayer.'),
     h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
 }
 
