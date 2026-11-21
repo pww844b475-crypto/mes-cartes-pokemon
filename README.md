@@ -267,3 +267,6 @@ Réglages → « Test d'affichage plein écran » : cadre rouge/vert/jaune coll�
 - `essai/1.html` à `essai/4.html` : quatre petites pages à ajouter à l'écran d'accueil (Partager → Sur l'écran d'accueil) pour comparer : 1 = comme l'application ; 2 = barre d'état « default » ; 3 = sans `viewport-fit` ; 4 = manifeste « fullscreen ». Chacune affiche le cadre et les mesures ; celle dont le cadre touche le bord droit indique le réglage à adopter. À supprimer ensuite de l'écran d'accueil.
 
 v102 : Réglages → « Pages d'essai pour la bande vide » : guide pas à pas avec un bouton « Copier » par page d'essai (l'adresse est calculée à partir de celle de l'application).
+
+## Copyright (v103)
+Fichier `LICENSE` (tous droits réservés) et mention en bas de Réglages. Les marques et images de cartes restent la propriété de leurs titulaires. Une licence n'empêche pas techniquement la copie d'un site public : elle donne un recours en cas de réutilisation.

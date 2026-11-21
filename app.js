@@ -3149,7 +3149,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v102';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v103';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 // Test d'affichage : un cadre coloré collé aux bords de la zone que l'appli reçoit du système, et les mesures. Une capture d'écran montre où s'arrête vraiment la fenêtre.
 function showFrameTest() {
   closeSheet();
@@ -3215,6 +3215,8 @@ function openSettings() {
     verEl,
     h('button', { class: 'btn sec', type: 'button', onclick: () => showFrameTest() }, '📐 Test d’affichage plein écran (pour diagnostiquer la bande vide)'),
     h('button', { class: 'btn sec', type: 'button', onclick: () => openEssais() }, '🧪 Pages d’essai pour la bande vide (guide pas à pas)'),
+    h('p', { class: 'copyright' }, '© 2026 Pijako — Pijakollection. Tous droits réservés : le code, le graphisme et les icônes de cette application ne peuvent être copiés, modifiés ni réutilisés sans autorisation écrite de leur auteur.'),
+    h('p', { class: 'copyright' }, 'Pokémon et les noms, images et illustrations de cartes sont des marques et des œuvres de The Pokémon Company, Nintendo, Creatures et GAME FREAK ; ils n’appartiennent pas à l’auteur de l’application. Données des cartes : TCGdex. Prix : Cardmarket et TCGplayer.'),
     h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
 }
 

@@ -788,3 +788,5 @@ main { max-width: none; }
 .essai-row { margin: 12px 0; }
 .essai-row p { margin: 0 0 4px; }
 .essai-row input { width: 100%; margin-bottom: 6px; font-size: 13px; }
+
+.copyright { margin: 12px 0 0; font-size: 12px; line-height: 1.4; color: var(--muted); }
