@@ -1028,10 +1028,10 @@ async function showListInner(my) {
   syncToggle();
   // raccourci vers mes cartes possédées (par rareté) + estimation de leur valeur
   let valRows = [], busy = false;
-  const mineBtn = h('button', { type: 'button', class: 'mine mtile', 'aria-label': 'Mes cartes possédées', onclick: () => { listScroll = scrollY; location.hash = '#chercher/own'; } }, h('span', { class: 'mi' }, '🃏'), h('span', { class: 'ml' }, 'Mes cartes'), h('b', { class: 'mn' }, '0'));
-  const valNum = h('b', { class: 'vv' }, '…'), valSub = h('span', { class: 'vs' });
+  const mineBtn = h('button', { type: 'button', class: 'mine mtile', 'aria-label': 'Mes cartes possédées', onclick: () => { listScroll = scrollY; location.hash = '#chercher/own'; } }, h('span', { class: 'mi' }, '🃏'), h('span', { class: 'ml' }, 'Cartes'), h('b', { class: 'mn' }, '0'));
+  const valNum = h('b', { class: 'vv' }, '…'), valSub = h('span', { class: 'vs' }), valCnt = h('span', { class: 'vc' }), valBar = h('i');
   const refreshBtn = h('button', { type: 'button', class: 'tbtn2', 'aria-label': 'Actualiser les prix', title: 'Actualiser les prix', onclick: () => recalc(true) }, '⟳');
-  const valbox = h('div', { class: 'valbox' }, h('button', { type: 'button', class: 'vt', 'aria-label': 'Détail de la valeur par rareté', onclick: () => openOwned(L, valRows, () => recalc(false)) }, h('span', { class: 'vl' }, 'Valeur estimée'), valNum, valSub), refreshBtn);
+  const valbox = h('div', { class: 'valbox' }, h('button', { type: 'button', class: 'vt', 'aria-label': 'Détail de la valeur par rareté', onclick: () => openOwned(L, valRows, () => recalc(false)) }, h('span', { class: 'vl' }, 'Valeur estimée'), valNum, valCnt, h('span', { class: 'vbar', 'aria-hidden': 'true' }, valBar), valSub), refreshBtn);
   const carSlot = h('div', { class: 'carslot', hidden: true });
   let carTimer = 0;
   let carSig = '', carT0 = 0;
@@ -1056,6 +1056,8 @@ async function showListInner(my) {
     const sm = summarize(valRows);
     mineBtn.querySelector('.mn').textContent = String(sm.cards);
     valNum.textContent = eur(sm.total);
+    { const haveAll = secs.reduce((n, x) => n + x.have, 0), totAll = secs.reduce((n, x) => n + x.total, 0), pc = pctOf(haveAll, totAll);
+      valCnt.textContent = `${plural(sm.cards, 'carte', 'cartes')} · ${plural(sm.copies, 'exemplaire', 'exemplaires')} · ${pc} % de la collection`; valBar.style.width = pc + '%'; }
     valSub.textContent = prog ? `Calcul des prix… ${prog}` : sm.pending ? 'Prix indisponibles pour le moment (connexion ?)' : `${valueOnly() ? 'Cartes de valeur · ' : ''}${{ cm: 'Cardmarket · tendance · tous vendeurs', tcg: 'TCGplayer · prix du marché (converti en €)', avg: 'Cardmarket + TCGplayer (converti en €)' }[priceSrc()]}${sm.oldest ? ' · relevé le ' + new Date(sm.oldest).toLocaleDateString('fr-FR') : ''}`;
   };
   // à chaque ouverture de l'application (une fois par lancement) : proposer d'actualiser les prix
@@ -1122,7 +1124,7 @@ async function showListInner(my) {
       h('b', {}, 'Astuce iPhone / iPad : '), 'touchez Partager ⬆︎ puis « Sur l’écran d’accueil ». Cochez vos cartes depuis l’icône installée : ses données sont séparées de celles de Safari (utilisez Sauvegarde pour les transférer).',
       h('button', { type: 'button', onclick: (e) => { store.set(K.tip, '1'); e.target.closest('.note').remove(); } }, 'Compris')));
   }
-  main.replaceChildren(...notes, askSlot, menu, carSlot, valbox, colhead, ...secs.map((x) => x.el), none);
+  main.replaceChildren(...notes, askSlot, valbox, menu, carSlot, colhead, ...secs.map((x) => x.el), none);
   main.classList.toggle('setgrid', setView === 'grille');
   recalc(false);
 
@@ -3140,7 +3142,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v97';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v98';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;

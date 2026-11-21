@@ -738,3 +738,27 @@ main { max-width: none; }
 /* Toutes tailles : le contenu et ses fonds passent sous les zones système latérales (la puce heure/wifi flotte par-dessus), sans bande vide sur les côtés. */
 @media (min-width: 0px) { :root { --safe-l: 0px; --safe-r: 0px; } }       /* sur ton iPhone pliable la zone système latérale (≈ 85 pt) restait vide, y compris à l'accueil et sur l'écran d'entrée */
 @media (orientation: landscape) and (max-height: 500px) { :root { --safe-l: env(safe-area-inset-left, 0px); --safe-r: env(safe-area-inset-right, 0px); } }      /* téléphone en paysage : on garde les marges de l'encoche */
+
+/* ---- accueil : tableau de bord (valeur, nombre de cartes, avancement) puis dock d'icônes rondes ---- */
+.valbox .vt { gap: 4px; padding: 14px 16px; border-radius: 18px; background: linear-gradient(150deg, #1f4fa8, #5b3fb5); color: #fff; border: 0; box-shadow: 0 8px 22px rgba(40, 60, 140, .35); }
+.valbox .vl { color: rgba(255, 255, 255, .8); }
+.valbox .vv { font-size: 32px; }
+.valbox .vc { font-size: 14px; font-weight: 600; color: rgba(255, 255, 255, .92); }
+.valbox .vbar { display: block; width: 100%; height: 7px; border-radius: 99px; background: rgba(255, 255, 255, .25); overflow: hidden; margin: 2px 0; }
+.valbox .vbar i { display: block; height: 100%; width: 0; border-radius: 99px; background: #ffd24a; transition: width .4s; }
+.valbox .vs { color: rgba(255, 255, 255, .7); }
+.valbox .tbtn2 { width: 52px; border-radius: 18px; }
+.menu { grid-template-columns: repeat(6, 1fr); gap: 4px; margin: 0 0 16px; }
+.mtile { min-height: 0; padding: 6px 0 4px; align-items: center; justify-content: flex-start; gap: 6px; text-align: center; background: none; border: 0; }
+.mtile .mi { display: grid; place-items: center; width: clamp(48px, 13vw, 66px); aspect-ratio: 1; border-radius: 22px; font-size: clamp(24px, 6.5vw, 32px); background: var(--g, var(--surface-2)); box-shadow: 0 5px 12px rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .25); }
+.mtile .ml { font-size: clamp(11px, 2.9vw, 14px); font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mtile .mn { top: 0; right: 50%; margin-right: calc(clamp(48px, 13vw, 66px) / -2 - 6px); font-size: 11px; line-height: 1; padding: 3px 6px; border-radius: 99px; background: #ff6b78; color: #fff; font-weight: 800; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); }
+.menu .mtile:nth-of-type(1) { --g: linear-gradient(145deg, #3d7bff, #2a4fd0); }
+.menu .mtile:nth-of-type(2) { --g: linear-gradient(145deg, #a06bff, #6a3fd0); }
+.menu .mtile:nth-of-type(3) { --g: linear-gradient(145deg, #2fcf8a, #12935f); }
+.menu .mtile:nth-of-type(4) { --g: linear-gradient(145deg, #ffa24a, #e0661f); }
+.menu .mtile:nth-of-type(5) { --g: linear-gradient(145deg, #4ac3ff, #1f86c9); }
+.menu .mtile:nth-of-type(6) { --g: linear-gradient(145deg, #8c9bb3, #5a6a85); }
+@media (max-height: 620px) { .mtile { min-height: 0; } }
+.valbox .tbtn2 { background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .3); color: #fff; backdrop-filter: blur(6px); }
+@media (prefers-color-scheme: light) { .valbox .tbtn2 { background: var(--surface); color: var(--text); border-color: var(--line); } }
