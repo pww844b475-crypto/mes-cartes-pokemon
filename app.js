@@ -939,6 +939,13 @@ function valuePanel(totalNow) {       // « VALEUR TOTALE » : montant, variatio
 }
 
 /* ---------- Vue : liste des extensions, par blocs ---------- */
+// icônes personnalisées du menu d'accueil (mascotte) : images/icons-menu/<nom>.webp ; l'emoji sert de secours si l'image manque
+const MENU_EMOJI = { cartes: '🃏', scanner: '📷', stats: '📊', amis: '👥', sauvegarde: '💾', reglages: '⚙️' };
+function menuIcon(k) {
+  const img = h('img', { src: `images/icons-menu/${k}.webp`, alt: '', width: 256, height: 256, decoding: 'async', draggable: 'false', class: 'mimg' });
+  img.addEventListener('error', () => img.replaceWith(document.createTextNode(MENU_EMOJI[k] || '•')));
+  return img;
+}
 async function showList(my) {   // l'écran de chargement animé s'affiche si l'attente dure
   const ld = loader.start('Liste des extensions');
   try { await showListInner(my); } finally { ld.done(); }
@@ -1028,7 +1035,7 @@ async function showListInner(my) {
   syncToggle();
   // raccourci vers mes cartes possédées (par rareté) + estimation de leur valeur
   let valRows = [], busy = false;
-  const mineBtn = h('button', { type: 'button', class: 'mine mtile', 'aria-label': 'Mes cartes possédées', onclick: () => { listScroll = scrollY; location.hash = '#chercher/own'; } }, h('span', { class: 'mi' }, '🃏'), h('span', { class: 'ml' }, 'Cartes'), h('b', { class: 'mn' }, '0'));
+  const mineBtn = h('button', { type: 'button', class: 'mine mtile', 'aria-label': 'Mes cartes possédées', onclick: () => { listScroll = scrollY; location.hash = '#chercher/own'; } }, h('span', { class: 'mi' }, menuIcon('cartes')), h('span', { class: 'ml' }, 'Cartes'), h('b', { class: 'mn' }, '0'));
   const valNum = h('b', { class: 'vv' }, '…'), valSub = h('span', { class: 'vs' }), valCnt = h('span', { class: 'vc' }), valBar = h('i');
   const refreshBtn = h('button', { type: 'button', class: 'tbtn2', 'aria-label': 'Actualiser les prix', title: 'Actualiser les prix', onclick: () => recalc(true) }, '⟳');
   const valbox = h('div', { class: 'valbox' }, h('button', { type: 'button', class: 'vt', 'aria-label': 'Détail de la valeur par rareté', onclick: () => openOwned(L, valRows, () => recalc(false)) }, h('span', { class: 'vl' }, 'Valeur estimée'), valNum, valCnt, h('span', { class: 'vbar', 'aria-hidden': 'true' }, valBar), valSub), refreshBtn);
@@ -1102,17 +1109,17 @@ async function showListInner(my) {
       h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
   }
   const goto = (hash) => () => { listScroll = scrollY; location.hash = hash; };
-  const mtile = (icon, label, aria, onclick) => h('button', { type: 'button', class: 'mtile', 'aria-label': aria, onclick }, h('span', { class: 'mi' }, icon), h('span', { class: 'ml' }, label));
+  const mtile = (icon, label, aria, onclick) => h('button', { type: 'button', class: 'mtile', 'aria-label': aria, onclick }, h('span', { class: 'mi' }, menuIcon(icon)), h('span', { class: 'ml' }, label));
   const homeScanIn = h('input', { type: 'file', accept: 'image/*', capture: 'environment', hidden: true, 'aria-label': 'Photo de la carte à scanner' });
   homeScanIn.addEventListener('change', () => { const file = homeScanIn.files[0]; homeScanIn.value = ''; if (!file) return; pendingScan = file; listScroll = scrollY; location.hash = '#chercher/scan'; });
   const menu = h('nav', { class: 'menu', 'aria-label': 'Menu' },
     mineBtn,
-    mtile('📷', 'Scanner', 'Scanner une carte avec l’appareil photo', () => { pendingScan = 'live'; listScroll = scrollY; location.hash = '#chercher/scan'; }),
+    mtile('scanner', 'Scanner', 'Scanner une carte avec l’appareil photo', () => { pendingScan = 'live'; listScroll = scrollY; location.hash = '#chercher/scan'; }),
     homeScanIn,
-    mtile('📊', 'Statistiques', 'Statistiques de la collection', openStats),
-    mtile('👥', 'Amis', 'Amis : partager et comparer', goto('#amis')),
-    mtile('💾', 'Sauvegarde', 'Sauvegarde et restauration', () => openBackup()),
-    mtile('⚙️', 'Réglages', 'Réglages', () => openSettings()));
+    mtile('stats', 'Statistiques', 'Statistiques de la collection', openStats),
+    mtile('amis', 'Amis', 'Amis : partager et comparer', goto('#amis')),
+    mtile('sauvegarde', 'Sauvegarde', 'Sauvegarde et restauration', () => openBackup()),
+    mtile('reglages', 'Réglages', 'Réglages', () => openSettings()));
   let setView = store.get(K.setview) === 'grille' ? 'grille' : 'liste';
   const vBtns = [['liste', 'Liste'], ['grille', 'Grille']].map(([k, l]) => h('button', { type: 'button', 'aria-pressed': String(setView === k), onclick: () => {
     setView = k; store.set(K.setview, k); vBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(['liste', 'grille'][i] === k))); main.classList.toggle('setgrid', k === 'grille');
@@ -3142,7 +3149,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v98';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v99';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;
