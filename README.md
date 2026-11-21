@@ -273,3 +273,6 @@ Fichier `LICENSE` (tous droits réservés) et mention en bas de Réglages. Les m
 
 ## Cartes : tableau de bord (v104)
 La page « Cartes » (icône du dock) s'ouvre sur trois tuiles : cartes possédées et exemplaires (touchez = toutes mes cartes), valeur estimée (touchez = détail par rareté), doubles (touchez = voir / quitter les doubles). Vient ensuite « Par rareté » : chaque bouton montre « possédées / total de la rareté ». Puis l'éventail et la grille.
+
+**v106** : sur « Mes cartes » on peut cocher plusieurs raretés à la fois (un toucher ajoute ou retire ; « Toutes » efface) ; chaque rareté choisie est aussi une puce retirable.
+**v107** : les 30 cartes de la Collection Classique 30ᵉ Anniversaire (`30th-c`, rareté « Sans Rareté » chez TCGdex) sont rangées sous la rareté « Collection Classique », comme celles de `cel25cc`.
