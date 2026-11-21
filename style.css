@@ -762,3 +762,14 @@ main { max-width: none; }
 @media (max-height: 620px) { .mtile { min-height: 0; } }
 .valbox .tbtn2 { background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .3); color: #fff; backdrop-filter: blur(6px); }
 @media (prefers-color-scheme: light) { .valbox .tbtn2 { background: var(--surface); color: var(--text); border-color: var(--line); } }
+
+/* icônes personnalisées (mascotte) du dock */
+.mtile .mi { width: clamp(58px, 16vw, 92px); background: none; box-shadow: none; border-radius: 0; font-size: clamp(30px, 8vw, 44px); }
+.mtile .mimg { display: block; width: 100%; height: auto; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .35)); }
+.mtile .mn { margin-right: calc(clamp(58px, 16vw, 92px) / -2 - 4px); }
+.mtile:active .mimg { transform: scale(.94); }
+.menu { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.mtile { min-width: 0; }
+.mtile .mi { width: clamp(44px, 14vw, 84px); }
+.mtile .ml { font-size: clamp(10px, 2.6vw, 14px); }
+.mtile .mn { margin-right: calc(clamp(44px, 14vw, 84px) / -2 - 2px); }

@@ -254,3 +254,6 @@ Plus de largeur maximale (1200 px) : le contenu occupe tout l'écran. Les rangé
 
 ## Accueil : tableau de bord et dock d'icônes (v98)
 La valeur estimée passe en haut, dans une carte en dégradé avec le nombre de cartes, d'exemplaires et la progression globale (barre). Les six tuiles deviennent un dock d'icônes rondes en couleur (Cartes, Scanner, Statistiques, Amis, Sauvegarde, Réglages) sur une seule ligne, avec une pastille rouge pour le nombre de cartes ; le carrousel vient juste après. Vérifié en simulation à 458×667, 667×458 et 1000×740.
+
+## Icônes personnalisées du dock (v99)
+Six illustrations fournies (mascotte : cartes, appareil photo, trophée, échange, disquette, engrenage) : fond blanc retiré, rognées, redimensionnées en 256 px WebP dans `images/icons-menu/` (ajoutées au cache hors ligne). `menuIcon(nom)` affiche l'image ; l'emoji d'origine sert de secours si le fichier manque. Colonnes du dock à largeur égale (`minmax(0,1fr)`), libellés réduits pour tenir sur l'écran étroit.
