@@ -260,3 +260,8 @@ Six illustrations fournies (mascotte : cartes, appareil photo, trophée, échang
 
 ## Test d'affichage (v100)
 Réglages → « Test d'affichage plein écran » : cadre rouge/vert/jaune collé aux bords de la zone reçue du système, barres bleu/blanc sur les côtés, et mesures (fenêtre, page, viewport visuel, écran, marges système, orientation). Une capture montre si la bande vide à droite vient de la fenêtre elle-même ou de la mise en page.
+
+## Bouton « 🏠 Accueil » et pages d'essai d'affichage (v101)
+- Le bouton « ‹ Extensions » devient « 🏠 Accueil » (page d'une extension, recherche/mes cartes, amis) ; la page de comparaison a en plus un bouton 🏠.
+- **Bande vide à droite — constat** (test d'affichage fait sur l'appareil) : fenêtre 867 × 669, marges système 0/0/34/0, application installée, orientation `landscape-secondary` ; le cadre du test s'arrête avant la zone où flotte la puce heure/wifi. La fenêtre que le système donne à l'application installée est donc plus étroite que l'écran ; ce n'est pas une marge CSS. Dans Safari (sites web) la page occupe tout l'écran.
+- `essai/1.html` à `essai/4.html` : quatre petites pages à ajouter à l'écran d'accueil (Partager → Sur l'écran d'accueil) pour comparer : 1 = comme l'application ; 2 = barre d'état « default » ; 3 = sans `viewport-fit` ; 4 = manifeste « fullscreen ». Chacune affiche le cadre et les mesures ; celle dont le cadre touche le bord droit indique le réglage à adopter. À supprimer ensuite de l'écran d'accueil.
