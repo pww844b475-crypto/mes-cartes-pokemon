@@ -257,3 +257,6 @@ La valeur estimée passe en haut, dans une carte en dégradé avec le nombre de 
 
 ## Icônes personnalisées du dock (v99)
 Six illustrations fournies (mascotte : cartes, appareil photo, trophée, échange, disquette, engrenage) : fond blanc retiré, rognées, redimensionnées en 256 px WebP dans `images/icons-menu/` (ajoutées au cache hors ligne). `menuIcon(nom)` affiche l'image ; l'emoji d'origine sert de secours si le fichier manque. Colonnes du dock à largeur égale (`minmax(0,1fr)`), libellés réduits pour tenir sur l'écran étroit.
+
+## Test d'affichage (v100)
+Réglages → « Test d'affichage plein écran » : cadre rouge/vert/jaune collé aux bords de la zone reçue du système, barres bleu/blanc sur les côtés, et mesures (fenêtre, page, viewport visuel, écran, marges système, orientation). Une capture montre si la bande vide à droite vient de la fenêtre elle-même ou de la mise en page.

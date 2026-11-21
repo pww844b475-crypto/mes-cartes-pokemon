@@ -3149,7 +3149,26 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v99';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v100';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+// Test d'affichage : un cadre coloré collé aux bords de la zone que l'appli reçoit du système, et les mesures. Une capture d'écran montre où s'arrête vraiment la fenêtre.
+function showFrameTest() {
+  closeSheet();
+  const info = h('div', { class: 'ftinfo' });
+  const upd = () => {
+    const vv = window.visualViewport, pr = document.createElement('div');
+    pr.style.cssText = 'position:fixed;visibility:hidden;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)'; document.body.append(pr);
+    const cs = getComputedStyle(pr), ins = [cs.paddingTop, cs.paddingRight, cs.paddingBottom, cs.paddingLeft].map((x) => Math.round(parseFloat(x) || 0)); pr.remove();
+    const de = document.documentElement;
+    info.replaceChildren(...[
+      `Version ${APP_VERSION}`, `fenêtre (innerWidth × innerHeight) : ${innerWidth} × ${innerHeight}`, `largeur de la page (clientWidth) : ${de.clientWidth} × ${de.clientHeight}`,
+      vv ? `viewport visuel : ${Math.round(vv.width)} × ${Math.round(vv.height)} (décalage ${Math.round(vv.offsetLeft)}, ${Math.round(vv.offsetTop)} · échelle ${vv.scale})` : 'viewport visuel : non disponible',
+      `écran (screen) : ${screen.width} × ${screen.height} · disponible ${screen.availWidth} × ${screen.availHeight} · ratio ${devicePixelRatio}`,
+      `marges système haut/droite/bas/gauche : ${ins.join(' / ')}`, `orientation : ${(screen.orientation && screen.orientation.type) || (innerWidth > innerHeight ? 'paysage' : 'portrait')} · ${isStandalone ? 'application installée' : 'dans Safari'}`,
+      'Touchez l’écran pour fermer.'].map((t) => h('p', {}, t)));
+  };
+  const ov = h('div', { class: 'frametest', role: 'dialog', 'aria-label': 'Test d’affichage', onclick: () => { ov.remove(); window.removeEventListener('resize', upd); } }, h('i', { class: 'ft-l' }), h('i', { class: 'ft-r' }), info);
+  document.body.append(ov); upd(); window.addEventListener('resize', upd);
+}
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;
@@ -3172,6 +3191,7 @@ function openSettings() {
       h('span', {}, h('span', { class: 'st' }, 'Écran d’ouverture'), h('span', { class: 'sd' }, 'Affiche le logo et « Touchez pour entrer » à chaque lancement de l’application.')), sw),
     h('button', { class: 'btn sec', type: 'button', onclick: () => { closeSheet(); document.documentElement.classList.remove('no-splash'); showSplash(); } }, '▶︎ Revoir l’écran d’ouverture'),
     verEl,
+    h('button', { class: 'btn sec', type: 'button', onclick: () => showFrameTest() }, '📐 Test d’affichage plein écran (pour diagnostiquer la bande vide)'),
     h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
 }
 
