@@ -2,99 +2,6 @@
  "avertissement": "Vérifier le texte original avant de répondre",
  "fiches": [
   {
-   "id": "conges-pointage",
-   "theme": "Congés payés et congés d'ancienneté",
-   "question": "Combien de jours de congés payés ai-je acquis, et comment sont décomptés mes jours de congé ?",
-   "synonymes": [
-    "CP",
-    "congé payé",
-    "congés",
-    "conges payes",
-    "jours de congés",
-    "vacances",
-    "acquis"
-   ],
-   "etiquettes": [
-    "Information à compléter"
-   ],
-   "champs": [
-    {
-     "id": "joursHebdo",
-     "label": "Jours travaillés par semaine",
-     "type": "number",
-     "min": 1,
-     "max": 6,
-     "defaut": 5
-    },
-    {
-     "id": "joursAbsence",
-     "label": "Jours d'absence à décompter",
-     "type": "number",
-     "min": 0,
-     "defaut": 5
-    }
-   ],
-   "calcul": "congesPointage",
-   "niveaux": [
-    {
-     "titre": "Accord de substitution",
-     "regles": [
-      "Le nombre de jours acquis n'est pas fixé par l'accord : il renvoie à la loi.",
-      "Période de prise : du 1er juin au 31 mai. Une semaine complète est décomptée pour 6 jours. Congés non pris : ni reportés, ni rémunérés.",
-      "Temps de travail réparti sur moins de 5 jours : jours à pointer = 6 × durée de l'absence ÷ jours de travail par semaine (arrondi à l'entier inférieur)."
-     ],
-     "sources": [
-      {
-       "doc": "subst",
-       "article": "art. 4.1.1",
-       "page": 42,
-       "extrait": "Le congé annuel s'acquiert conformément aux dispositions légales en vigueur.",
-       "verifie_image": false
-      },
-      {
-       "doc": "subst",
-       "article": "art. 4.1.2",
-       "page": 42,
-       "extrait": "Toute semaine complète de congés annuels est décomptée pour 6 jours."
-      },
-      {
-       "doc": "subst",
-       "article": "art. 4.1.2",
-       "page": 42,
-       "extrait": "ne sont ni reportés, ni rémunérés."
-      }
-     ]
-    },
-    {
-     "titre": "Convention collective (version du 28 août 2025)",
-     "regles": [
-      "Durée fixée par la législation en vigueur.",
-      "Maladie assimilée à du travail effectif pour l'acquisition des congés, dans la limite de 2 mois au total, pour les salariés ayant au moins 2 ans de présence."
-     ],
-     "sources": [
-      {
-       "doc": "cc",
-       "article": "art. 7.1.1",
-       "page": 49,
-       "extrait": "La durée des congés payés annuels est fixée conformément à la législation en vigueur."
-      }
-     ]
-    },
-    {
-     "niveau": "code",
-     "titre": "Code du travail",
-     "regles": [
-      "Information à compléter : Code du travail non fourni dans les sources. Le nombre de jours acquis par mois travaillé n'est donc pas affiché."
-     ],
-     "sources": []
-    }
-   ],
-   "notes": [
-    "La saisie « jours d'absence » est un nombre de jours normalement travaillés."
-   ],
-   "reponse": "Le nombre de jours acquis n'est pas fixé par l'accord : il renvoie à la loi (Code du travail non fourni : information à compléter). Les congés se prennent du 1er juin au 31 mai ; une semaine complète compte pour 6 jours."
-  },
-  {
    "id": "preavis",
    "theme": "Rupture du contrat, retraite",
    "question": "Quelle est la durée du préavis (démission, licenciement) ?",
@@ -885,7 +792,13 @@
     "accident du travail",
     "arret",
     "délai de carence",
-    "jours de carence"
+    "jours de carence",
+    "durée du complément",
+    "pendant combien de jours le complément",
+    "combien de jours de complément",
+    "180 jours",
+    "360 jours",
+    "540 jours"
    ],
    "etiquettes": [
     "Écart à vérifier",
@@ -3298,6 +3211,1498 @@
       }
      ],
      "verifie_image": true
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "conges-pointage",
+   "theme": "Congés payés et congés d'ancienneté",
+   "question": "Comment mes jours de congés sont-ils décomptés (une semaine = 6 jours) ?",
+   "reponse": "Toute semaine complète de congés annuels est décomptée pour 6 jours. Pour un horaire réparti sur moins de 5 jours par semaine, le nombre de jours à pointer est égal à 6 × durée de l'absence ÷ nombre de jours de travail par semaine, arrondi à l'entier inférieur (accord, art. 4.1.2).",
+   "synonymes": [
+    "décompte des congés",
+    "semaine de congés",
+    "6 jours",
+    "jours à pointer",
+    "temps partiel congés",
+    "pointer congés",
+    "horaire réparti"
+   ],
+   "etiquettes": [],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.1.2, p.42)",
+     "regles": [
+      "Une semaine complète de congés annuels est décomptée pour 6 jours.",
+      "Horaire sur moins de 5 jours par semaine : jours à pointer = 6 × durée de l'absence ÷ nombre de jours de travail hebdomadaire, arrondi à l'entier inférieur."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.1.2",
+       "page": 42,
+       "extrait": "Toute semaine complète de congés annuels est décomptée pour 6 jours."
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Livret CGT (p.11)",
+     "regles": [
+      "Reprend la même règle."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Congés payés",
+       "page": 11,
+       "extrait": "Toute semaine complète de congés annuels = 6 jours."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur le décompte en jours ; pour l'acquisition légale, voir la fiche « Combien de jours de congés payés ai-je acquis ? »."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "La saisie « jours d'absence » est un nombre de jours normalement travaillés."
+   ],
+   "champs": [
+    {
+     "id": "joursHebdo",
+     "label": "Jours travaillés par semaine",
+     "type": "number",
+     "min": 1,
+     "step": "1",
+     "defaut": 5,
+     "max": 6
+    },
+    {
+     "id": "joursAbsence",
+     "label": "Jours d'absence à décompter",
+     "type": "number",
+     "min": 0,
+     "step": "1",
+     "defaut": 5
+    }
+   ],
+   "calcul": "congesPointage"
+  },
+  {
+   "id": "conges-acquis",
+   "theme": "Congés payés et congés d'ancienneté",
+   "question": "Combien de jours de congés payés ai-je acquis ?",
+   "reponse": "2,5 jours ouvrables par mois de travail effectif chez le même employeur, soit 30 jours ouvrables (5 semaines) au maximum sur l'année. Un nombre non entier est arrondi au nombre entier supérieur. Les congés payés, la maternité, la paternité, l'adoption et les accidents du travail comptent comme du travail effectif ; l'arrêt maladie non professionnel donne droit à 2 jours ouvrables par mois (24 jours maximum). L'accord renvoie à la loi.",
+   "synonymes": [
+    "jours de congés acquis",
+    "congés acquis",
+    "droits à congés",
+    "2,5 jours par mois",
+    "acquisition congés",
+    "nombre de jours de congés",
+    "30 jours ouvrables",
+    "congés payés acquis",
+    "CP acquis"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.1.1, p.42)",
+     "regles": [
+      "Le congé annuel s'acquiert conformément aux dispositions légales en vigueur : l'accord ne fixe pas lui-même le nombre de jours."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.1.1",
+       "page": 42,
+       "extrait": "Le congé annuel s'acquiert conformément aux dispositions légales en vigueur."
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.1.1 ; version du 28 août 2025)",
+     "regles": [
+      "La durée est fixée par la législation en vigueur.",
+      "En dehors des cas prévus par la loi, la maladie est assimilée à du travail effectif pour l'acquisition des congés et l'indemnité, dans la limite de 2 mois au total, pour les salariés d'au moins 2 ans de présence."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.1.1",
+       "page": 49,
+       "extrait": "La durée des congés payés annuels est fixée conformément à la législation en vigueur."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "2,5 jours ouvrables par mois de travail effectif, 30 jours ouvrables au plus (L3141-3).",
+      "Arrondi au nombre entier immédiatement supérieur (L3141-7).",
+      "Assimilés à du travail effectif : congés payés, maternité, paternité, adoption, accident du travail et maladie professionnelle, arrêt lié à une maladie non professionnelle, etc. (L3141-5).",
+      "Maladie non professionnelle : 2 jours ouvrables par mois, dans la limite de 24 jours ouvrables par période de référence (L3141-5-1)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3141-3",
+       "page": 7,
+       "extrait": "un congé de deux jours et demi ouvrables par mois de travail effectif chez le même employeur"
+      },
+      {
+       "doc": "ct",
+       "article": "L3141-3",
+       "page": 7,
+       "extrait": "La durée totale du congé exigible ne peut excéder trente jours ouvrables"
+      },
+      {
+       "doc": "ct",
+       "article": "L3141-7",
+       "page": 11,
+       "extrait": "la durée du congé est portée au nombre entier immédiatement supérieur"
+      },
+      {
+       "doc": "ct",
+       "article": "L3141-5",
+       "page": 9,
+       "extrait": "Les périodes de congé de maternité, de paternité et d'accueil de l'enfant et d'adoption"
+      },
+      {
+       "doc": "ct",
+       "article": "L3141-5-1",
+       "page": 10,
+       "extrait": "est de deux jours ouvrables par mois, dans la limite d'une attribution, à ce titre, de vingt-quatre jours ouvrables"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "La période d'acquisition est la période de référence : l'accord fixe la prise des congés du 1er juin au 31 mai.",
+    "Le calcul est légal : la maladie non professionnelle (loi du 22 avril 2024) donne droit à 2 jours ouvrables par mois. La convention (2 mois de maladie assimilés, 2 ans de présence) est plus ancienne : à comparer avec la loi, sans trancher.",
+    "Le décompte se fait en jours ouvrables : voir la fiche sur les jours ouvrés et ouvrables."
+   ],
+   "champs": [
+    {
+     "id": "moisTravail",
+     "label": "Mois de travail effectif ou assimilé (congés payés, maternité, paternité, AT/MP…) sur la période",
+     "type": "number",
+     "min": 0,
+     "step": "0.5",
+     "defaut": 12,
+     "max": 12
+    },
+    {
+     "id": "moisMaladieNonPro",
+     "label": "Mois d'arrêt maladie non professionnel sur la période",
+     "type": "number",
+     "min": 0,
+     "step": "0.5",
+     "defaut": 0,
+     "max": 12
+    }
+   ],
+   "calcul": "congesAcquis"
+  },
+  {
+   "id": "conges-periode-report",
+   "theme": "Congés payés et congés d'ancienneté",
+   "question": "Quelle est la période de prise des congés, et mes congés non pris sont-ils reportés ou payés ?",
+   "reponse": "La période de prise va du 1er juin au 31 mai de l'année suivante. Les congés non pris sur cette période ne sont ni reportés, ni rémunérés (accord, art. 4.1.2). Les jours épargnés sur le CET sont une autre possibilité, prévue par l'accord sur le CET.",
+   "synonymes": [
+    "période de prise des congés",
+    "1er juin au 31 mai",
+    "congés non pris",
+    "report des congés",
+    "reportés",
+    "payés congés non pris",
+    "perte des congés",
+    "solde de congés"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.1.2, p.42)",
+     "regles": [
+      "Période de prise : du 1er juin au 31 mai de l'année suivante.",
+      "Les congés non pris sur cette période ne sont ni reportés, ni rémunérés."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.1.2",
+       "page": 42,
+       "extrait": "La période de prise des congés payés est fixée du 1er juin au 31 mai de l'année suivante",
+       "ocr_corrige": true,
+       "note_ocr": "Page 42 de l'accord : lecture confirmée sur l'image."
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.1.2",
+       "page": 42,
+       "extrait": "ne sont ni reportés, ni rémunérés."
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Livret CGT (p.11)",
+     "regles": [
+      "Reprend la période du 1er juin au 31 mai."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Congés payés",
+       "page": 11,
+       "extrait": "La période de prise des congés payés est fixée du 1er juin au 31 mai de l'année suivante."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "Un accord d'entreprise peut prévoir des reports de congés pour les salariés dont la durée du travail est décomptée à l'année (L3141-22). L'accord de substitution prévoit l'inverse : pas de report."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3141-22",
+       "page": 29,
+       "extrait": "peut prévoir que les congés ouverts au titre de l'année de référence peuvent faire l'objet de reports"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "Le CET (compte épargne-temps) permet d'épargner des jours : voir ses règles dans l'accord (art. 5.4)."
+   ]
+  },
+  {
+   "id": "conges-ordre-depart",
+   "theme": "Congés payés et congés d'ancienneté",
+   "question": "Quand le calendrier des congés est-il affiché et comment est fixé l'ordre des départs ? (vacances scolaires, couples dans l'entreprise)",
+   "reponse": "L'ordre des départs est établi par l'employeur et affiché aussitôt que possible, entre le 1er et le 15 mars, et au plus tard le 1er avril, après consultation des représentants du personnel. Il tient compte des souhaits et de la situation de famille ; les membres d'une même famille dans l'entreprise partent à la même date autant que possible, et les parents d'enfants scolarisés sont servis pendant les vacances scolaires dans la mesure du possible (accord, art. 4.1.3).",
+   "synonymes": [
+    "ordre des départs",
+    "calendrier des congés",
+    "affichage des congés",
+    "vacances scolaires",
+    "couple dans la même entreprise",
+    "conjoint même entreprise",
+    "enfants scolarisés",
+    "dates de congés",
+    "1er avril",
+    "15 mars"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.1.3, p.42-43)",
+     "regles": [
+      "Affichage aussitôt que possible (entre le 1er et le 15 mars), au plus tard le 1er avril, après consultation des instances représentatives du personnel.",
+      "Prise en compte, autant que possible, des souhaits des salariés et de leur situation de famille.",
+      "L'employeur s'efforce de favoriser le départ à la même date des membres d'une même famille vivant sous le même toit.",
+      "Congés du personnel dont les enfants fréquentent l'école : donnés, dans la mesure du possible, pendant les vacances scolaires.",
+      "Roulement recommandé dans les dates de départ."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.1.3",
+       "page": 42,
+       "extrait": "par affichage aussitôt que possible (entre le 1er et le 15 mars), et au plus tard le 1er avril",
+       "ocr_corrige": true,
+       "note_ocr": "Page 42 de l'accord : lecture confirmée sur l'image."
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.1.3",
+       "page": 42,
+       "extrait": "l'employeur s'efforcera de favoriser le départ en congé, à la même date, des membres d'une famille vivant sous le même toit"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.1.3",
+       "page": 43,
+       "extrait": "seront donnés, dans la mesure du possible, pendant les vacances scolaires"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.2 ; version du 28 août 2025)",
+     "regles": [
+      "Ordre établi par l'employeur, affiché au plus tard le 1er avril ; mêmes principes (situation de famille, vacances scolaires, roulement)."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.2",
+       "page": 49,
+       "extrait": "au plus tard le 1er avril"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "Sauf circonstances exceptionnelles, l'employeur ne peut pas modifier l'ordre et les dates de départ moins d'un mois avant la date de départ prévue (L3141-16)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3141-16",
+       "page": 16,
+       "extrait": "modifier l'ordre et les dates de départ moins d'un mois avant la date de départ prévue"
+      }
+     ]
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "conges-fractionnement",
+   "theme": "Congés payés et congés d'ancienneté",
+   "question": "Ai-je droit à des jours de fractionnement ?",
+   "reponse": "Oui si des congés payés (hors 5e semaine) sont pris en dehors de la période légale de mai à octobre : 2 jours ouvrables supplémentaires si au moins 6 jours sont pris en dehors, 1 jour ouvrable si 3 à 5 jours (accord, art. 4.1.4).",
+   "synonymes": [
+    "fractionnement",
+    "jours de fractionnement",
+    "congés hors période",
+    "congés en hiver",
+    "5e semaine",
+    "hors saison"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.1.4, p.43)",
+     "regles": [
+      "Congés payés (sauf la 5e semaine) pris en dehors de la période légale de mai à octobre : 2 jours ouvrables si au moins 6 jours pris, 1 jour ouvrable si 3 à 5 jours."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.1.4",
+       "page": 43,
+       "extrait": "pris en dehors de la période légale de mai à octobre"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.1.4",
+       "page": 43,
+       "extrait": "2 jours ouvrables si le nombre de jours pris est au moins égal à 6"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.1.4",
+       "page": 43,
+       "extrait": "1 jour ouvrable, si le nombre de jours pris est compris entre 3 et 5"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "À défaut d'accord, 2 jours ouvrables de congé supplémentaire quand au moins 6 jours sont pris en dehors du 1er mai-31 octobre (L3141-23). La règle est identique à celle de l'accord."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3141-23",
+       "page": 15,
+       "extrait": "Deux jours ouvrables de congé supplémentaire sont attribués lorsque le nombre de jours de congé pris en dehors de cette période"
+      }
+     ]
+    }
+   ],
+   "notes": [],
+   "champs": [
+    {
+     "id": "joursHorsPeriode",
+     "label": "Jours de congés pris en dehors de mai-octobre (hors 5e semaine)",
+     "type": "number",
+     "min": 0,
+     "step": "1",
+     "defaut": 6
+    }
+   ],
+   "calcul": "fractionnement"
+  },
+  {
+   "id": "conges-anciennete",
+   "theme": "Congés payés et congés d'ancienneté",
+   "question": "Ai-je droit à un congé supplémentaire d'ancienneté ?",
+   "reponse": "Accord : 1 jour après 10 ans d'ancienneté, 2 jours après 15 ans, 3 jours après 20 ans, 4 jours après 30 ans, 5 jours après 40 ans, pour la période du 1er juin au 31 mai ; l'ancienneté doit être acquise au 1er juin. Convention : 1, 2 et 3 jours aux mêmes seuils de 10, 15 et 20 ans, sans palier au-delà.",
+   "synonymes": [
+    "congé d'ancienneté",
+    "congé supplémentaire",
+    "jours d'ancienneté",
+    "ancienneté 10 ans",
+    "jour supplémentaire ancienneté",
+    "prime d'ancienneté congés",
+    "15 ans",
+    "20 ans",
+    "30 ans",
+    "40 ans"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.2, p.43)",
+     "regles": [
+      "1 jour après 10 ans ; 2 jours après 15 ans ; 3 jours après 20 ans ; 4 jours après 30 ans ; 5 jours après 40 ans d'ancienneté.",
+      "Accordé pour la période du 1er juin au 31 mai ; l'ancienneté doit être acquise à la date du 1er juin de l'année N-1 : pas de bénéfice pour ceux qui l'acquièrent pendant la période."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.2",
+       "page": 43,
+       "extrait": "1 jour après 10 ans d'ancienneté ;"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.2",
+       "page": 43,
+       "extrait": "5 jours après 40 ans d'ancienneté ;"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.2",
+       "page": 43,
+       "extrait": "L'ancienneté devra être acquise à la date du 1er juin de l'année N-1"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.1.2 ; version du 28 août 2025)",
+     "regles": [
+      "1 jour après 10 ans, 2 jours après 15 ans, 3 jours après 20 ans d'ancienneté dans l'entreprise.",
+      "Le franchissement d'un seuil majore les congés payés acquis au 31 mai suivant ; au prorata en cas de droits incomplets."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.1.2",
+       "page": 49,
+       "extrait": "1 jour après 10 ans d'ancienneté dans l'entreprise"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 7.1.2",
+       "page": 49,
+       "extrait": "3 jours après 20 ans d'ancienneté dans l'entreprise"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 7.1.2",
+       "page": 49,
+       "extrait": "entraîne la majoration des congés payés acquis au 31 mai"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "Un accord peut majorer la durée du congé en raison de l'âge, de l'ancienneté ou du handicap (L3141-10)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3141-10",
+       "page": 31,
+       "extrait": "Majorer la durée du congé en raison de l'âge, de l'ancienneté ou du handicap"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "L'accord et la convention diffèrent à partir de 30 ans (4 et 5 jours dans l'accord seulement) : les deux sont affichés sans trancher."
+   ],
+   "champs": [
+    {
+     "id": "ancienneteAns",
+     "label": "Ancienneté acquise au 1er juin (années)",
+     "type": "number",
+     "min": 0,
+     "step": "0.5",
+     "defaut": 12
+    }
+   ],
+   "calcul": "congeAnciennete"
+  },
+  {
+   "id": "conges-rappel",
+   "theme": "Congés payés et congés d'ancienneté",
+   "question": "Je suis rappelé pendant mes congés : qu'ai-je en échange ?",
+   "reponse": "Si un collaborateur est rappelé pendant son congé pour les besoins du service, dans un cas exceptionnel, il lui est accordé 2 journées de congés supplémentaires, et ses frais de voyage sont remboursés. Les autres frais font l'objet d'un accord particulier (accord, art. 4.1.2).",
+   "synonymes": [
+    "rappelé pendant les congés",
+    "rappel de congés",
+    "interrompre les congés",
+    "besoins du service",
+    "frais de voyage congés",
+    "journées supplémentaires rappel"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.1.2, p.42)",
+     "regles": [
+      "Cas exceptionnel de rappel pendant le congé pour les besoins du service : 2 journées de congés supplémentaires.",
+      "Les frais de voyage nécessités par le déplacement sont remboursés ; les frais d'une autre nature font l'objet d'un accord particulier."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.1.2",
+       "page": 42,
+       "extrait": "il lui est accordé 2 journées de congés supplémentaires"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.1.2",
+       "page": 42,
+       "extrait": "Les frais de voyage nécessités par le déplacement lui sont remboursés."
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "conges-maladie",
+   "theme": "Congés payés et congés d'ancienneté",
+   "question": "Je tombe malade pendant mes congés : que se passe-t-il ?",
+   "reponse": "Les congés sont interrompus. Après sa guérison, le salarié bénéficie du reliquat de congés, à une date fixée en accord avec le chef de service (accord, art. 4.1.5). Prévenir l'employeur et justifier l'arrêt dans les délais habituels.",
+   "synonymes": [
+    "maladie pendant les congés",
+    "malade en congés",
+    "arrêt maladie en vacances",
+    "interrompre congés maladie",
+    "reliquat de congés",
+    "guérison"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.1.5, p.43)",
+     "regles": [
+      "La maladie qui survient pendant les congés payés les interrompt.",
+      "Après guérison, le salarié bénéficie du reliquat à une date fixée en accord avec le chef de service."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.1.5",
+       "page": 43,
+       "extrait": "Lorsque la maladie survient pendant les congés payés, ceux-ci sont interrompus et le salarié, après sa guérison, bénéficie du reliquat"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Pour les délais de prévenance et de justificatif de l'arrêt : voir la fiche sur les formalités de l'arrêt maladie."
+   ]
+  },
+  {
+   "id": "conges-evenement",
+   "theme": "Congés payés et congés d'ancienneté",
+   "question": "Un décès ou une naissance survient pendant mes congés : suspendent-ils mon congé ?",
+   "reponse": "Oui : les congés exceptionnels accordés à l'occasion d'un décès ou d'une naissance suspendent le congé annuel d'autant de jours ouvrés ou ouvrables selon l'événement concerné (accord, art. 4.1).",
+   "synonymes": [
+    "décès pendant les congés",
+    "naissance pendant les congés",
+    "événement familial pendant congés",
+    "suspendre le congé annuel",
+    "congé suspendu"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.1, p.45)",
+     "regles": [
+      "Si l'événement (décès ou naissance) intervient pendant les congés payés, les congés exceptionnels accordés suspendent le congé annuel d'autant de jours ouvrés ou ouvrables selon l'événement."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.1",
+       "page": 45,
+       "extrait": "suspendent le congé annuel d'autant de jours ouvrés ou ouvrables selon l'événement"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Pour le nombre de jours de chaque événement : voir la fiche « événements familiaux »."
+   ]
+  },
+  {
+   "id": "conges-indemnite",
+   "theme": "Congés payés et congés d'ancienneté",
+   "question": "Comment est payée une journée de congé payé (indemnité) ?",
+   "reponse": "L'indemnité de congés payés est calculée de deux façons, et le salarié reçoit la plus élevée : le dixième de la rémunération brute totale de la période de référence, ou le maintien du salaire qu'il aurait perçu s'il avait travaillé (Code du travail, L3141-24). Les accords ne fixent pas d'autre mode de calcul.",
+   "synonymes": [
+    "indemnité de congés payés",
+    "règle du dixième",
+    "maintien de salaire congés",
+    "paie des congés",
+    "1/10",
+    "dixième",
+    "indemnité de congé",
+    "salaire pendant les congés"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution",
+     "regles": [
+      "Aucune règle propre de calcul de l'indemnité trouvée : l'accord renvoie à la loi pour les droits à congés (art. 4.1.1)."
+     ],
+     "sources": []
+    },
+    {
+     "titre": "Convention collective (art. 7.1.1, p.49 ; version du 28 août 2025)",
+     "regles": [
+      "Maladie assimilée à du travail effectif pour l'acquisition des congés et l'indemnité, dans la limite de 2 mois, pour les salariés d'au moins 2 ans de présence. Le calcul de l'indemnité relève du Code du travail."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.1.1",
+       "page": 49,
+       "extrait": "sont considérées comme une période de travail pour l'acquisition des congés payés et l'indemnité correspondante"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "Indemnité égale au dixième de la rémunération brute totale perçue au cours de la période de référence (L3141-24, I).",
+      "L'indemnité ne peut pas être inférieure à la rémunération qui aurait été perçue pendant le congé si le salarié avait continué à travailler (L3141-24, II)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3141-24",
+       "page": 12,
+       "extrait": "une indemnité égale au dixième de la rémunération brute totale perçue par le salarié au cours de la période de référence"
+      },
+      {
+       "doc": "ct",
+       "article": "L3141-24",
+       "page": 12,
+       "extrait": "ne peut être inférieure au montant de la rémunération qui aurait été perçue pendant la période de congé"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "La rémunération brute totale comprend notamment l'indemnité de congé de l'année précédente et certaines périodes assimilées (L3141-24 I)."
+   ],
+   "champs": [
+    {
+     "id": "remunerationReference",
+     "label": "Rémunération brute totale de la période de référence (€)",
+     "type": "number",
+     "min": 0,
+     "step": "0.01",
+     "defaut": 0
+    },
+    {
+     "id": "maintienSalaire",
+     "label": "Salaire qu'aurait perçu le salarié pendant le congé (€)",
+     "type": "number",
+     "min": 0,
+     "step": "0.01",
+     "defaut": 0
+    }
+   ],
+   "calcul": "indemniteConges"
+  },
+  {
+   "id": "grossesse-horaire",
+   "theme": "Grossesse, maternité, parentalité",
+   "question": "Quelle réduction d'horaire pendant la grossesse, et mon horaire peut-il être limité (7 h 30 - 19 h) ?",
+   "reponse": "Dès le 1er jour du 4e mois : réduction d'horaire d'une demi-heure (ou 2 fois 15 minutes) par journée travaillée, sans perte de rémunération, en retardant la prise ou en avançant la fin de poste. Dès le 5e mois, sur certificat et à sa demande : la journée ne peut pas commencer avant 7 h 30 ni finir après 19 h, jusqu'à la première année de l'enfant (accord, art. 4.3).",
+   "synonymes": [
+    "grossesse",
+    "femme enceinte",
+    "enceinte",
+    "réduction d'horaire grossesse",
+    "demi-heure",
+    "4e mois",
+    "5e mois",
+    "7h30",
+    "19h",
+    "horaire femme enceinte"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.3, p.48)",
+     "regles": [
+      "À partir du 1er jour du 4e mois, sur certificat médical : réduction d'horaire d'une demi-heure (ou 2 fois 15 minutes) par journée travaillée, sans perte de rémunération, au choix de la salariée (prise retardée ou cessation anticipée).",
+      "À partir du 5e mois, sur certificat et à sa demande : journée de travail jamais avant 7 h 30 ni après 19 h, jusqu'à la première année de l'enfant."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.3",
+       "page": 48,
+       "extrait": "une réduction d'horaire d'une demi-heure ou de deux fois 15 minutes par journée travaillée sans perte de rémunération"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.3",
+       "page": 48,
+       "extrait": "ne pourra pas commencer avant 7h30, ni se terminer après 19h"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.6.4 d ; version du 28 août 2025)",
+     "regles": [
+      "À l'expiration du 4e mois de grossesse : entrée 1/4 d'heure après le reste du personnel ou sortie 1/4 d'heure avant, sans perte de salaire.",
+      "L'accord adapte et améliore cette règle (une demi-heure)."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.6.4 d)",
+       "page": 52,
+       "extrait": "toute salariée sera autorisée à rentrer 1/4 d'heure après le reste du personnel ou à sortir 1/4 d'heure avant"
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.16)",
+     "regles": [
+      "Reprend la règle de l'accord : réduction de 30 minutes par jour (écart déjà noté dans votre tableau : le livret ne précise pas le choix en début ou en fin de journée)."
+     ],
+     "sources": []
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "L'accord est plus favorable que la convention (30 minutes contre 15) ; les deux sont affichés sans trancher."
+   ],
+   "champs": [
+    {
+     "id": "moisGrossesse",
+     "label": "Mois de grossesse (1 à 9)",
+     "type": "select",
+     "options": [
+      [
+       "1",
+       "1e mois"
+      ],
+      [
+       "2",
+       "2e mois"
+      ],
+      [
+       "3",
+       "3e mois"
+      ],
+      [
+       "4",
+       "4e mois"
+      ],
+      [
+       "5",
+       "5e mois"
+      ],
+      [
+       "6",
+       "6e mois"
+      ],
+      [
+       "7",
+       "7e mois"
+      ],
+      [
+       "8",
+       "8e mois"
+      ],
+      [
+       "9",
+       "9e mois"
+      ]
+     ]
+    }
+   ],
+   "calcul": "grossesse"
+  },
+  {
+   "id": "grossesse-poste",
+   "theme": "Grossesse, maternité, parentalité",
+   "question": "Puis-je changer d'emploi pendant la grossesse sans perdre de salaire ? Suis-je dispensée de nuit et d'astreinte ?",
+   "reponse": "Sur certificat médical, l'entreprise s'efforce de vous placer dans un autre emploi en rapport avec vos aptitudes ; si le changement comporte un déclassement, le salaire antérieur est maintenu sans limitation de durée. Une femme enceinte ou de retour de congé maternité est affectée à un poste de jour et dispensée d'astreinte avec intervention de nuit (accord, art. 4.3).",
+   "synonymes": [
+    "changement d'emploi grossesse",
+    "déclassement grossesse",
+    "dispense de nuit",
+    "poste de jour",
+    "astreinte enceinte",
+    "femme enceinte nuit",
+    "retour de congé maternité poste",
+    "maintien du salaire grossesse"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.3, p.48)",
+     "regles": [
+      "Changement d'emploi demandé, justifié par certificat médical (suites graves et immédiates de la grossesse ou de l'accouchement) : l'entreprise s'efforce de placer la salariée dans un emploi adapté.",
+      "Si le changement comporte un déclassement : maintien du salaire antérieur, sans limitation de durée.",
+      "Femme enceinte ou de retour de congé maternité : poste de jour, dispense d'astreinte avec intervention de nuit."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.3",
+       "page": 48,
+       "extrait": "l'intéressée bénéficie du maintien de son salaire antérieur et ce sans limitation de durée"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.3",
+       "page": 48,
+       "extrait": "Une femme enceinte ou de retour de congé maternité sera affectée à un poste de jour"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.3",
+       "page": 48,
+       "extrait": "Elle sera dispensée d'astreinte avec intervention de nuit"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.6.6 b ; version du 28 août 2025)",
+     "regles": [
+      "Demande de changer d'emploi dans le mois suivant le retour de congé postnatal : l'entreprise place temporairement la salariée dans un autre emploi, sans diminution de rémunération, si c'est possible ; sinon le contrat est suspendu avec complément de salaire."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.6.6 b)",
+       "page": 53,
+       "extrait": "sans diminution de sa rémunération"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "maternite-duree",
+   "theme": "Grossesse, maternité, parentalité",
+   "question": "Quelle est la durée du congé maternité, et mon salaire est-il maintenu (3e enfant) ?",
+   "reponse": "Légalement : 16 semaines (6 avant, 10 après l'accouchement) pour le 1er ou 2e enfant, 26 semaines (8 avant, 18 après) à partir du 3e enfant, 34 semaines pour des jumeaux, 46 pour des triplés. Accord : pour un 3e enfant, maintien du salaire pendant la totalité des 26 semaines. Convention : maintien du net pendant 6 semaines après 1 an de présence, 10 semaines après 2 ans, 16 semaines après 3 ans.",
+   "synonymes": [
+    "congé maternité",
+    "maternité",
+    "accouchement",
+    "congé de maternité",
+    "3e enfant",
+    "troisième enfant",
+    "jumeaux",
+    "16 semaines",
+    "26 semaines",
+    "maintien de salaire maternité",
+    "complément maternité"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (titre 6, p.99)",
+     "regles": [
+      "Naissance d'un troisième enfant : maintien du salaire pendant la totalité du congé maternité de 26 semaines, soit les 10 semaines supplémentaires par rapport au 1er ou 2e enfant."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 6.1.3.2",
+       "page": 99,
+       "extrait": "assurer le maintien du salaire pendant la totalité du congé maternité de vingt-six (26) semaines"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.6.6 a ; version du 28 août 2025)",
+     "regles": [
+      "Pour la salariée ayant au moins 1 an de présence à la déclaration de grossesse : complément pour maintenir la rémunération nette pendant 6 semaines (1 an de présence), 10 semaines (2 ans), 16 semaines (3 ans), plus 2 semaines en cas de naissances multiples."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.6.6 a)",
+       "page": 52,
+       "extrait": "pendant 6 semaines, après 1 an de présence"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 7.6.6 a)",
+       "page": 53,
+       "extrait": "pendant 16 semaines, après 3 ans de présence"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 7.6.6 a)",
+       "page": 53,
+       "extrait": "Ces durées sont prolongées de 2 semaines en cas de naissances multiples"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "1er ou 2e enfant : congé de 6 semaines avant et 10 semaines après la date présumée de l'accouchement (L1225-17).",
+      "À partir de 2 enfants déjà à charge : 8 semaines avant et 18 semaines après (L1225-19).",
+      "Jumeaux : 12 semaines avant et 22 après ; triplés ou plus : 24 avant et 22 après (L1225-18).",
+      "À l'issue du congé, la salariée retrouve son emploi ou un emploi similaire (L1225-25)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L1225-17",
+       "page": 18,
+       "extrait": "commence six semaines avant la date présumée de l'accouchement et se termine dix semaines après"
+      },
+      {
+       "doc": "ct",
+       "article": "L1225-19",
+       "page": 19,
+       "extrait": "le congé de maternité commence huit semaines avant la date présumée de l'accouchement et se termine dix-huit semaines après la date de celui-ci"
+      },
+      {
+       "doc": "ct",
+       "article": "L1225-18",
+       "page": 20,
+       "extrait": "cette période commence douze semaines avant la date présumée de l'accouchement et se termine vingt-deux semaines après"
+      },
+      {
+       "doc": "ct",
+       "article": "L1225-25",
+       "page": 26,
+       "extrait": "la salariée retrouve son précédent emploi ou un emploi similaire assorti d'une rémunération au moins équivalente"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "L'accord (26 semaines de maintien pour le 3e enfant) et la convention (6, 10 ou 16 semaines selon l'ancienneté) diffèrent : les deux sont affichés sans trancher.",
+    "Le rang « 3e enfant ou plus » suit l'accord ; la loi vise une salariée (ou un foyer) ayant déjà 2 enfants à charge ou 2 enfants nés viables.",
+    "Les indemnités journalières de la Sécurité sociale pendant le congé ne sont pas détaillées ici."
+   ],
+   "champs": [
+    {
+     "id": "rang",
+     "label": "Rang de l'enfant",
+     "type": "select",
+     "options": [
+      [
+       "1",
+       "1er ou 2e enfant"
+      ],
+      [
+       "3",
+       "3e enfant ou plus"
+      ]
+     ]
+    },
+    {
+     "id": "multiples",
+     "label": "Naissance multiple",
+     "type": "select",
+     "options": [
+      [
+       "non",
+       "Non"
+      ],
+      [
+       "jumeaux",
+       "Jumeaux"
+      ],
+      [
+       "triples",
+       "Triplés ou plus"
+      ]
+     ]
+    },
+    {
+     "id": "ancienneteAns",
+     "label": "Ancienneté à la déclaration de grossesse (années)",
+     "type": "number",
+     "min": 0,
+     "step": "0.5",
+     "defaut": 3
+    }
+   ],
+   "calcul": "maternite"
+  },
+  {
+   "id": "paternite",
+   "theme": "Grossesse, maternité, parentalité",
+   "question": "Mon salaire est-il maintenu pendant le congé paternité ? Combien de jours ?",
+   "reponse": "Le congé de paternité et d'accueil de l'enfant dure 25 jours calendaires (32 en cas de naissances multiples), dont 4 jours consécutifs après le congé de naissance de 3 jours. L'accord prévoit le maintien du salaire pendant 25 jours (32 en cas de naissances multiples).",
+   "synonymes": [
+    "congé paternité",
+    "paternité",
+    "25 jours",
+    "32 jours",
+    "père naissance",
+    "congé de paternité",
+    "accueil de l'enfant",
+    "naissance multiple"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (titre 6, p.99)",
+     "regles": [
+      "Congé paternité : maintien du salaire pendant 25 jours en cas de naissance simple et 32 jours en cas de naissances multiples."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 6.1.3.2",
+       "page": 99,
+       "extrait": "assurer le maintien du salaire pendant vingt-cinq (25) jours en cas de naissance simple"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 6.1.3.2",
+       "page": 99,
+       "extrait": "pendant trente-deux (32) jours en cas de naissance multiples"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.5 ; version du 28 août 2025)",
+     "regles": [
+      "Naissance : 3 jours ouvrés d'absence sans retenue de salaire. Après la naissance, le père bénéficie d'un congé de paternité et d'accueil de l'enfant selon la loi."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.5.3",
+       "page": 51,
+       "extrait": "le père bénéficie d'un congé de paternité et d'accueil de l'enfant"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "25 jours calendaires, ou 32 en cas de naissances multiples ; il comprend 4 jours calendaires consécutifs suivant le congé de naissance, puis 21 jours (28 en cas de naissances multiples) (L1225-35).",
+      "À l'issue du congé, le salarié retrouve son emploi ou un emploi similaire (L1225-36)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L1225-35",
+       "page": 21,
+       "extrait": "bénéficient d'un congé de paternité et d'accueil de l'enfant de vingt-cinq jours calendaires ou de trente-deux jours calendaires en cas de naissances multiples"
+      },
+      {
+       "doc": "ct",
+       "article": "L1225-36",
+       "page": 22,
+       "extrait": "le salarié retrouve son précédent emploi ou un emploi similaire assorti d'une rémunération au moins équivalente"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "Les indemnités journalières de la Sécurité sociale pendant le congé de paternité ne sont pas détaillées ici.",
+    "Le délai de prévenance de l'employeur (entre 15 jours et 2 mois, selon l'article L1225-35) est fixé en partie par décret."
+   ],
+   "champs": [
+    {
+     "id": "multiples",
+     "label": "Naissance",
+     "type": "select",
+     "options": [
+      [
+       "non",
+       "Simple"
+      ],
+      [
+       "jumeaux",
+       "Multiple (jumeaux ou plus)"
+      ]
+     ]
+    }
+   ],
+   "calcul": "paternite"
+  },
+  {
+   "id": "conge-parental-anciennete",
+   "theme": "Grossesse, maternité, parentalité",
+   "question": "Le congé parental compte-t-il pour mon ancienneté ?",
+   "reponse": "Accord : moins d'un an de congé parental, il compte en entier ; de 1 à 2 ans, 12 mois sont pris en compte ; au-delà de 2 ans, la moitié de la durée. Loi et convention : le congé parental à temps plein compte pour moitié dans les droits liés à l'ancienneté.",
+   "synonymes": [
+    "congé parental",
+    "congé parental d'éducation",
+    "ancienneté congé parental",
+    "enfant congé parental",
+    "parental"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (titre 6, p.100)",
+     "regles": [
+      "Moins de 1 an : durée prise en compte en entier. De 1 an à moins de 2 ans : 12 mois pris en compte. Plus de 2 ans : la moitié de la durée."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 6.1.3.3",
+       "page": 100,
+       "extrait": "Si la durée du congé parental est inférieure à 1 an, elle est prise en compte dans son intégralité"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 6.1.3.3",
+       "page": 100,
+       "extrait": "la moitié de la durée est prise en compte dans le calcul de l'ancienneté"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.6.7 ; version du 28 août 2025)",
+     "regles": [
+      "Le congé parental à plein temps est pris en compte pour moitié dans la détermination des avantages liés à l'ancienneté. Le salarié conserve les avantages acquis."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.6.7",
+       "page": 53,
+       "extrait": "Le congé parental à plein temps est pris en compte pour moitié dans la détermination des avantages liés à l'ancienneté"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "La durée du congé parental à temps plein est prise en compte pour moitié pour les droits liés à l'ancienneté ; à temps partiel, elle est assimilée à du travail effectif (L1225-54).",
+      "Droit au congé parental : salarié d'au moins un an d'ancienneté à la fin du congé de maternité ou d'adoption (L1225-47)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L1225-54",
+       "page": 25,
+       "extrait": "La durée du congé parental d'éducation à temps plein est prise en compte pour moitié"
+      },
+      {
+       "doc": "ct",
+       "article": "L1225-47",
+       "page": 24,
+       "extrait": "tout salarié justifiant d'une ancienneté minimale d'une année a le droit"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "L'accord est plus favorable que la loi pour les congés de moins de 2 ans ; les deux sont affichés sans trancher."
+   ],
+   "champs": [
+    {
+     "id": "moisCongeParental",
+     "label": "Durée du congé parental à temps plein (mois)",
+     "type": "number",
+     "min": 0,
+     "step": "1",
+     "defaut": 18
+    }
+   ],
+   "calcul": "congeParentalAnciennete"
+  },
+  {
+   "id": "grossesse-facilites",
+   "theme": "Grossesse, maternité, parentalité",
+   "question": "Quelles facilités pour une femme enceinte (parking, télétravail, allaitement, PMA) ?",
+   "reponse": "Les salariées enceintes de 4 mois et plus peuvent utiliser les places de parking réservées aux familles ou aux femmes enceintes. Télétravail aménagé si le poste est éligible, sinon affectation ou aménagement temporaire avec le médecin du travail. Allaitement : solutions adaptées et télétravail aménagé. PMA : absences pour les actes médicaux, et jusqu'à 3 autorisations d'absence (3 jours maximum) pour le père ou le conjoint, sans perte de rémunération (accord, titre 6).",
+   "synonymes": [
+    "parking femme enceinte",
+    "télétravail grossesse",
+    "allaitement",
+    "PMA",
+    "procréation médicalement assistée",
+    "enceinte facilités",
+    "places de parking",
+    "affectation temporaire"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (titre 6, art. 6.1.3.2, p.99)",
+     "regles": [
+      "Salariées enceintes de 4 mois et plus : accès aux places de parking réservées aux familles ou aux femmes enceintes.",
+      "Télétravail aménagé pour les femmes enceintes (poste éligible) et pour les femmes qui allaitent ; sinon affectation ou aménagement temporaire, avec le médecin du travail.",
+      "PMA : aménagement du temps de travail pour les actes médicaux ; 3 autorisations d'absence maximum (3 jours au plus) pour les pères, conjoints ou conjointes, sans diminution de la rémunération."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 6.1.3.2",
+       "page": 99,
+       "extrait": "les salariées enceintes de 4 mois et plus sont autorisées à utiliser les places de parking réservées aux familles"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 6.1.3.2",
+       "page": 99,
+       "extrait": "à hauteur de trois autorisations d'absence maximum pour les pères, conjoints, conjointes"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 6.1.3.2",
+       "page": 99,
+       "extrait": "les heures d'absences correspondantes n'entraineront aucune diminution de la rémunération"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Livret CGT (p.23)",
+     "regles": [
+      "Reprend ces mesures."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Articulation vie professionnelle et personnelle",
+       "page": 23,
+       "extrait": "les salariées enceintes de 4 mois et plus sont autorisées à utiliser les places de parking"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "parents-rentree",
+   "theme": "Grossesse, maternité, parentalité",
+   "question": "Puis-je adapter mon horaire pour la rentrée scolaire ou une réunion parents-professeurs ?",
+   "reponse": "L'entreprise adapte les horaires des salariés parents qui le souhaitent pour accompagner leurs enfants à l'école le jour de la rentrée. Pour les salariés en famille monoparentale, elle facilite l'aménagement du temps de travail pour participer aux réunions parents-professeurs (accord, titre 6).",
+   "synonymes": [
+    "rentrée scolaire",
+    "réunion parents professeurs",
+    "famille monoparentale",
+    "accompagner enfants école",
+    "horaire parent",
+    "rentrée des classes",
+    "parent isolé"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (titre 6, p.99-100)",
+     "regles": [
+      "Adapter les horaires des salariés parents qui le souhaitent pour accompagner leurs enfants à l'école le jour de la rentrée scolaire.",
+      "Familles monoparentales : faciliter l'aménagement du temps de travail pour les réunions parents-professeurs."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 6.1.3.2",
+       "page": 100,
+       "extrait": "Adapter les horaires des salariés parents qui le souhaitent, pour leur permettre d'accompagner leurs enfants à l'école le jour de la rentrée scolaire"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 6.1.3.2",
+       "page": 99,
+       "extrait": "salariés en situation de famille monoparentale pour leur permettre de participer aux réunions parents professeurs"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "adoption-absences",
+   "theme": "Grossesse, maternité, parentalité",
+   "question": "Adoption : combien d'autorisations d'absence pour les formalités ?",
+   "reponse": "Jusqu'à 3 autorisations d'absence pour les formalités administratives d'adoption (3 jours au plus), sans diminution de rémunération (accord, titre 6). Congé d'adoption : maintien du salaire net pendant 6, 8 ou 10 semaines selon que le salarié a 1, 2 ou 3 ans de présence (convention, art. 7.6.6).",
+   "synonymes": [
+    "adoption",
+    "congé d'adoption",
+    "formalités d'adoption",
+    "enfant adopté",
+    "démarche d'adoption",
+    "placement adoption"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (titre 6, p.99)",
+     "regles": [
+      "Salariés engagés dans une démarche d'adoption : 3 autorisations d'absence maximum pour les formalités administratives, 3 jours au plus, sans diminution de la rémunération."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 6.1.3.2",
+       "page": 99,
+       "extrait": "à hauteur de trois (3) autorisations d'absence maximum pour les formalités administratives"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.6.6 a ; version du 28 août 2025)",
+     "regles": [
+      "Congé d'adoption : maintien du salaire net pendant 6 semaines après 1 an de présence, 8 semaines après 2 ans, 10 semaines après 3 ans ; au prorata si les deux parents sont dans la même entreprise."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.6.6 a)",
+       "page": 53,
+       "extrait": "bénéficiera du maintien de son salaire net mensuel dans les conditions suivantes"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 7.6.6 a)",
+       "page": 53,
+       "extrait": "pendant 10 semaines, après 3 ans de présence"
+      }
+     ]
     },
     {
      "niveau": "code",

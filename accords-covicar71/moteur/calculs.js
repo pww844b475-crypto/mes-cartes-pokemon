@@ -270,4 +270,67 @@ export function demenagement({ motif = 'handicap', moisEcart = 0 }) {
   return { lignes: [L('accord', 'Absence rémunérée de 1 jour ouvré pour déménagement', ok ? 'Oui, si les justificatifs sont fournis' : 'Non : en dehors du délai', { brut: ok, note: g === 12 ? 'Délai : dans les 12 mois suivant l\'événement.' : 'Délai : dans les 6 mois précédant ou suivant l\'événement.' })] };
 }
 
-export const CALCULS = { delaiProtection, capitalDeces, demenagement, enfantMalade, retraiteProgressive, primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };
+// ---- 18. Congés payés acquis (Code du travail L3141-3, L3141-5, L3141-5-1, L3141-7)
+export function congesAcquis({ moisTravail = 0, moisMaladieNonPro = 0 }) {
+  const a = 2.5 * moisTravail, b = Math.min(2 * moisMaladieNonPro, 24);
+  const total = Math.min(Math.ceil(a + b - 1e-9), 30);
+  return { lignes: [L('code', 'Jours ouvrables de congés acquis sur la période de référence', `${total} jours ouvrables (${r2(total / 6)} semaines de 6 jours)`, { brut: total, note: 'Calcul légal : 2,5 jours ouvrables par mois de travail effectif (et assimilé) ; 2 jours par mois d\'arrêt maladie non professionnel, dans la limite de 24 jours ; arrondi à l\'entier supérieur ; 30 jours maximum.' })] };
+}
+
+// ---- 19. Jours de fractionnement (accord art. 4.1.4 p.43 ; Code du travail L3141-23)
+export function fractionnement({ joursHorsPeriode = 0 }) {
+  const j = joursHorsPeriode >= 6 ? 2 : joursHorsPeriode >= 3 ? 1 : 0;
+  return { lignes: [L('accord', 'Jours supplémentaires de fractionnement', j === 0 ? 'Aucun' : `${j} jour(s) ouvrable(s)`, { brut: j, note: 'La 5e semaine de congés payés est exclue du calcul (accord).' })] };
+}
+
+// ---- 20. Congé supplémentaire d'ancienneté (accord art. 4.2 p.43 ; convention art. 7.1.2 p.49)
+export function congeAnciennete({ ancienneteAns = 0 }) {
+  const acc = ancienneteAns >= 40 ? 5 : ancienneteAns >= 30 ? 4 : ancienneteAns >= 20 ? 3 : ancienneteAns >= 15 ? 2 : ancienneteAns >= 10 ? 1 : 0;
+  const cc = ancienneteAns >= 20 ? 3 : ancienneteAns >= 15 ? 2 : ancienneteAns >= 10 ? 1 : 0;
+  return { lignes: [L('accord', 'Congé supplémentaire d\'ancienneté (ancienneté acquise au 1er juin)', acc ? `${acc} jour(s)` : 'Aucun', { brut: acc }), L('convention', 'Congé supplémentaire d\'ancienneté', cc ? `${cc} jour(s)` : 'Aucun', { brut: cc, note: 'La convention s\'arrête à 3 jours (20 ans) ; l\'accord va jusqu\'à 5 jours (40 ans).' })] };
+}
+
+// ---- 21. Indemnité de congés payés (Code du travail L3141-24)
+export function indemniteConges({ remunerationReference = 0, maintienSalaire = 0 }) {
+  const dixieme = r2(remunerationReference / 10), m = r2(maintienSalaire), v = Math.max(dixieme, m);
+  return { lignes: [L('code', 'Règle du dixième (1/10 de la rémunération brute de la période de référence)', `${dixieme} €`, { brut: dixieme }), L('code', 'Règle du maintien de salaire (ce qu\'aurait perçu le salarié en travaillant)', `${m} €`, { brut: m }), L('code', 'Indemnité due (la plus élevée des deux)', `${v} €`, { brut: v })] };
+}
+
+// ---- 22. Grossesse : réduction d'horaire (accord art. 4.3 p.48 ; convention art. 7.6.4 d)
+export function grossesse({ moisGrossesse = 0 }) {
+  const l = [];
+  l.push(L('accord', 'Réduction d\'horaire par journée travaillée, sans perte de rémunération', moisGrossesse >= 4 ? '30 minutes (ou 2 fois 15 minutes), en prise de travail retardée ou en fin anticipée au choix de la salariée' : 'Pas avant le 1er jour du 4e mois', { brut: moisGrossesse >= 4 ? 30 : 0 }));
+  l.push(L('accord', 'Plage horaire de travail (certificat, à sa demande)', moisGrossesse >= 5 ? 'Pas avant 7 h 30, pas après 19 h, jusqu\'à la première année de l\'enfant' : 'Pas avant le 5e mois', { brut: moisGrossesse >= 5 }));
+  l.push(L('convention', 'Entrée 1/4 d\'heure plus tard ou sortie 1/4 d\'heure plus tôt', moisGrossesse > 4 ? 'Oui (à l\'expiration du 4e mois)' : 'Pas avant l\'expiration du 4e mois', { brut: moisGrossesse > 4 }));
+  return { lignes: l };
+}
+
+// ---- 23. Durée du congé de maternité et maintien de salaire (L1225-17 à 19 ; accord titre 6 p.99 ; convention art. 7.6.6 a)
+export function maternite({ rang = 1, multiples = 'non', ancienneteAns = 0 }) {
+  let avant, apres;
+  if (multiples === 'jumeaux') { avant = 12; apres = 22; } else if (multiples === 'triples') { avant = 24; apres = 22; }
+  else if (rang >= 3) { avant = 8; apres = 18; } else { avant = 6; apres = 10; }
+  const l = [L('code', 'Congé de maternité légal', `${avant + apres} semaines (${avant} avant et ${apres} après l'accouchement)`, { brut: avant + apres })];
+  if (rang >= 3 && multiples === 'non') l.push(L('accord', 'Maintien du salaire (3e enfant)', 'Pendant la totalité des 26 semaines', { brut: 26 }));
+  let cc = ancienneteAns >= 3 ? 16 : ancienneteAns >= 2 ? 10 : ancienneteAns >= 1 ? 6 : 0;
+  if (cc && multiples !== 'non') cc += 2;
+  l.push(L('convention', 'Complément de salaire de l\'employeur (maintien du net)', cc ? `${cc} semaines` : 'Aucun (moins de 1 an de présence à la déclaration de grossesse)', { brut: cc, note: 'Après 1 an : 6 semaines ; 2 ans : 10 semaines ; 3 ans : 16 semaines ; plus 2 semaines en cas de naissances multiples. Ancienneté appréciée à la déclaration de grossesse.' }));
+  return { lignes: l };
+}
+
+// ---- 24. Congé de paternité (L1225-35 ; accord titre 6 p.99)
+export function paternite({ multiples = 'non' }) {
+  const m = multiples !== 'non', total = m ? 32 : 25;
+  return { lignes: [L('code', 'Congé de paternité et d\'accueil de l\'enfant', `${total} jours calendaires (4 jours consécutifs après le congé de naissance, puis ${m ? 28 : 21} jours)`, { brut: total }), L('accord', 'Maintien du salaire', `${total} jours`, { brut: total })] };
+}
+
+// ---- 25. Congé parental et ancienneté (accord titre 6 p.100 ; L1225-54 ; convention art. 7.6.7)
+export function congeParentalAnciennete({ moisCongeParental = 0 }) {
+  const m = moisCongeParental;
+  const accord = m < 12 ? m : m <= 24 ? 12 : m / 2;
+  const l = [L('accord', 'Mois pris en compte dans l\'ancienneté', `${r2(accord)} mois`, { brut: accord, note: m === 24 ? 'Exactement 24 mois : le texte ne tranche pas entre « 12 mois » et « la moitié », qui donnent ici le même résultat (12 mois).' : undefined })];
+  l.push(L('code', 'Congé parental à temps plein (légal, convention)', `${r2(m / 2)} mois (la moitié)`, { brut: r2(m / 2), note: 'Code du travail L1225-54 et convention art. 7.6.7 : prise en compte pour moitié.' }));
+  return { lignes: l };
+}
+
+export const CALCULS = { congesAcquis, fractionnement, congeAnciennete, indemniteConges, grossesse, maternite, paternite, congeParentalAnciennete, delaiProtection, capitalDeces, demenagement, enfantMalade, retraiteProgressive, primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };

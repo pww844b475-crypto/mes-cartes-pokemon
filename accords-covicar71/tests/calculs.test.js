@@ -191,3 +191,53 @@ test('déménagement — accord art. 4.2.3 (12 mois après ; 6 mois avant ou apr
   assert.equal(d('divorce', 12), true); assert.equal(d('divorce', 13), false); assert.equal(d('divorce', -1), false);
   assert.equal(d('naissance', -6), true); assert.equal(d('naissance', 6), true); assert.equal(d('mariage', 7), false); assert.equal(d('mariage', -7), false);
 });
+
+test('congés acquis — Code du travail L3141-3, L3141-5-1, L3141-7', () => {
+  const a = p => C.congesAcquis(p).lignes[0].brut;
+  assert.equal(a({ moisTravail: 12 }), 30);                              // 12 × 2,5
+  assert.equal(a({ moisTravail: 6 }), 15);
+  assert.equal(a({ moisTravail: 5.5 }), 14);                             // 13,75 arrondi au supérieur
+  assert.equal(a({ moisTravail: 6, moisMaladieNonPro: 6 }), 27);         // 15 + 6 × 2
+  assert.equal(a({ moisTravail: 0, moisMaladieNonPro: 12 }), 24);        // plafond de 24 jours pour la maladie
+  assert.equal(a({ moisTravail: 12, moisMaladieNonPro: 12 }), 30);       // plafond général de 30
+});
+test('fractionnement — accord art. 4.1.4', () => {
+  const f = n => C.fractionnement({ joursHorsPeriode: n }).lignes[0].brut;
+  assert.deepEqual([f(2), f(3), f(5), f(6), f(10)], [0, 1, 1, 2, 2]);
+});
+test('congé d\'ancienneté — accord art. 4.2 et convention art. 7.1.2', () => {
+  const c = n => C.congeAnciennete({ ancienneteAns: n }).lignes.map(l => l.brut);
+  assert.deepEqual(c(9), [0, 0]); assert.deepEqual(c(10), [1, 1]); assert.deepEqual(c(15), [2, 2]);
+  assert.deepEqual(c(20), [3, 3]); assert.deepEqual(c(30), [4, 3]); assert.deepEqual(c(40), [5, 3]);
+});
+test('indemnité de congés payés — L3141-24 (le plus élevé du dixième et du maintien)', () => {
+  const i = p => C.indemniteConges(p).lignes[2].brut;
+  assert.equal(i({ remunerationReference: 24000, maintienSalaire: 2500 }), 2500);
+  assert.equal(i({ remunerationReference: 24000, maintienSalaire: 2000 }), 2400);
+  assert.equal(C.indemniteConges({ remunerationReference: 24000 }).lignes[0].brut, 2400);
+});
+test('grossesse — accord art. 4.3 et convention art. 7.6.4 d', () => {
+  const g = m => C.grossesse({ moisGrossesse: m }).lignes.map(l => l.brut);
+  assert.deepEqual(g(3), [0, false, false]);
+  assert.deepEqual(g(4), [30, false, false]);
+  assert.deepEqual(g('5'), [30, true, true]);
+});
+test('maternité — L1225-17 à 19, accord titre 6, convention art. 7.6.6 a', () => {
+  const m = p => C.maternite(p).lignes;
+  assert.equal(m({ rang: 1, multiples: 'non', ancienneteAns: 3 })[0].brut, 16);
+  assert.equal(m({ rang: '3', multiples: 'non', ancienneteAns: 3 })[0].brut, 26);
+  assert.equal(m({ rang: '3', multiples: 'non', ancienneteAns: 3 })[1].brut, 26);          // maintien de salaire accord
+  assert.equal(m({ rang: 1, multiples: 'jumeaux', ancienneteAns: 0 })[0].brut, 34);
+  assert.equal(m({ rang: 1, multiples: 'triples', ancienneteAns: 0 })[0].brut, 46);
+  const cc = a => C.maternite({ rang: 1, multiples: 'non', ancienneteAns: a }).lignes.at(-1).brut;
+  assert.deepEqual([cc(0.5), cc(1), cc(2), cc(3)], [0, 6, 10, 16]);
+  assert.equal(C.maternite({ rang: 1, multiples: 'jumeaux', ancienneteAns: 3 }).lignes.at(-1).brut, 18);
+});
+test('paternité — L1225-35 et accord titre 6', () => {
+  assert.equal(C.paternite({ multiples: 'non' }).lignes[0].brut, 25);
+  assert.equal(C.paternite({ multiples: 'jumeaux' }).lignes[1].brut, 32);
+});
+test('congé parental et ancienneté — accord titre 6 p.100, L1225-54', () => {
+  const p = m => C.congeParentalAnciennete({ moisCongeParental: m }).lignes.map(l => l.brut);
+  assert.deepEqual(p(6), [6, 3]); assert.deepEqual(p(18), [12, 9]); assert.deepEqual(p(24), [12, 12]); assert.deepEqual(p(30), [15, 15]);
+});
