@@ -3226,8 +3226,8 @@
   {
    "id": "conges-pointage",
    "theme": "Congés payés et congés d'ancienneté",
-   "question": "Comment mes jours de congés sont-ils décomptés (une semaine = 6 jours) ?",
-   "reponse": "Toute semaine complète de congés annuels est décomptée pour 6 jours. Pour un horaire réparti sur moins de 5 jours par semaine, le nombre de jours à pointer est égal à 6 × durée de l'absence ÷ nombre de jours de travail par semaine, arrondi à l'entier inférieur (accord, art. 4.1.2).",
+   "question": "Comment mes jours de congés sont-ils décomptés ? (temps partiel, semaine = 6 jours)",
+   "reponse": "Une semaine complète de congés est décomptée pour 6 jours. À temps partiel (moins de 5 jours travaillés par semaine), un jour pris compte pour plusieurs jours : jours décomptés = 6 × jours d'absence ÷ jours travaillés par semaine, arrondi à l'entier inférieur. Exemples : à 3 jours par semaine, 1 jour pris = 2 jours décomptés ; à 4 jours par semaine, 1 jour pris = 1 jour et 2 jours pris = 3 jours (accord, art. 4.1.2).",
    "synonymes": [
     "décompte des congés",
     "semaine de congés",
@@ -3235,7 +3235,12 @@
     "jours à pointer",
     "temps partiel congés",
     "pointer congés",
-    "horaire réparti"
+    "horaire réparti",
+    "temps partiel",
+    "salarié à temps partiel",
+    "3 jours par semaine",
+    "4 jours par semaine",
+    "décompte temps partiel"
    ],
    "etiquettes": [],
    "niveaux": [
@@ -3279,6 +3284,8 @@
     }
    ],
    "notes": [
+    "Exemple : un salarié qui travaille 3 jours par semaine et prend 1 jour de congé se voit décompter 2 jours (6 × 1 ÷ 3). S'il prend ses 3 jours de la semaine, 6 jours sont décomptés : une semaine complète.",
+    "Pour un horaire de 5 ou 6 jours par semaine, c'est la règle « semaine complète = 6 jours » qui s'applique ; les jours isolés sont comptés selon cette même proportion.",
     "La saisie « jours d'absence » est un nombre de jours normalement travaillés."
    ],
    "champs": [

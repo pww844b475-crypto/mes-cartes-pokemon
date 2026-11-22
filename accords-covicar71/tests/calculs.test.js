@@ -241,3 +241,12 @@ test('congé parental et ancienneté — accord titre 6 p.100, L1225-54', () => 
   const p = m => C.congeParentalAnciennete({ moisCongeParental: m }).lignes.map(l => l.brut);
   assert.deepEqual(p(6), [6, 3]); assert.deepEqual(p(18), [12, 9]); assert.deepEqual(p(24), [12, 12]); assert.deepEqual(p(30), [15, 15]);
 });
+
+test('congés — temps partiel : un jour pris à 3 jours par semaine compte pour 2 (accord art. 4.1.2)', () => {
+  const p = (h, a) => C.congesPointage({ joursHebdo: h, joursAbsence: a }).lignes[0].brut;
+  assert.equal(p(3, 1), 2);   // 6 × 1 ÷ 3
+  assert.equal(p(3, 3), 6);   // semaine complète
+  assert.equal(p(4, 1), 1);   // 6 ÷ 4 = 1,5 arrondi à 1
+  assert.equal(p(2, 1), 3);   // 6 × 1 ÷ 2
+  assert.equal(p(5, 7), 8);   // 1 semaine complète (6) + 2 jours
+});
