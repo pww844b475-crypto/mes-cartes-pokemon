@@ -1,0 +1,29 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { norm } from '../moteur/normalise.js';
+import { chercherFiches, chercherTexte } from '../moteur/recherche.js';
+const { fiches } = JSON.parse(readFileSync(new URL('../fiches/fiches.json', import.meta.url)));
+const syn = JSON.parse(readFileSync(new URL('../fiches/synonymes.json', import.meta.url)));
+const corpus = JSON.parse(readFileSync(new URL('../data/corpus.json', import.meta.url)));
+
+test('normalisation : accents, majuscules, ponctuation', () => assert.equal(norm('  Préavis, DÉMISSION !'), 'preavis demission'));
+test('recherche ignore accents et casse', () => assert.equal(chercherFiches('PREAVIS', fiches, syn).fiches[0].id, 'preavis'));
+test('recherche tolère une faute légère', () => assert.equal(chercherFiches('indemnite de licenciment', fiches, syn).fiches[0].id, 'indemnite-licenciement'));
+test('synonyme : « CP » mène aux congés payés', () => assert.equal(chercherFiches('CP', fiches, syn).fiches[0].id, 'conges-pointage'));
+test('synonyme : « RSA » mène à la remise sur achats', () => assert.equal(chercherFiches('RSA', fiches, syn).fiches[0].id, 'remise-achats'));
+test('aucune fiche → mode aucune', () => assert.equal(chercherFiches('xylophone', fiches, syn).mode, 'aucune'));
+test('texte exact dans le corpus, avec référence', () => {
+  const r = chercherTexte('délai de carence de 2 jours', corpus);
+  assert.ok(r.some(x => x.doc === 'subst' && x.page === 37));
+});
+test('page de la convention = numéro du pied de page', () => {
+  const r = chercherTexte('préavis réciproque est fixée à 1 mois de date à date', corpus);
+  assert.ok(r.some(x => x.doc === 'cc' && x.page === 114));
+});
+test('un seul mot commun ne suffit pas : « heures de délégation » → pas de fiche', () => assert.equal(chercherFiches('heures de délégation', fiches, syn).mode, 'aucune'));
+test('« majoration heures de nuit » → fiche nuit', () => assert.equal(chercherFiches('majoration heures de nuit', fiches, syn).fiches[0].id, 'majoration-nuit'));
+test('l\'extrait de la recherche de texte contient le mot cherché', () => {
+  const r = chercherTexte('hospitalisation', corpus, 5);
+  assert.ok(r.length > 0 && r.every(x => norm(x.extrait).includes('hospitalisation')));
+});

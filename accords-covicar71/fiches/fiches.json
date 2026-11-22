@@ -1,0 +1,1241 @@
+{
+ "avertissement": "Vérifier le texte original avant de répondre",
+ "fiches": [
+  {
+   "id": "conges-pointage",
+   "theme": "Congés payés et congés d'ancienneté",
+   "question": "Combien de jours de congés payés ai-je acquis, et comment sont décomptés mes jours de congé ?",
+   "synonymes": [
+    "CP",
+    "congé payé",
+    "congés",
+    "conges payes",
+    "jours de congés",
+    "vacances",
+    "acquis"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "champs": [
+    {
+     "id": "joursHebdo",
+     "label": "Jours travaillés par semaine",
+     "type": "number",
+     "min": 1,
+     "max": 6,
+     "defaut": 5
+    },
+    {
+     "id": "joursAbsence",
+     "label": "Jours d'absence à décompter",
+     "type": "number",
+     "min": 0,
+     "defaut": 5
+    }
+   ],
+   "calcul": "congesPointage",
+   "niveaux": [
+    {
+     "titre": "Accord de substitution",
+     "regles": [
+      "Le nombre de jours acquis n'est pas fixé par l'accord : il renvoie à la loi.",
+      "Période de prise : du 1er juin au 31 mai. Une semaine complète est décomptée pour 6 jours. Congés non pris : ni reportés, ni rémunérés.",
+      "Temps de travail réparti sur moins de 5 jours : jours à pointer = 6 × durée de l'absence ÷ jours de travail par semaine (arrondi à l'entier inférieur)."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.1.1",
+       "page": 42,
+       "extrait": "Le congé annuel s'acquiert conformément aux dispositions légales en vigueur.",
+       "verifie_image": false
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.1.2",
+       "page": 42,
+       "extrait": "Toute semaine complète de congés annuels est décomptée pour 6 jours."
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.1.2",
+       "page": 42,
+       "extrait": "ne sont ni reportés, ni rémunérés."
+      }
+     ]
+    },
+    {
+     "titre": "Convention collective (version du 28 août 2025)",
+     "regles": [
+      "Durée fixée par la législation en vigueur.",
+      "Maladie assimilée à du travail effectif pour l'acquisition des congés, dans la limite de 2 mois au total, pour les salariés ayant au moins 2 ans de présence."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.1.1",
+       "page": 49,
+       "extrait": "La durée des congés payés annuels est fixée conformément à la législation en vigueur."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non fourni dans les sources. Le nombre de jours acquis par mois travaillé n'est donc pas affiché."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "La saisie « jours d'absence » est un nombre de jours normalement travaillés."
+   ]
+  },
+  {
+   "id": "preavis",
+   "theme": "Rupture du contrat, retraite",
+   "question": "Quelle est la durée du préavis (démission, licenciement) ?",
+   "synonymes": [
+    "préavis",
+    "delai conge",
+    "délai-congé",
+    "démission",
+    "démissionner",
+    "licenciement",
+    "quitter"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "champs": [
+    {
+     "id": "statut",
+     "label": "Statut",
+     "type": "select",
+     "options": [
+      [
+       "employe",
+       "Employé / ouvrier"
+      ],
+      [
+       "maitrise",
+       "Agent de maîtrise"
+      ],
+      [
+       "cadre",
+       "Cadre"
+      ]
+     ]
+    },
+    {
+     "id": "motif",
+     "label": "Motif de la rupture",
+     "type": "select",
+     "options": [
+      [
+       "demission",
+       "Démission"
+      ],
+      [
+       "licenciement",
+       "Licenciement (hors faute grave ou lourde)"
+      ],
+      [
+       "faute",
+       "Faute grave ou lourde"
+      ]
+     ]
+    },
+    {
+     "id": "ancienneteMois",
+     "label": "Ancienneté (en mois)",
+     "type": "number",
+     "min": 0,
+     "defaut": 24
+    }
+   ],
+   "calcul": "preavis",
+   "niveaux": [
+    {
+     "titre": "Accord de substitution",
+     "regles": [
+      "Information à compléter : aucune règle de durée de préavis trouvée dans l'accord de substitution (les occurrences du mot « préavis » concernent d'autres sujets : p.3, 69, 136)."
+     ],
+     "sources": []
+    },
+    {
+     "titre": "Convention collective (version du 28 août 2025)",
+     "regles": [
+      "Employés/ouvriers : 1 mois ; 2 mois en cas de licenciement (hors faute grave ou lourde) avec au moins 2 ans d'ancienneté.",
+      "Agents de maîtrise : au moins 2 mois. Cadres : 3 mois. Sauf faute grave ou lourde.",
+      "Recherche d'emploi pendant le préavis (employés/ouvriers) : 2 heures par jour pendant 1 mois."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "annexe I art. 5.1",
+       "page": 114,
+       "extrait": "La durée du préavis réciproque est fixée à 1 mois de date à date"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe I art. 5.1",
+       "page": 114,
+       "extrait": "Le préavis est porté à 2 mois lors du licenciement, hors faute grave ou lourde"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe II art. 5.1",
+       "page": 123,
+       "extrait": "Sauf en cas de faute grave ou lourde, la durée du préavis réciproque ne peut être inférieure à 2 mois."
+      },
+      {
+       "doc": "cc",
+       "article": "annexe III art. 5.1",
+       "page": 128,
+       "extrait": "La durée du préavis est fixée à 3 mois, sauf en cas de faute grave ou lourde."
+      },
+      {
+       "doc": "cc",
+       "article": "annexe I art. 5.3",
+       "page": 115,
+       "extrait": "autorisé à s'absenter pour rechercher un nouvel emploi 2 heures par jour pendant 1 mois"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non fourni dans les sources."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Le préavis du salarié démissionnaire employé n'a pas de condition d'ancienneté dans le texte lu."
+   ]
+  },
+  {
+   "id": "indemnite-licenciement",
+   "theme": "Rupture du contrat, retraite",
+   "question": "Ai-je droit à une indemnité de licenciement et de combien ?",
+   "synonymes": [
+    "indemnité de licenciement",
+    "licencié",
+    "licenciement",
+    "indemnité de rupture",
+    "économique"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "champs": [
+    {
+     "id": "statut",
+     "label": "Statut",
+     "type": "select",
+     "options": [
+      [
+       "employe",
+       "Employé / ouvrier"
+      ],
+      [
+       "maitrise",
+       "Agent de maîtrise"
+      ],
+      [
+       "cadre",
+       "Cadre"
+      ]
+     ]
+    },
+    {
+     "id": "ancienneteMois",
+     "label": "Ancienneté (en mois)",
+     "type": "number",
+     "min": 0,
+     "defaut": 60
+    },
+    {
+     "id": "age",
+     "label": "Âge",
+     "type": "number",
+     "min": 16,
+     "defaut": 40
+    },
+    {
+     "id": "enfants",
+     "label": "Enfants à charge (règles Sécurité sociale)",
+     "type": "number",
+     "min": 0,
+     "defaut": 0
+    },
+    {
+     "id": "motif",
+     "label": "Motif",
+     "type": "select",
+     "options": [
+      [
+       "autre",
+       "Autre motif (hors faute grave ou lourde)"
+      ],
+      [
+       "economique",
+       "Motif économique"
+      ],
+      [
+       "faute",
+       "Faute grave ou lourde"
+      ]
+     ]
+    },
+    {
+     "id": "salaireMensuel",
+     "label": "Rémunération mensuelle brute (€)",
+     "type": "number",
+     "min": 0,
+     "defaut": 0
+    },
+    {
+     "id": "primeAnnuelle",
+     "label": "Prime annuelle (€)",
+     "type": "number",
+     "min": 0,
+     "defaut": 0
+    },
+    {
+     "id": "indemnitesFonction",
+     "label": "Indemnités de fonction mensuelles (€)",
+     "type": "number",
+     "min": 0,
+     "defaut": 0
+    },
+    {
+     "id": "brut12",
+     "label": "Convention : rémunération brute des 12 derniers mois (€)",
+     "type": "number",
+     "min": 0,
+     "defaut": 0
+    },
+    {
+     "id": "brut3",
+     "label": "Convention : rémunération brute des 3 derniers mois (€)",
+     "type": "number",
+     "min": 0,
+     "defaut": 0
+    }
+   ],
+   "calcul": "indemniteLicenciement",
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.4)",
+     "regles": [
+      "Au moins 2 ans de présence. Après 2 ans : 50 % du salaire de référence mensuel.",
+      "Employés après 3 ans : 75 % + 25 % par année de présence supplémentaire, plafond 6 fois le salaire de référence (lecture retenue : années entières au-delà de 3 ans).",
+      "Majorations possibles : 20 % à 45 ans ou plus ; 10 % par enfant à charge.",
+      "Salaire de référence = rémunération mensuelle + 1/12 de la prime annuelle + indemnités de fonction.",
+      "Agents de maîtrise et cadres : barème propre (3 ou 6 fois le salaire de référence, etc.) : calcul non codé dans cette version."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.4",
+       "page": 26,
+       "extrait": "Après 2 ans d'ancienneté : 50% du salaire de référence mensuel, pour tous les membres du personnel."
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.4",
+       "page": 26,
+       "extrait": "75% du salaire de référence mensuel auquel s'ajoute une majoration de 25% de ce salaire de référence mensuel par année de présence supplémentaire"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.4",
+       "page": 26,
+       "extrait": "Le salarié licencié est âgé de 45 ans ou plus au moment du licenciement = 20% de majoration"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.4",
+       "page": 26,
+       "extrait": "Cette indemnité est due sauf en cas de licenciement pour faute grave ou lourde."
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.4",
+       "page": 26,
+       "extrait": "Le salaire de référence mensuel est égal à la rémunération mensuelle plus 1/12ème de la prime annuelle, plus les indemnités de fonction."
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (annexe I, employés/ouvriers ; version du 28 août 2025)",
+     "regles": [
+      "Au moins 8 mois d'ancienneté ininterrompue : 1/4 de mois par année jusqu'à 10 ans, 1/3 de mois par année à partir de 10 ans ; année incomplète au prorata des mois complets.",
+      "Salaire « plein tarif » : 1/12 de la rémunération brute des 12 derniers mois, ou le tiers des 3 derniers mois si plus avantageux.",
+      "Licenciement économique, plus de 50 ans : majoration de 20 % (sauf exclusions listées au texte)."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "annexe I art. 7.1",
+       "page": 115,
+       "extrait": "une indemnité égale à ¼ de mois par année d'ancienneté jusqu'à 10 ans"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe I art. 7.1",
+       "page": 115,
+       "extrait": "1/3 de mois par année d'ancienneté pour les années à partir de 10 ans"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe I art. 7.2",
+       "page": 115,
+       "extrait": "Le salarié licencié pour motif économique et âgé de plus de 50 ans bénéficiera d'une majoration de 20 % de l'indemnité"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe I art. 6",
+       "page": 115,
+       "extrait": "1/ 12e de la rémunération brute perçue par le salarié au cours des 12 derniers mois"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non fourni dans les sources."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Les deux niveaux sont affichés côte à côte sans désigner le plus favorable."
+   ]
+  },
+  {
+   "id": "prime-annuelle",
+   "theme": "Prime annuelle et prime de vacances",
+   "question": "Ai-je droit à la prime annuelle et comment est-elle calculée et versée ?",
+   "synonymes": [
+    "prime annuelle",
+    "13e mois",
+    "treizième mois",
+    "gratification",
+    "prime de fin d'année",
+    "acompte décembre"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "champs": [
+    {
+     "id": "dateEmbauche",
+     "label": "Date d'embauche",
+     "type": "date"
+    },
+    {
+     "id": "annee",
+     "label": "Année de la prime",
+     "type": "number",
+     "min": 2000,
+     "defaut": 2026
+    },
+    {
+     "id": "brutAnnee",
+     "label": "Rémunération brute de l'assiette sur l'année (€)",
+     "type": "number",
+     "min": 0,
+     "defaut": 0
+    },
+    {
+     "id": "joursMaladie",
+     "label": "Jours d'absence maladie dans l'année",
+     "type": "number",
+     "min": 0,
+     "defaut": 0
+    },
+    {
+     "id": "sommeForfaitaires",
+     "label": "Option : somme des 12 salaires forfaitaires mensuels (€)",
+     "type": "number",
+     "min": 0,
+     "defaut": 0
+    }
+   ],
+   "calcul": "primeAnnuelle",
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.2) — salariés non cadres",
+     "regles": [
+      "Bénéficiaires : au moins 6 mois d'ancienneté à fin novembre.",
+      "Acompte début décembre : 75 % ; solde avec la paie de décembre.",
+      "Montant : 1/12 de la rémunération brute du temps de travail effectué du 1er janvier au 31 décembre.",
+      "Encadrement : calcul sur la rémunération de novembre ; abattement de 1/365e par jour au-delà de 180 jours d'absence (non codé ici)."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.2",
+       "page": 24,
+       "extrait": "les bénéficiaires seront les salariés ayant au moins 6 mois d'ancienneté à fin novembre de l'exercice en cours"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.2",
+       "page": 24,
+       "extrait": "un acompte début décembre correspondant à 75% du montant brut de la gratification"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.2",
+       "page": 24,
+       "extrait": "Le montant de la prime annuelle est égal à 1/12ème de la rémunération brute",
+       "ocr_corrige": true,
+       "note_ocr": "Le texte extrait lisait « 1/126me » ; l'image de la page 24 montre « 1/12ème »."
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.2",
+       "page": 25,
+       "extrait": "peut bénéficier d'une prime annuelle qui est égale à 1/12 de la somme des salaires forfaitaires mensuels"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective",
+     "regles": [
+      "Information à compléter : l'accord renvoie à la convention pour les conditions ; l'article correspondant n'a pas encore été relu."
+     ],
+     "sources": []
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non fourni dans les sources."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "La prime de vacances (NAO 2026) fait l'objet d'une fiche distincte à venir."
+   ]
+  },
+  {
+   "id": "interessement-2026",
+   "theme": "Intéressement 2026 (avenant)",
+   "question": "Combien vais-je toucher d'intéressement au titre de 2026 ?",
+   "synonymes": [
+    "intéressement",
+    "interessement",
+    "prime d'intéressement",
+    "NPS",
+    "démarque"
+   ],
+   "etiquettes": [
+    "Version projet non signée",
+    "Écart à vérifier"
+   ],
+   "champs": [
+    {
+     "id": "caX",
+     "label": "CA HT HE Drive inclus : réalisé ÷ budget (%)",
+     "type": "number",
+     "step": "0.01",
+     "defaut": 0
+    },
+    {
+     "id": "mdcX",
+     "label": "Poids CA MDC ÷ CA TTC PGC (%)",
+     "type": "number",
+     "step": "0.01",
+     "defaut": 0
+    },
+    {
+     "id": "demarqueEcart",
+     "label": "Démarque : réalisé − prévisionnel (points de %)",
+     "type": "number",
+     "step": "0.01",
+     "defaut": 0
+    },
+    {
+     "id": "nps",
+     "label": "Net Promoter Score",
+     "type": "number",
+     "step": "1",
+     "defaut": 0
+    },
+    {
+     "id": "presenceMois",
+     "label": "Présence dans l'exercice (mois, 0 à 12)",
+     "type": "number",
+     "min": 0,
+     "max": 12,
+     "defaut": 12
+    },
+    {
+     "id": "ratioTempsPartiel",
+     "label": "Temps partiel : heures effectuées ÷ durée conventionnelle (1 = temps plein)",
+     "type": "number",
+     "step": "0.01",
+     "defaut": 1
+    }
+   ],
+   "calcul": "interessement2026",
+   "niveaux": [
+    {
+     "titre": "Avenant 2026 (copie pour signature, non signée)",
+     "regles": [
+      "Critère 1 : meilleur des deux indicateurs (CA HT HE Drive inclus ; poids de la MDC). Critère 2 : démarque. Critère 3 : NPS.",
+      "Grilles 2026 : maximum 100 € (critère 1), 150 € (critère 2), 150 € (critère 3)."
+     ],
+     "sources": [
+      {
+       "doc": "avenant",
+       "article": "préambule",
+       "page": 2,
+       "extrait": "l'application du meilleur des deux indicateurs suivants"
+      },
+      {
+       "doc": "avenant",
+       "article": "art. 1.1",
+       "page": 3,
+       "extrait": "L'objectif 2026 de CA est constitué par le budget 2026 arrêté au niveau France pour chaque magasin"
+      }
+     ]
+    },
+    {
+     "titre": "Accord d'intéressement du 30 juin 2025",
+     "regles": [
+      "Versement lié à un seuil déclencheur : résultat opérationnel courant d'au moins 0,2 % du CA HT hors essence.",
+      "Répartition selon la durée de présence ; temps partiel au prorata des heures.",
+      "Plafond individuel : trois quarts du plafond annuel moyen de la sécurité sociale (valeur à compléter : non fournie dans les sources)."
+     ],
+     "sources": [
+      {
+       "doc": "interess",
+       "article": "préambule",
+       "page": 2,
+       "extrait": "ne doit pas être inférieure à 0,2 % du Chiffre d'Affaires hors taxe hors essence"
+      },
+      {
+       "doc": "interess",
+       "article": "art. 7",
+       "page": 16,
+       "extrait": "en fonction de la durée de présence dans l'Entreprise au cours de l'exercice de référence"
+      },
+      {
+       "doc": "interess",
+       "article": "art. 7",
+       "page": 17,
+       "extrait": "la part d'intéressement sera déterminée au prorata des heures contractuelles augmentées des heures complémentaires"
+      },
+      {
+       "doc": "interess",
+       "article": "art. 6.2",
+       "page": 15,
+       "extrait": "trois quarts du plafond annuel moyen de la sécurité sociale"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non fourni dans les sources."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Sans avenant signé, ce sont les grilles de repli de l'accord qui s'appliquent (onglet « Écarts à vérifier »). La copie de l'avenant reçue n'est pas signée.",
+    "Le montant affiché est un total de grilles : le seuil déclencheur, le plafond individuel et la formule de répartition ne sont pas calculés."
+   ]
+  },
+  {
+   "id": "abondement-pee",
+   "theme": "Épargne salariale (PEE et PERCOL)",
+   "question": "Combien l'entreprise abonde-t-elle sur le PEE et le PERCOL ?",
+   "synonymes": [
+    "abondement",
+    "PEE",
+    "PERCOL",
+    "épargne salariale",
+    "plan d'épargne",
+    "versement volontaire"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "champs": [
+    {
+     "id": "versements",
+     "label": "Versements cumulés PEE + PERCOL dans l'année (€)",
+     "type": "number",
+     "min": 0,
+     "step": "0.01",
+     "defaut": 300
+    }
+   ],
+   "calcul": "abondement",
+   "niveaux": [
+    {
+     "titre": "Règlement du PEE (et du PERCOL, même grille)",
+     "regles": [
+      "Grille par tranche de versement : jusqu'à 50 € : 220 % ; 50-100 € : 180 % ; 100-150 € : 150 % ; 150-200 € : 125 % ; 200-300 € : 100 % ; 300 € à 1 150 € : 16,8 %.",
+      "Plafond de l'abondement : 580,30 €. Versements pris en compte : limite de 1 150 € par an. L'abondement ne peut pas dépasser le triple des versements.",
+      "Lecture « tranche par tranche » retenue : le cumul complet des tranches donne exactement 580,30 €."
+     ],
+     "sources": [
+      {
+       "doc": "pee",
+       "article": "art. 5",
+       "page": 5,
+       "extrait": "Plafond 580,30€"
+      },
+      {
+       "doc": "pee",
+       "article": "art. 5",
+       "page": 5,
+       "extrait": "abondement se détermine en cumulant les versements effectués sur le Plan d'Epargne Entreprise"
+      },
+      {
+       "doc": "pee",
+       "article": "art. 5",
+       "page": 5,
+       "extrait": "dans la limite d'un montant total annuel de 1 150 €"
+      },
+      {
+       "doc": "pee",
+       "article": "art. 5",
+       "page": 5,
+       "extrait": "ne pourra ni dépasser le triple de ses versements, ni excéder le plafond légal d'abondement en vigueur"
+      },
+      {
+       "doc": "percol",
+       "article": "art. 5",
+       "page": 4,
+       "extrait": "Cette grille est commune au Plan d'Epargne Entreprise et au Plan d'Epargne Retraite collectif."
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective",
+     "regles": [
+      "Non applicable dans le périmètre de cette fiche."
+     ],
+     "sources": []
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non fourni dans les sources."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "La note * du règlement renvoie au plafond de la sécurité sociale en vigueur : valeur à compléter."
+   ]
+  },
+  {
+   "id": "majoration-nuit",
+   "theme": "Nuit, dimanche, jours fériés, solidarité",
+   "question": "Quelle majoration pour les heures de nuit ?",
+   "synonymes": [
+    "nuit",
+    "majoration de nuit",
+    "travail de nuit",
+    "heures de nuit",
+    "travailleur de nuit"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "champs": [
+    {
+     "id": "tauxHoraire",
+     "label": "Salaire horaire de base (€)",
+     "type": "number",
+     "step": "0.01",
+     "min": 0,
+     "defaut": 12
+    },
+    {
+     "id": "h2122",
+     "label": "Heures entre 21 h et 22 h",
+     "type": "number",
+     "min": 0,
+     "defaut": 0
+    },
+    {
+     "id": "h225",
+     "label": "Heures entre 22 h et 5 h",
+     "type": "number",
+     "min": 0,
+     "defaut": 8
+    },
+    {
+     "id": "h56",
+     "label": "Heures entre 5 h et 6 h",
+     "type": "number",
+     "min": 0,
+     "defaut": 0
+    },
+    {
+     "id": "forfaitJours",
+     "label": "Cadre au forfait annuel en jours",
+     "type": "checkbox",
+     "defaut": false
+    }
+   ],
+   "calcul": "majorationNuit",
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.6)",
+     "regles": [
+      "22 h-5 h : +30 % du salaire horaire de base. 21 h-22 h et 5 h-6 h : +10 %.",
+      "S'applique que le salarié soit travailleur de nuit ou non. Non applicable aux cadres au forfait annuel en jours.",
+      "Repos compensateur (employés et maîtrise) : 7 h à 270 h de nuit, 14 h à 900 h, 21 h à 1 300 h, sur la période du 1er juin au 31 mai."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.6",
+       "page": 55,
+       "extrait": "Toute heure, accomplie entre 22 H et 5 H, donne lieu à une majoration de 30 % du salaire horaire de base."
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.6",
+       "page": 56,
+       "extrait": "Toute heure, accomplie entre 21 H et 22 H donne lieu à une majoration de 10 % du salaire horaire de base"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.6",
+       "page": 56,
+       "extrait": "Ces majorations s'appliquent, que le salarié soit travailleur de nuit ou non."
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (version du 28 août 2025)",
+     "regles": [
+      "22 h-5 h : +20 %. 21 h-22 h : +5 %."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 5.11.4",
+       "page": 36,
+       "extrait": "Toute heure accomplie entre 22 heures et 5 heures donne lieu à une majoration de 20 % du salaire horaire de base."
+      },
+      {
+       "doc": "cc",
+       "article": "art. 5.11.4",
+       "page": 36,
+       "extrait": "Toute heure, accomplie entre 21 heures et 22 heures donne lieu à une majoration de 5 % du salaire horaire de base."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non fourni dans les sources."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Les taux de l'accord et de la convention diffèrent : les deux sont affichés avec leur source."
+   ]
+  },
+  {
+   "id": "arret-maladie",
+   "theme": "Maladie, accident, prévoyance, mutuelle",
+   "question": "Je suis en arrêt maladie : l'entreprise complète-t-elle mon salaire, et pendant combien de temps ?",
+   "synonymes": [
+    "arrêt maladie",
+    "maladie",
+    "carence",
+    "complément de salaire",
+    "indemnité complémentaire",
+    "accident du travail",
+    "arret"
+   ],
+   "etiquettes": [
+    "Écart à vérifier",
+    "Information à compléter"
+   ],
+   "champs": [
+    {
+     "id": "statut",
+     "label": "Statut",
+     "type": "select",
+     "options": [
+      [
+       "employe",
+       "Employé / ouvrier"
+      ],
+      [
+       "maitrise",
+       "Agent de maîtrise"
+      ],
+      [
+       "cadre",
+       "Cadre"
+      ]
+     ]
+    },
+    {
+     "id": "ancienneteAns",
+     "label": "Ancienneté (années)",
+     "type": "number",
+     "step": "0.5",
+     "min": 0,
+     "defaut": 3
+    },
+    {
+     "id": "hospitalisation",
+     "label": "Hospitalisation",
+     "type": "checkbox",
+     "defaut": false
+    },
+    {
+     "id": "plus23j",
+     "label": "Arrêt de plus de 23 jours",
+     "type": "checkbox",
+     "defaut": false
+    },
+    {
+     "id": "plus2mois",
+     "label": "Arrêt de plus de 2 mois",
+     "type": "checkbox",
+     "defaut": false
+    },
+    {
+     "id": "accidentTravail",
+     "label": "Accident du travail / maladie professionnelle",
+     "type": "checkbox",
+     "defaut": false
+    }
+   ],
+   "calcul": "arretMaladie",
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.11)",
+     "regles": [
+      "Complément après 1 an d'ancienneté (maladie), sans condition pour accident du travail et de trajet. Prévenir sous 48 h, justificatif sous 4 jours.",
+      "Carence de 2 jours, sauf hospitalisation, accident du travail ou arrêt de plus de 23 jours.",
+      "Durée (employés et maîtrise) : 1 à 10 ans : 180 jours ; 10 à 25 ans : 360 jours ; au-delà : 540 jours. Cadres : 540 jours après 1 an.",
+      "Après épuisement des droits : 6 mois après la reprise avant réouverture."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.11.1",
+       "page": 37,
+       "extrait": "Après un an d'ancienneté pour maladie, ou sans condition d'ancienneté pour les accidents de travail et de trajet"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.11.1",
+       "page": 37,
+       "extrait": "un délai de carence de 2 jours calculé à partir du premier jour d'arrêt de travail"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.11.1",
+       "page": 37,
+       "extrait": "Ce délai de carence ne s'applique pas en cas d'hospitalisation (quelle qu'en soit la durée) ni en cas d'accident du travail."
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.11.2",
+       "page": 38,
+       "extrait": "entre 1 et 10 ans d'ancienneté : pendant 180 jours calendaires,"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (annexe I, employés/ouvriers ; version du 28 août 2025)",
+     "regles": [
+      "Complément à partir du 8e jour d'arrêt, après 1 an de présence ; carence de 7 jours calendaires, sauf hospitalisation, arrêt de plus de 2 mois, accident du travail ou maladie professionnelle.",
+      "Barème selon l'ancienneté (voir le résultat du calcul)."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "annexe I art. 3",
+       "page": 114,
+       "extrait": "une indemnité complémentaire qui lui sera versée à partir du 8e jour d'arrêt de travail"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe I art. 3.1",
+       "page": 114,
+       "extrait": "100 % pendant les 30 premiers jours auxquels s'ajoutent 90 % pendant les 15 jours suivants"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe I art. 3.6",
+       "page": 114,
+       "extrait": "Le délai de carence de 7 jours calendaires ne joue pas :"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non fourni dans les sources."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Le niveau de prise en charge par la prévoyance (APGIS) n'est pas dans les sources : Information à compléter."
+   ]
+  },
+  {
+   "id": "evenements-familiaux",
+   "theme": "Absences autorisées (famille, santé, engagements)",
+   "question": "Combien de jours d'absence pour un événement familial (naissance, mariage, décès) ?",
+   "synonymes": [
+    "naissance",
+    "mariage",
+    "décès",
+    "deces",
+    "PACS",
+    "événement familial",
+    "jours pour événement",
+    "enterrement",
+    "obsèques",
+    "adoption"
+   ],
+   "etiquettes": [
+    "Vérifier le chiffre sur l'image"
+   ],
+   "champs": [
+    {
+     "id": "evenement",
+     "label": "Événement",
+     "type": "select",
+     "options": [
+      [
+       "naissance",
+       "Naissance ou adoption d'un enfant"
+      ],
+      [
+       "mariage_salarie",
+       "Mariage ou PACS du salarié"
+      ],
+      [
+       "mariage_enfant",
+       "Mariage ou PACS d'un enfant / descendant"
+      ],
+      [
+       "mariage_parent",
+       "Mariage ou PACS du père ou de la mère"
+      ],
+      [
+       "deces_conjoint",
+       "Décès du conjoint, concubin, partenaire de PACS, enfant"
+      ],
+      [
+       "deces_parent",
+       "Décès d'un frère, sœur, parent, beau-parent"
+      ],
+      [
+       "deces_grandparent",
+       "Décès d'un grand-parent, petit-enfant, beau-frère, belle-sœur"
+      ],
+      [
+       "bapteme",
+       "Baptême ou communion d'un enfant"
+      ]
+     ]
+    },
+    {
+     "id": "distance300",
+     "label": "Décès : déplacement de plus de 300 km (accord) / 500 km (convention)",
+     "type": "checkbox",
+     "defaut": false
+    }
+   ],
+   "calcul": "evenementFamilial",
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.1)",
+     "regles": [
+      "Jours ouvrés, sans condition d'ancienneté, à prendre au moment de l'événement et sur justificatif.",
+      "Assimilés à du travail effectif pour les congés payés."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.1",
+       "page": 44,
+       "extrait": "Ces jours d'absence devront être pris au moment des événements en cause et justifiés."
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.1",
+       "page": 44,
+       "extrait": "Naissance/ adoption d'un enfant 3 jours ouvrés",
+       "ocr_corrige": true,
+       "note_ocr": "Le texte extrait lisait « 8 jours » ; l'image de la page 44 montre « 3 jours ouvrés »."
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.5 ; version du 28 août 2025)",
+     "regles": [
+      "Absences sur justification, sans retenue de salaire, assimilées à du travail effectif pour les congés payés."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.5.1 a) 1)",
+       "page": 50,
+       "extrait": "Décès du conjoint, du partenaire lié par un pacte civil de solidarité, ou d'un enfant : 5 jours ouvrés"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 7.5.1 a) 5)",
+       "page": 51,
+       "extrait": "3 jours ouvrés, quel que soit le nombre d'enfants survenant en même temps au foyer"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 7.5.2",
+       "page": 51,
+       "extrait": "Ces absences ne donneront lieu à aucune retenue de salaire"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non fourni dans les sources."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Pour les décès, l'accord distingue enfant à charge ; la convention cite « un enfant ». Les deux textes sont affichés tels quels."
+   ]
+  },
+  {
+   "id": "remise-achats",
+   "theme": "Avantages, remises, primes diverses",
+   "question": "Remise sur achats : qui y a droit, à quel taux et jusqu'à quel plafond ?",
+   "synonymes": [
+    "remise sur achats",
+    "RSA",
+    "remise",
+    "carte PASS",
+    "réduction magasin",
+    "remise salarié"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "champs": [
+    {
+     "id": "achats",
+     "label": "Achats annuels concernés (€)",
+     "type": "number",
+     "min": 0,
+     "defaut": 5000
+    },
+    {
+     "id": "ancienneteMois",
+     "label": "Ancienneté (mois)",
+     "type": "number",
+     "min": 0,
+     "defaut": 12
+    }
+   ],
+   "calcul": "remiseAchats",
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.2) et NAO 2026 (partie 2)",
+     "regles": [
+      "Accord : remise de 10 %, plafond d'achats de 11 000 € par année civile, au moins 3 mois d'ancienneté, carte PASS et compte Carrefour Banque.",
+      "NAO 2026 : 12 % du 1er avril 2026 au 31 mars 2027 ; plafond de 13 000 € pour 2026 (remise maximale 1 560 €) ; +10 % sur certains équipements numériques, une fois par an."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.2.1",
+       "page": 28,
+       "extrait": "une remise de 10% pour leurs achats personnels"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.2.2",
+       "page": 29,
+       "extrait": "plafonné à 11 000 € par année civile et par bénéficiaire"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.2.3",
+       "page": 29,
+       "extrait": "au moins 3 mois d'ancienneté"
+      },
+      {
+       "doc": "nao",
+       "article": "partie 2 art. 1",
+       "page": 9,
+       "extrait": "Remise Sur Achats portée exceptionnellement à 12%"
+      },
+      {
+       "doc": "nao",
+       "article": "partie 2 art. 2",
+       "page": 9,
+       "extrait": "plafond annuel d'achats de 13.000 € par salarié bénéficiaire"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective",
+     "regles": [
+      "Non applicable : avantage propre à l'entreprise."
+     ],
+     "sources": []
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non fourni dans les sources."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Écart avec le livret CGT (onglet « Écarts à vérifier ») : le livret indique 11 000 € et 12 % temporaire ; les textes signés indiquent 13 000 € en 2026."
+   ]
+  }
+ ]
+}

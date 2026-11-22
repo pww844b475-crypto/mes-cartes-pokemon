@@ -1,0 +1,52 @@
+{
+ "CP": [
+  "congé payé",
+  "congés payés",
+  "congés",
+  "vacances",
+  "jours de congé"
+ ],
+ "maladie": [
+  "arrêt maladie",
+  "arrêt",
+  "arrêt de travail",
+  "carence"
+ ],
+ "licenciement": [
+  "licencié",
+  "indemnité de licenciement",
+  "rupture"
+ ],
+ "nuit": [
+  "travail de nuit",
+  "heures de nuit",
+  "majoration de nuit"
+ ],
+ "RSA": [
+  "remise sur achats",
+  "remise",
+  "carte pass"
+ ],
+ "PEE": [
+  "épargne salariale",
+  "PERCOL",
+  "abondement"
+ ],
+ "intéressement": [
+  "interessement",
+  "prime d'intéressement"
+ ],
+ "préavis": [
+  "délai congé",
+  "démission"
+ ],
+ "décès": [
+  "obsèques",
+  "enterrement",
+  "deces"
+ ],
+ "naissance": [
+  "adoption",
+  "paternité"
+ ]
+}

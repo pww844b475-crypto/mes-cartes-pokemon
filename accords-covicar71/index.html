@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Accords Covicar 71</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Accords 71">
+<meta name="theme-color" content="#b00020">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<section id="porte" class="porte" hidden>
+  <form id="formPorte">
+    <h1>Accords Covicar 71</h1>
+    <p>Outil des élus CGT</p>
+    <input id="mdp" type="password" autocomplete="off" placeholder="Mot de passe" aria-label="Mot de passe" required>
+    <button type="submit">Ouvrir</button>
+    <p id="erreurMdp" class="erreur" hidden>Mot de passe incorrect.</p>
+  </form>
+</section>
+<main id="appli" hidden>
+  <header>
+    <h1 id="titre">Accords Covicar 71</h1>
+    <form id="formRecherche" role="search">
+      <input id="q" type="search" inputmode="search" autocomplete="off" placeholder="Que cherchez-vous ? (dictée vocale possible)" aria-label="Recherche">
+      <button type="submit" aria-label="Chercher">🔍</button>
+    </form>
+  </header>
+  <div class="bandeau" role="note">Vérifier le texte original avant de répondre</div>
+  <div id="vue"></div>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>
