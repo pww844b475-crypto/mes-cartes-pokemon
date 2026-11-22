@@ -12,11 +12,15 @@
     "démission",
     "démissionner",
     "licenciement",
-    "quitter"
+    "quitter",
+    "départ sans préavis",
+    "nouvel emploi",
+    "recherche d'emploi",
+    "2 heures par jour",
+    "durée du préavis",
+    "démission préavis"
    ],
-   "etiquettes": [
-    "Information à compléter"
-   ],
+   "etiquettes": [],
    "champs": [
     {
      "id": "statut",
@@ -115,11 +119,18 @@
     },
     {
      "niveau": "code",
-     "titre": "Code du travail",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
      "regles": [
-      "Information à compléter : Code du travail non fourni dans les sources."
+      "Licenciement hors faute grave : 1 mois de préavis entre 6 mois et 2 ans d'ancienneté, 2 mois à partir de 2 ans, sauf règle conventionnelle plus favorable (L1234-1)."
      ],
-     "sources": []
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L1234-1",
+       "page": 35,
+       "extrait": "à un préavis de deux mois"
+      }
+     ]
     }
    ],
    "notes": [
@@ -130,16 +141,27 @@
   {
    "id": "indemnite-licenciement",
    "theme": "Rupture du contrat, retraite",
-   "question": "Ai-je droit à une indemnité de licenciement et de combien ?",
+   "question": "Ai-je droit à une indemnité de licenciement et de combien ? (majorations, salaire de référence, faute grave)",
    "synonymes": [
     "indemnité de licenciement",
     "licencié",
     "licenciement",
     "indemnité de rupture",
-    "économique"
+    "économique",
+    "majorations indemnité licenciement",
+    "45 ans",
+    "enfants à charge",
+    "salaire de référence",
+    "faute grave",
+    "faute lourde",
+    "calcul indemnité de licenciement",
+    "indemnité conventionnelle",
+    "indemnité légale",
+    "8 mois d'ancienneté",
+    "licenciement économique 50 ans"
    ],
    "etiquettes": [
-    "Information à compléter"
+    "Écart à vérifier"
    ],
    "champs": [
     {
@@ -246,7 +268,8 @@
       "Employés après 3 ans : 75 % + 25 % par année de présence supplémentaire, plafond 6 fois le salaire de référence (lecture retenue : années entières au-delà de 3 ans).",
       "Majorations possibles : 20 % à 45 ans ou plus ; 10 % par enfant à charge.",
       "Salaire de référence = rémunération mensuelle + 1/12 de la prime annuelle + indemnités de fonction.",
-      "Agents de maîtrise et cadres : barème propre (3 ou 6 fois le salaire de référence, etc.) : calcul non codé dans cette version."
+      "Agents de maîtrise : 3 fois le salaire de référence après 3 ans, plus 25 % par année supplémentaire jusqu'à la 19e année ; 9 fois après 20 ans. Cadres : 6 fois, puis 12 fois après 20 ans. Lecture retenue : années entières au-delà de 3 ans.",
+      "Agents de maîtrise : 3 fois le salaire de référence après 3 ans, plus 25 % par année supplémentaire jusqu'à la 19e année ; 9 fois après 20 ans. Cadres : 6 fois, puis 12 fois après 20 ans. Lecture retenue : années entières au-delà de 3 ans."
      ],
      "sources": [
       {
@@ -278,16 +301,32 @@
        "article": "art. 3.4",
        "page": 26,
        "extrait": "Le salaire de référence mensuel est égal à la rémunération mensuelle plus 1/12ème de la prime annuelle, plus les indemnités de fonction."
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.4",
+       "page": 26,
+       "extrait": "3 fois (agents de maîtrise) ou 6 fois (cadres) le salaire de référence mensuel"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.4",
+       "page": 26,
+       "extrait": "3 fois (agents de maîtrise) ou 6 fois (cadres) le salaire de référence mensuel"
       }
      ],
      "verifie_image": true
     },
     {
-     "titre": "Convention collective (annexe I, employés/ouvriers ; version du 28 août 2025)",
+     "titre": "Convention collective (annexes I, II et III ; version du 28 août 2025)",
      "regles": [
       "Au moins 8 mois d'ancienneté ininterrompue : 1/4 de mois par année jusqu'à 10 ans, 1/3 de mois par année à partir de 10 ans ; année incomplète au prorata des mois complets.",
       "Salaire « plein tarif » : 1/12 de la rémunération brute des 12 derniers mois, ou le tiers des 3 derniers mois si plus avantageux.",
-      "Licenciement économique, plus de 50 ans : majoration de 20 % (sauf exclusions listées au texte)."
+      "Licenciement économique, plus de 50 ans : majoration de 20 % (sauf exclusions listées au texte).",
+      "Agents de maîtrise (annexe II) : mêmes règles que les employés. Cadres (annexe III) : de 8 mois à 5 ans, 1/4 de mois par année ; au-delà de 5 ans : 3/10 de mois par année jusqu'à 10 ans, 4/10 de 10 à 20 ans, 5/10 au-delà ; maximum 12 mois, plus 1/3 de mois par année au-delà de 40 ans.",
+      "Cadre licencié pour motif économique à partir de 50 ans : indemnité légale ou majoration de 20 %, selon la formule la plus avantageuse.",
+      "Agents de maîtrise (annexe II) : mêmes règles que les employés. Cadres (annexe III) : de 8 mois à 5 ans, 1/4 de mois par année ; au-delà de 5 ans : 3/10 de mois par année jusqu'à 10 ans, 4/10 de 10 à 20 ans, 5/10 au-delà ; maximum 12 mois, plus 1/3 de mois par année au-delà de 40 ans.",
+      "Cadre licencié pour motif économique à partir de 50 ans : indemnité légale ou majoration de 20 %, selon la formule la plus avantageuse."
      ],
      "sources": [
       {
@@ -313,22 +352,93 @@
        "article": "annexe I art. 6",
        "page": 115,
        "extrait": "1/ 12e de la rémunération brute perçue par le salarié au cours des 12 derniers mois"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 3.10",
+       "page": 15,
+       "extrait": "a droit, sauf en cas de faute grave ou lourde, à une indemnité minimale de licenciement"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe III art. 7.1.1",
+       "page": 128,
+       "extrait": "Cadres ayant de 8 mois à 5 ans de présence ininterrompue dans l'entreprise au moment du licenciement"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe III art. 7.1.2",
+       "page": 129,
+       "extrait": "3/10e de mois par année de présence, pour la tranche jusqu'à 10 ans"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe III art. 7.1.2",
+       "page": 129,
+       "extrait": "Le montant de l'indemnité ne peut dépasser un maximum de 12 mois"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 3.10",
+       "page": 15,
+       "extrait": "a droit, sauf en cas de faute grave ou lourde, à une indemnité minimale de licenciement"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe III art. 7.1.1",
+       "page": 128,
+       "extrait": "Cadres ayant de 8 mois à 5 ans de présence ininterrompue dans l'entreprise au moment du licenciement"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe III art. 7.1.2",
+       "page": 129,
+       "extrait": "3/10e de mois par année de présence, pour la tranche jusqu'à 10 ans"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe III art. 7.1.2",
+       "page": 129,
+       "extrait": "Le montant de l'indemnité ne peut dépasser un maximum de 12 mois"
       }
      ]
     },
     {
      "niveau": "code",
-     "titre": "Code du travail",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
      "regles": [
-      "Information à compléter : Code du travail non fourni dans les sources."
+      "Indemnité légale de licenciement : au moins 8 mois d'ancienneté ininterrompus, sauf faute grave (L1234-9).",
+      "Montant minimal : 1/4 de mois de salaire par année jusqu'à 10 ans, 1/3 de mois par année à partir de 10 ans (R1234-2).",
+      "Salaire de référence : le plus avantageux entre la moyenne des 12 derniers mois et le tiers des 3 derniers mois (R1234-4)."
      ],
-     "sources": []
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L1234-9",
+       "page": 32,
+       "extrait": "licencié alors qu'il compte 8 mois d'ancienneté ininterrompus au service du même employeur, a droit, sauf en cas de faute grave"
+      },
+      {
+       "doc": "ct",
+       "article": "R1234-2",
+       "page": 33,
+       "extrait": "Un quart de mois de salaire par année d'ancienneté pour les années jusqu'à dix ans"
+      },
+      {
+       "doc": "ct",
+       "article": "R1234-4",
+       "page": 34,
+       "extrait": "Soit le tiers des trois derniers mois"
+      }
+     ]
     }
    ],
    "notes": [
-    "Les deux niveaux sont affichés côte à côte sans désigner le plus favorable."
+    "Les deux niveaux sont affichés côte à côte sans désigner le plus favorable.",
+    "La convention dit que si l'indemnité légale est moins favorable, elle est remplacée par l'indemnité conventionnelle (art. 3.10). L'indemnité légale minimale est celle de R1234-2 (identique au barème employés de la convention).",
+    "La faute grave ou lourde exclut l'indemnité dans l'accord comme dans la convention."
    ],
-   "reponse": "Employé licencié avec au moins 2 ans de présence : 50 % d'un mois de salaire de référence ; dès 3 ans : 75 % plus 25 % par année supplémentaire, dans la limite de 6 mois (accord, art. 3.4). La convention a un autre barème : les deux sont affichés plus bas."
+   "reponse": "Il faut au moins 2 ans de présence (accord) et le licenciement ne doit pas être pour faute grave ou lourde. Employé : 50 % d'un mois de salaire de référence dès 2 ans, puis 75 % plus 25 % par année supplémentaire dès 3 ans, plafonné à 6 mois (accord, art. 3.4). Majorations : +20 % à 45 ans, +10 % par enfant à charge. Salaire de référence : rémunération mensuelle + 1/12 de la prime annuelle + indemnités de fonction. La convention a un autre barème (dès 8 mois d'ancienneté) : les deux sont affichés. Maîtrise et cadres : barèmes propres, calculés ci-dessous."
   },
   {
    "id": "prime-annuelle",
@@ -1523,12 +1633,20 @@
     "temps partiel retraite",
     "trimestres",
     "60 ans",
-    "150 trimestres"
+    "150 trimestres",
+    "comment demander la retraite progressive",
+    "demande de retraite progressive",
+    "retraite progressive et retraite anticipée",
+    "cumulables",
+    "quel temps de travail retraite progressive",
+    "cotisations retraite progressive",
+    "50 %",
+    "60 %",
+    "avenant retraite progressive"
    ],
    "etiquettes": [
     "Information à compléter",
-    "Écart à vérifier",
-    "Vérifier le chiffre sur l'image"
+    "Écart à vérifier"
    ],
    "champs": [
     {
@@ -1570,7 +1688,9 @@
       "Aucune condition d'ancienneté dans l'entreprise n'est écrite.",
       "Temps de travail réduit à l'équivalent de 50 ou 60 % d'un temps complet.",
       "Les cotisations retraite (parts patronale et salariale) sont prises en charge par l'employeur à hauteur du différentiel, jusqu'à l'âge légal de départ.",
-      "Un avenant dédié est nécessaire."
+      "Un avenant dédié est nécessaire.",
+      "La retraite progressive n'est pas cumulable avec la retraite anticipée (dispense d'activité) : art. 3.14.",
+      "La retraite progressive n'est pas cumulable avec la retraite anticipée (dispense d'activité) : art. 3.14."
      ],
      "sources": [
       {
@@ -1596,9 +1716,21 @@
        "article": "art. 3.13",
        "page": 39,
        "extrait": "réduit à l'équivalent de 50 ou 60 % d'un temps complet"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.14",
+       "page": 39,
+       "extrait": "sans être cumulable avec le système de retraite progressive"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.14",
+       "page": 39,
+       "extrait": "sans être cumulable avec le système de retraite progressive"
       }
      ],
-     "verifie_image": false
+     "verifie_image": true
     },
     {
      "titre": "Livret CGT (p.11)",
@@ -1625,8 +1757,7 @@
     }
    ],
    "notes": [
-    "Seul le nombre de trimestres validés compte, pas l'ancienneté : demander un relevé de carrière à la caisse.",
-    "Les passages de la page 39 sont lus sur le texte extrait, pas encore vérifiés sur l'image."
+    "Seul le nombre de trimestres validés compte, pas l'ancienneté : demander un relevé de carrière à la caisse."
    ]
   },
   {
@@ -4721,6 +4852,408 @@
     }
    ],
    "notes": []
+  },
+  {
+   "id": "allocation-retraite",
+   "theme": "Rupture du contrat, retraite",
+   "question": "Quelle allocation de départ à la retraite pour un employé ou un cadre ?",
+   "reponse": "Employé (accord) : 2,5 mois de salaire de référence entre 10 et 13 ans d'ancienneté, 3 mois de 13 à 16 ans, 4 mois de 16 à 20 ans, 5 mois au-delà de 20 ans, avec un salaire limité au plafond de la Sécurité sociale. Encadrement : 2,5 mois à 10 ans, plus 2/10 de mois par année supplémentaire, plafonné à 5 mois (maîtrise) et 6 mois (cadres) ; plus d'augmentation après 64 ans. La convention a ses propres barèmes : voir le calcul.",
+   "synonymes": [
+    "allocation de départ à la retraite",
+    "indemnité de départ à la retraite",
+    "départ en retraite",
+    "prime de départ à la retraite",
+    "retraite employé",
+    "retraite encadrement",
+    "retraite cadre",
+    "64 ans",
+    "plafond sécurité sociale retraite",
+    "mise à la retraite",
+    "partir à la retraite"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.5, p.26-27)",
+     "regles": [
+      "Employés : plus de 10 ans et moins de 13 ans : 2 mois et demi ; plus de 13 ans et moins de 16 ans : 3 mois ; plus de 16 ans et moins de 20 ans : 4 mois ; plus de 20 ans : 5 mois. Salaire de référence mensuel limité au plafond de la Sécurité sociale.",
+      "Encadrement : 2 mois et demi à 10 ans d'ancienneté ; au-delà de 10 ans, en plus, 2/10 de mois par année de présence supplémentaire, avec un plafond de 5 mois (agents de maîtrise) et 6 mois (cadres).",
+      "Départ au-delà de 64 ans : les années de présence ne font plus augmenter l'allocation.",
+      "Salaire de référence mensuel = rémunération mensuelle + 1/12 de la prime annuelle + indemnités de fonction."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.5",
+       "page": 26,
+       "extrait": "2 mois et demi du salaire de référence mensuel au moment du départ, limité au plafond de la Sécurité sociale"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.5",
+       "page": 27,
+       "extrait": "5 mois du salaire de référence mensuel au moment du départ, limité au plafond de la Sécurité sociale"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.5",
+       "page": 27,
+       "extrait": "2/10ème de mois par année de présence supplémentaire avec un plafond de 5 mois (pour les agents de maîtrise)",
+       "ocr_corrige": true,
+       "note_ocr": "Le texte extrait lisait « 20ème » ; l'image de la page 27 montre « 2/10ème »."
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.5",
+       "page": 27,
+       "extrait": "les années de présence ne donnent plus lieu à augmentation de l'allocation de départ à la retraite"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (annexes I à III art. 8 ; version du 28 août 2025)",
+     "regles": [
+      "Employés et maîtrise : au moins 10 ans d'ancienneté ; 2/20 de mois par année jusqu'à 10 ans, 3/20 par année après 10 ans ; maximum 4 mois, en salaire « plein tarif ».",
+      "Cadres : au moins 5 ans de présence ; 2/20 de mois par année jusqu'à 10 ans, 3/20 de 10 à 20 ans, 5/20 au-delà de 20 ans ; maximum 6 mois.",
+      "Mise à la retraite par l'employeur : allocation au moins égale à l'indemnité de licenciement."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "annexe I art. 8.2",
+       "page": 116,
+       "extrait": "2/ 20e de mois par année de présence pour la tranche jusqu'à 10 ans"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe I art. 8.2",
+       "page": 116,
+       "extrait": "Le montant de l'indemnité ne peut dépasser un maximum de 4 mois"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe III art. 8.2",
+       "page": 129,
+       "extrait": "a droit, s'il a au moins 5 ans de présence dans l'entreprise, à une allocation de départ en retraite"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe III art. 8.2",
+       "page": 130,
+       "extrait": "5/20e de mois par année de présence pour la tranche au-delà de 20 ans"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe I art. 8.3",
+       "page": 116,
+       "extrait": "recevra une allocation de départ en retraite au moins égale à l'indemnité de licenciement prévue à l'article 7 de la présente annexe"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "Tout salarié quittant volontairement l'entreprise pour une pension de vieillesse a droit à une indemnité de départ à la retraite (L1237-9).",
+      "Minimum légal : 1/2 mois après 10 ans, 1 mois après 15 ans, 1 mois et demi après 20 ans, 2 mois après 30 ans (D1237-1)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L1237-9",
+       "page": 40,
+       "extrait": "Tout salarié quittant volontairement l'entreprise pour bénéficier d'une pension de vieillesse a droit à une indemnité de départ à la retraite"
+      },
+      {
+       "doc": "ct",
+       "article": "D1237-1",
+       "page": 39,
+       "extrait": "Un demi-mois de salaire après dix ans d'ancienneté"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "Le plafond mensuel de la Sécurité sociale n'est pas dans les sources : saisir sa valeur pour l'appliquer aux employés.",
+    "Bornes exactes (13, 16, 20 ans pile) : le texte dit « plus de » et « moins de » : les âges exacts ne sont pas couverts.",
+    "L'accord et la convention donnent des résultats différents : les deux sont affichés sans trancher. Vos questions sur l'encadrement : le calcul « encadrement » suit l'accord (2,5 mois + 2/10 de mois par année après 10 ans)."
+   ],
+   "champs": [
+    {
+     "id": "statut",
+     "label": "Statut",
+     "type": "select",
+     "options": [
+      [
+       "employe",
+       "Employé / ouvrier"
+      ],
+      [
+       "maitrise",
+       "Agent de maîtrise"
+      ],
+      [
+       "cadre",
+       "Cadre"
+      ]
+     ]
+    },
+    {
+     "id": "ancienneteAns",
+     "label": "Ancienneté (années)",
+     "type": "number",
+     "min": 0,
+     "step": "0.5",
+     "defaut": 14
+    },
+    {
+     "id": "salaireReference",
+     "label": "Salaire de référence mensuel (€), si connu",
+     "type": "number",
+     "min": 0,
+     "step": "0.01",
+     "defaut": 0
+    },
+    {
+     "id": "plafondSecu",
+     "label": "Employé : plafond mensuel de la Sécurité sociale (€), si connu",
+     "type": "number",
+     "min": 0,
+     "step": "0.01",
+     "defaut": 0
+    }
+   ],
+   "calcul": "allocationRetraite"
+  },
+  {
+   "id": "retraite-anticipee",
+   "theme": "Rupture du contrat, retraite",
+   "question": "Comment fonctionne la retraite anticipée (dispense d'activité) ? Délais, durée maximum, congés et CET ?",
+   "reponse": "Le salarié peut anticiper son départ en retraite avec une dispense d'activité non rémunérée, prise par mois entiers, en percevant une avance sur salaire équivalente au net habituel, retenue ensuite sur l'indemnité de départ. La durée est limitée par la valeur de l'indemnité de départ, jusqu'à 6 mois. Demande écrite au moins 6 mois avant la date de départ, avec un document de la caisse de retraite, et solde des congés payés et du CET. Pas cumulable avec la retraite progressive (accord, art. 3.14).",
+   "synonymes": [
+    "retraite anticipée",
+    "dispense d'activité",
+    "anticiper son départ à la retraite",
+    "avance sur salaire retraite",
+    "départ anticipé",
+    "CET retraite",
+    "congés payés retraite",
+    "solder les congés",
+    "6 mois avant le départ",
+    "cumulable retraite progressive",
+    "congés payés et CET à la retraite",
+    "mes congés payés et mon CET",
+    "que deviennent mes congés payés",
+    "solde de congés retraite",
+    "à la retraite"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.14, p.39-40)",
+     "regles": [
+      "Possibilité d'anticiper son départ à la retraite, sans cumul avec la retraite progressive.",
+      "Dispense d'activité non rémunérée pendant une durée déterminée avant le départ, avec avance sur salaire mensuelle équivalente au salaire net habituel, retenue sur l'indemnité de départ à la retraite.",
+      "La dispense est prise par mois entiers ; sa durée est limitée par la valeur de l'avance, qui ne peut dépasser le montant de l'indemnité de départ, jusqu'à 6 mois.",
+      "Demande écrite au moins 6 mois avant la date de départ effective ; justificatif de la caisse de retraite ; engagement de départ à la date prévue ; solde des compteurs de congés payés et du CET ; calendrier prévisionnel.",
+      "Le montant de l'indemnité de départ à la retraite n'est pas réduit par la dispense."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.14",
+       "page": 39,
+       "extrait": "sans être cumulable avec le système de retraite progressive"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.14",
+       "page": 39,
+       "extrait": "elle doit être prise par mois entiers"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.14",
+       "page": 40,
+       "extrait": "Le salarié devra faire une demande écrite au moins 6 mois avant la date de départ effective à la retraite"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.14",
+       "page": 40,
+       "extrait": "et solder ses compteurs de congés payés acquis et de son CET"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Livret CGT (p.11)",
+     "regles": [
+      "Reprend ces règles : dispense d'activité, avance sur salaire retenue sur l'indemnité de départ, jusqu'à 6 mois, demande 6 mois avant, et non-cumul avec la retraite progressive."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Départ à la retraite anticipée",
+       "page": 11,
+       "extrait": "La retraite anticipée n'est pas cumulable avec retraite progressive."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "periode-essai",
+   "theme": "Rupture du contrat, retraite",
+   "question": "Quelle est la durée de la période d'essai et les délais de prévenance ?",
+   "reponse": "Employé ou ouvrier : 2 mois. Agent de maîtrise : 3 mois, renouvelable une fois d'un commun accord dans la limite de 2 mois. Cadre : 4 mois (jusqu'à 6 mois par accord), renouvelable une fois, 8 mois au maximum, avec accord écrit. Si l'employeur met fin à l'essai : prévenance de 24 heures avant 8 jours de présence, 48 heures de 8 jours à 1 mois, 2 semaines après 1 mois, 1 mois après 3 mois. Le salarié prévient 48 heures à l'avance (24 heures avant 8 jours de présence).",
+   "synonymes": [
+    "période d'essai",
+    "essai",
+    "rupture période d'essai",
+    "renouvellement de l'essai",
+    "délai de prévenance essai",
+    "durée de l'essai",
+    "fin de période d'essai",
+    "prévenance",
+    "essai cadre",
+    "essai employé"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Convention collective (annexes I, II, III art. 2 ; version du 28 août 2025)",
+     "regles": [
+      "Employés et ouvriers : 2 mois. Prévenance de l'employeur : 24 h en deçà de 8 jours, 48 h de 8 jours à 1 mois, 2 semaines après 1 mois.",
+      "Agents de maîtrise : 3 mois ; prolongation d'un commun accord, une fois, dans la limite de 2 mois ; prévenance de l'employeur jusqu'à 1 mois après 3 mois de présence.",
+      "Cadres : 4 mois (accord possible jusqu'à 6 mois), renouvelable une fois dans la limite de 8 mois, après accord écrit signé par les deux parties.",
+      "Rupture par le salarié : prévenance de 48 heures, ramenée à 24 heures si moins de 8 jours de présence."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "annexe I art. 2.1",
+       "page": 113,
+       "extrait": "est fixée à 2 mois"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe I art. 2.2",
+       "page": 113,
+       "extrait": "2 semaines après 1 mois de présence"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe II art. 2.1",
+       "page": 122,
+       "extrait": "La durée de la période d'essai est fixée à 3 mois."
+      },
+      {
+       "doc": "cc",
+       "article": "annexe II art. 2.2",
+       "page": 122,
+       "extrait": "soit de la prolonger une fois dans la limite de 2 mois"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe III art. 2.1",
+       "page": 127,
+       "extrait": "La durée normale de la période d'essai est fixée à 4 mois"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe III art. 2.1",
+       "page": 127,
+       "extrait": "renouvelable une fois dans la limite d'une durée totale de 8 mois après accord écrit"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe II art. 2.2",
+       "page": 122,
+       "extrait": "celui-ci respecte un délai de prévenance de 48 heures"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "Durées maximales du CDI : 2 mois (ouvriers, employés), 3 mois (agents de maîtrise et techniciens), 4 mois (cadres) (L1221-19).",
+      "Renouvellement une fois si un accord de branche étendu le prévoit ; durée maximale renouvellement compris : 4, 6 ou 8 mois (L1221-21).",
+      "Prévenance de l'employeur : 24 h avant 8 jours, 48 h de 8 jours à 1 mois, 2 semaines après 1 mois, 1 mois après 3 mois ; elle ne prolonge pas l'essai (L1221-25)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L1221-19",
+       "page": 36,
+       "extrait": "Pour les ouvriers et les employés, de deux mois"
+      },
+      {
+       "doc": "ct",
+       "article": "L1221-21",
+       "page": 37,
+       "extrait": "Quatre mois pour les ouvriers et employés"
+      },
+      {
+       "doc": "ct",
+       "article": "L1221-25",
+       "page": 38,
+       "extrait": "Un mois après trois mois de présence"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "Pour les employés, l'annexe I de la convention ne cite que trois paliers de prévenance ; le palier « 1 mois après 3 mois de présence » vient de la loi (L1221-25) et des annexes II et III.",
+    "Un mois est compté ici pour 30 jours et trois mois pour 90 jours."
+   ],
+   "champs": [
+    {
+     "id": "statut",
+     "label": "Statut",
+     "type": "select",
+     "options": [
+      [
+       "employe",
+       "Employé / ouvrier"
+      ],
+      [
+       "maitrise",
+       "Agent de maîtrise"
+      ],
+      [
+       "cadre",
+       "Cadre"
+      ]
+     ]
+    },
+    {
+     "id": "joursPresence",
+     "label": "Jours de présence du salarié",
+     "type": "number",
+     "min": 0,
+     "step": "1",
+     "defaut": 20
+    }
+   ],
+   "calcul": "periodeEssai"
   }
  ]
 }

@@ -250,3 +250,38 @@ test('congés — temps partiel : un jour pris à 3 jours par semaine compte pou
   assert.equal(p(2, 1), 3);   // 6 × 1 ÷ 2
   assert.equal(p(5, 7), 8);   // 1 semaine complète (6) + 2 jours
 });
+
+test('indemnité de licenciement — accord art. 3.4 : maîtrise et cadres', () => {
+  const base = { salaireMensuel: 3000, primeAnnuelle: 0, motif: 'autre' };
+  const acc = (statut, mois) => C.indemniteLicenciement({ ...base, statut, ancienneteMois: mois }).lignes[1].mois;
+  assert.equal(acc('cadre', 30), 0.5);            // 2 ans : 50 %
+  assert.equal(acc('cadre', 96), 7.25);           // 6 + 0,25 × (8 − 3)
+  assert.equal(acc('maitrise', 96), 4.25);        // 3 + 0,25 × 5
+  assert.equal(acc('cadre', 240), 12);            // 20 ans
+  assert.equal(acc('maitrise', 240), 9);
+});
+test('indemnité de licenciement — convention annexe III (cadres)', () => {
+  const cc = (mois) => C.indemniteLicenciement({ statut: 'cadre', ancienneteMois: mois, motif: 'autre', brut12: 36000 }).lignes.find(l => l.label.startsWith('Indemnité de licenciement (convention')).mois;
+  assert.equal(cc(6), 0);                          // moins de 8 mois
+  assert.equal(cc(48), 1);                         // 4 ans × 1/4
+  assert.equal(cc(96), 2.4);                       // 8 ans × 3/10
+  assert.equal(cc(180), 5);                        // 10 × 0,3 + 5 × 0,4
+  assert.equal(cc(600), 15.33);                      // plafond de 12 mois, plus 10 ans × 1/3 après 40 ans
+});
+test('allocation de départ à la retraite — accord art. 3.5, convention annexes I à III art. 8.2', () => {
+  const a = (statut, ans) => C.allocationRetraite({ statut, ancienneteAns: ans }).lignes.map(l => l.brut);
+  assert.deepEqual(a('employe', 9), [0, 0]);
+  assert.deepEqual(a('employe', 12), [2.5, 1.3]);        // convention : 2/20 × 10 + 3/20 × 2
+  assert.deepEqual(a('employe', 25), [5, 3.25]);         // convention : 1 + 15 × 3/20 (sous le plafond de 4 mois)
+  assert.deepEqual(a('employe', 40), [5, 4]);            // convention : plafond de 4 mois
+  assert.deepEqual(a('maitrise', 14), [3.3, 1.6]);       // 2,5 + 0,2 × 4 ; convention 1 + 0,6
+  assert.deepEqual(a('cadre', 40), [6, 6]);              // plafonds de 6 mois
+  assert.equal(C.allocationRetraite({ statut: 'employe', ancienneteAns: 12, salaireReference: 3000, plafondSecu: 2500 }).lignes[1].brut, 6250);   // 2,5 × plafond 2 500
+});
+test('période d\'essai — convention annexes I à III art. 2, L1221-25', () => {
+  const e = (statut, j) => C.periodeEssai({ statut, joursPresence: j }).lignes;
+  assert.equal(e('employe', 5)[1].brut, '24 heures'); assert.equal(e('employe', 20)[1].brut, '48 heures'); assert.equal(e('employe', 60)[1].brut, '2 semaines');
+  assert.equal(e('cadre', 100)[1].brut, '1 mois'); assert.equal(e('cadre', 100)[3].brut, '1 mois');
+  assert.equal(e('employe', 100)[1].brut, '2 semaines'); assert.equal(e('employe', 100)[3].brut, '1 mois');   // palier légal seul
+  assert.equal(e('maitrise', 5)[2].brut, 24); assert.equal(e('maitrise', 20)[2].brut, 48);
+});

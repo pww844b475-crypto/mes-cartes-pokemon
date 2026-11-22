@@ -27,25 +27,33 @@ export function preavis({ statut, motif, ancienneteMois }) {
 // ---- 3. Indemnité de licenciement : accord de substitution (art. 3.4) et convention (annexe I art. 7), côte à côte. Employés/ouvriers seulement.
 export function indemniteLicenciement(p) {
   const { statut, ancienneteMois, age = 0, enfants = 0, motif, salaireMensuel = 0, primeAnnuelle = 0, indemnitesFonction = 0, brut12 = 0, brut3 = 0 } = p;
-  if (statut !== 'employe') return { lignes: [], info: 'Calcul non codé pour la maîtrise et les cadres dans cette version : Information à compléter (texte : accord de substitution art. 3.4 ; convention annexes II et III).' };
   const lignes = [];
   const grave = motif === 'faute';
-  // Accord
+  const ans = ancienneteMois / 12;
+  // Accord de substitution (art. 3.4)
   const salRefAccord = r2(salaireMensuel + primeAnnuelle / 12 + indemnitesFonction);
-  let mois = null;
-  if (grave) mois = 0;
-  else if (ancienneteMois < 24) mois = 0;
+  let mois;
+  if (grave || ancienneteMois < 24) mois = 0;
   else if (ancienneteMois < 36) mois = 0.5;
-  else mois = Math.min(6, 0.75 + 0.25 * (Math.floor(ancienneteMois / 12) - 3));
+  else if (statut === 'employe') mois = Math.min(6, 0.75 + 0.25 * (Math.floor(ans) - 3));
+  else if (ans >= 20) mois = statut === 'cadre' ? 12 : 9;
+  else mois = (statut === 'cadre' ? 6 : 3) + 0.25 * (Math.floor(ans) - 3);
   const base = r2(mois * salRefAccord);
   const majPct = (age >= 45 ? 20 : 0) + 10 * enfants;
   lignes.push(L('accord', 'Salaire de référence mensuel (accord)', `${salRefAccord} €`));
-  lignes.push(L('accord', 'Indemnité avant majorations', `${mois} mois = ${base} €`, { brut: base, mois }));
+  lignes.push(L('accord', 'Indemnité avant majorations', `${r2(mois)} mois = ${base} €`, { brut: base, mois }));
   lignes.push(L('accord', 'Majorations possibles (45 ans : +20 % ; enfants : +10 % chacun)', `+${majPct} %`, { note: 'Base de la majoration non précisée dans le texte : ici appliquée à l\'indemnité.' }));
   lignes.push(L('accord', 'Indemnité avec majorations', `${r2(base * (1 + majPct / 100))} €`, { brut: r2(base * (1 + majPct / 100)) }));
-  // Convention
+  // Convention (annexes I et II : employés et maîtrise ; annexe III : cadres)
   let moisCC = 0;
-  if (!grave && ancienneteMois >= 8) moisCC = Math.min(ancienneteMois, 120) * (0.25 / 12) + Math.max(ancienneteMois - 120, 0) * (1 / 3 / 12);
+  if (!grave && ancienneteMois >= 8) {
+    if (statut !== 'cadre') moisCC = Math.min(ancienneteMois, 120) * (0.25 / 12) + Math.max(ancienneteMois - 120, 0) * (1 / 3 / 12);
+    else if (ancienneteMois <= 60) moisCC = ancienneteMois * (0.25 / 12);
+    else {
+      const t1 = Math.min(ancienneteMois, 120), t2 = Math.min(Math.max(ancienneteMois - 120, 0), 120), t3 = Math.max(ancienneteMois - 240, 0), t4 = Math.max(ancienneteMois - 480, 0);
+      moisCC = Math.min(12, (t1 * 0.3 + t2 * 0.4 + t3 * 0.5) / 12) + t4 / 12 / 3;
+    }
+  }
   const salCC = Math.max(brut12 / 12, brut3 / 3);
   if (salCC > 0) {
     const b = r2(moisCC * salCC);
@@ -333,4 +341,34 @@ export function congeParentalAnciennete({ moisCongeParental = 0 }) {
   return { lignes: l };
 }
 
-export const CALCULS = { congesAcquis, fractionnement, congeAnciennete, indemniteConges, grossesse, maternite, paternite, congeParentalAnciennete, delaiProtection, capitalDeces, demenagement, enfantMalade, retraiteProgressive, primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };
+// ---- 26. Allocation de départ à la retraite (accord art. 3.5 p.26-27 ; convention annexes I à III art. 8.2)
+export function allocationRetraite({ statut = 'employe', ancienneteAns = 0, salaireReference = 0, plafondSecu = 0 }) {
+  const a = ancienneteAns, l = [];
+  let m;
+  if (statut === 'employe') m = a > 20 ? 5 : a > 16 ? 4 : a > 13 ? 3 : a > 10 ? 2.5 : 0;
+  else if (a >= 10) m = Math.min(2.5 + 0.2 * Math.floor(a - 10), statut === 'cadre' ? 6 : 5); else m = 0;
+  const sr = statut === 'employe' && plafondSecu > 0 ? Math.min(salaireReference, plafondSecu) : salaireReference;
+  l.push(L('accord', 'Allocation de départ à la retraite', m ? `${r2(m)} mois de salaire de référence` : 'Aucune (moins de 10 ans d\'ancienneté ou seuil non atteint)', { brut: r2(m), note: statut === 'employe' ? 'Salaire de référence limité au plafond de la Sécurité sociale.' : 'Au-delà de 64 ans au départ, les années de présence ne font plus augmenter l\'allocation.' }));
+  if (m && sr > 0) l.push(L('accord', 'Montant', `${r2(m * sr)} €`, { brut: r2(m * sr) }));
+  let cc = 0;
+  if (statut === 'cadre') cc = a >= 5 ? Math.min(6, Math.min(a, 10) * 2 / 20 + Math.max(Math.min(a, 20) - 10, 0) * 3 / 20 + Math.max(a - 20, 0) * 5 / 20) : 0;
+  else cc = a >= 10 ? Math.min(4, 10 * 2 / 20 + (a - 10) * 3 / 20) : 0;
+  l.push(L('convention', 'Allocation de départ en retraite (salaire « plein tarif »)', cc ? `${r2(cc)} mois` : 'Aucune (ancienneté minimale non atteinte)', { brut: r2(cc), note: statut === 'cadre' ? 'Cadres : au moins 5 ans de présence, maximum 6 mois.' : 'Employés et maîtrise : au moins 10 ans d\'ancienneté, maximum 4 mois.' }));
+  return { lignes: l };
+}
+
+// ---- 27. Période d'essai (convention annexes I à III art. 2 ; L1221-19, L1221-21, L1221-25)
+export function periodeEssai({ statut = 'employe', joursPresence = 0 }) {
+  const dur = statut === 'employe' ? '2 mois' : statut === 'maitrise' ? '3 mois, renouvelable une fois d\'un commun accord dans la limite de 2 mois' : '4 mois (jusqu\'à 6 mois par accord), renouvelable une fois dans la limite de 8 mois, accord écrit signé';
+  const j = joursPresence;
+  const emp = j < 8 ? '24 heures' : j <= 30 ? '48 heures' : (statut === 'employe' || j <= 90) ? '2 semaines' : '1 mois';
+  const emp_loi = j < 8 ? '24 heures' : j <= 30 ? '48 heures' : j <= 90 ? '2 semaines' : '1 mois';
+  return { lignes: [
+    L('convention', 'Durée de la période d\'essai', dur),
+    L('convention', 'Délai de prévenance si l\'employeur met fin à l\'essai', emp, { brut: emp, note: statut === 'employe' ? 'Annexe I : 3 paliers (24 h, 48 h, 2 semaines après 1 mois). Le palier « 1 mois après 3 mois » est dans la loi.' : undefined }),
+    L('convention', 'Délai de prévenance si le salarié met fin à l\'essai', j < 8 ? '24 heures' : '48 heures', { brut: j < 8 ? 24 : 48 }),
+    L('code', 'Délai de prévenance de l\'employeur selon la loi (L1221-25)', emp_loi, { brut: emp_loi }),
+  ] };
+}
+
+export const CALCULS = { allocationRetraite, periodeEssai, congesAcquis, fractionnement, congeAnciennete, indemniteConges, grossesse, maternite, paternite, congeParentalAnciennete, delaiProtection, capitalDeces, demenagement, enfantMalade, retraiteProgressive, primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };

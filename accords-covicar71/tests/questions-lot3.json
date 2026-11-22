@@ -1,0 +1,77 @@
+[
+ {
+  "n": 23,
+  "question": "Ai-je droit à une indemnité de licenciement et de combien ?",
+  "fiche": "indemnite-licenciement"
+ },
+ {
+  "n": 24,
+  "question": "Les majorations de l'indemnité de licenciement (45 ans, enfants à charge) ?",
+  "fiche": "indemnite-licenciement"
+ },
+ {
+  "n": 25,
+  "question": "Comment est calculé le salaire de référence de l'indemnité ?",
+  "fiche": "indemnite-licenciement"
+ },
+ {
+  "n": 26,
+  "question": "L'indemnité est-elle due en cas de faute grave ?",
+  "fiche": "indemnite-licenciement"
+ },
+ {
+  "n": 27,
+  "question": "Quelle allocation de départ à la retraite pour un employé ?",
+  "fiche": "allocation-retraite"
+ },
+ {
+  "n": 28,
+  "question": "Quelle allocation de départ à la retraite pour l'encadrement ?",
+  "fiche": "allocation-retraite"
+ },
+ {
+  "n": 29,
+  "question": "Quelles conditions pour la retraite progressive ?",
+  "fiche": "retraite-progressive"
+ },
+ {
+  "n": 30,
+  "question": "Retraite progressive : quel temps de travail et quelles cotisations ?",
+  "fiche": "retraite-progressive"
+ },
+ {
+  "n": 31,
+  "question": "Comment demander la retraite progressive ?",
+  "fiche": "retraite-progressive"
+ },
+ {
+  "n": 32,
+  "question": "Comment fonctionne la retraite anticipée (dispense d'activité) ?",
+  "fiche": "retraite-anticipee"
+ },
+ {
+  "n": 33,
+  "question": "Retraite anticipée : quand faire la demande et quelle durée maximum ?",
+  "fiche": "retraite-anticipee"
+ },
+ {
+  "n": 34,
+  "question": "Retraite progressive et retraite anticipée sont-elles cumulables ?",
+  "fiche": "retraite-progressive"
+ },
+ {
+  "n": 35,
+  "question": "Que deviennent mes congés payés et mon CET à la retraite ?",
+  "fiche": "retraite-anticipee"
+ },
+ {
+  "n": 36,
+  "question": "Quelle est la durée du préavis (démission, licenciement) ?",
+  "fiche": "preavis"
+ },
+ {
+  "n": 37,
+  "question": "Quelle est la durée de la période d'essai ?",
+  "fiche": "periode-essai"
+ }
+]

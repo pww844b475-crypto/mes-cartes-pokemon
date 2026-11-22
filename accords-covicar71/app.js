@@ -17,6 +17,7 @@ function h(tag, attrs = {}, ...enfants) {
   for (const e of enfants.flat()) if (e != null) el.append(e.nodeType ? e : document.createTextNode(e));
   return el;
 }
+const fr = s => String(s).replace(/(\d)\.(\d)/g, '$1,$2'); // décimales à la française
 const remplir = (el, ...xs) => el.replaceChildren(...xs.flat(Infinity).filter(x => x != null));
 const tags = (liste = []) => h('div', {}, liste.map(t => h('span', { class: 'tag' + (t.startsWith('✓') ? ' ok' : '') }, t)));
 
@@ -84,7 +85,7 @@ function ouvrirFiche(f) {
       r.info ? h('p', { class: 'note' }, r.info) : null,
       ...(r.lignes || []).map(l => h('div', { class: 'rf-ligne' },
         h('div', { class: 'rf-label' }, h('span', { class: 'badge' }, NIVEAU[l.niveau] || l.niveau), l.label),
-        h('div', { class: 'rf-valeur' }, l.valeur),
+        h('div', { class: 'rf-valeur' }, fr(l.valeur)),
         l.note ? h('div', { class: 'note' }, l.note) : null)));
   }
   const niveaux = h('div', { class: 'niveaux' }, f.niveaux.map(n => h('div', { class: 'carte' },
