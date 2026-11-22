@@ -191,4 +191,24 @@ export function journeeSolidarite({ statut = 'employe', horaireSalarie = 0, hora
   return { lignes };
 }
 
-export const CALCULS = { journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };
+// ---- 12. Prime annuelle d'un salarié en arrêt (accord art. 3.2 p.24-25 ; art. 3.11.2 p.38 ; convention art. 3.6.2 p.14)
+const jour = d => new Date(Date.UTC(...d.split('-').map((x, i) => i === 1 ? Number(x) - 1 : Number(x))));
+const iso = dt => dt.toISOString().slice(0, 10);
+export function primeEtArret({ statut = 'employe', ancienneteAns = 0, accidentTravail = false, dateDebut, annee }) {
+  if (!dateDebut || !annee) return { lignes: [], erreur: 'Renseigner la date de début de l\'arrêt et l\'année de la prime.' };
+  const debut = jour(dateDebut), l = [];
+  const duree = statut === 'cadre' ? (ancienneteAns >= 1 ? 540 : 0) : ancienneteAns < 1 ? 0 : ancienneteAns < 10 ? 180 : ancienneteAns < 25 ? 360 : 540;
+  const finCompl = duree ? new Date(debut.getTime() + (duree - 1) * 86400000) : null;
+  const j1 = Date.UTC(annee, 0, 1), d31 = Date.UTC(annee, 11, 31);
+  l.push(L('accord', 'Fin approximative du complément de l\'employeur (jours calendaires, carence non déduite)', finCompl ? iso(finCompl) : 'Pas de complément (ancienneté insuffisante)', { brut: finCompl ? iso(finCompl) : null }));
+  const jusque = finCompl ? finCompl.getTime() : -Infinity;
+  if (jusque < j1) l.push(L('accord', `Complément de l'employeur versé en ${annee}`, 'Aucun : la base de calcul de la prime est nulle', { brut: 0, note: 'Les indemnités de la Sécurité sociale et de la prévoyance ne comptent pas dans la base (art. 3.2).' }));
+  else { const jours = Math.min(jusque, d31) - j1; l.push(L('accord', `Complément de l'employeur versé en ${annee}`, `Environ ${Math.floor(jours / 86400000) + 1} jours : prime proportionnelle à ces sommes`, { brut: Math.floor(jours / 86400000) + 1 })); }
+  if (accidentTravail) l.push(L('accord', 'Accident du travail / maladie professionnelle', 'Compte dans la base « dans la limite ininterrompue d\'un an » (jusqu\'au ' + iso(new Date(Date.UTC(debut.getUTCFullYear() + 1, debut.getUTCMonth(), debut.getUTCDate() - 1))) + ')', { brut: 'at' }));
+  const unAn = Date.UTC(debut.getUTCFullYear() + 1, debut.getUTCMonth(), debut.getUTCDate());
+  const versement = Date.UTC(annee, 11, 1);
+  l.push(L('convention', 'Contrat suspendu depuis moins de 1 an au moment du versement (début décembre)', unAn > versement ? 'Oui : condition remplie' : 'Non : condition non remplie (art. 3.6.2)', { brut: unAn > versement }));
+  return { lignes: l };
+}
+
+export const CALCULS = { primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };

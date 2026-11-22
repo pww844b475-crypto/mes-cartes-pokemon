@@ -129,3 +129,16 @@ test('journée de solidarité — exemple RH : CDI à 30 h par semaine, référe
   assert.equal(r.lignes[0].brut, 360);
   assert.ok(r.lignes[0].valeur.startsWith('6 h 00'));
 });
+
+test('prime annuelle d\'un salarié en arrêt — accord art. 3.2 / 3.11.2, convention art. 3.6.2', () => {
+  const run = p => C.primeEtArret({ statut: 'employe', annee: 2026, ...p }).lignes;
+  const a = run({ ancienneteAns: 3, dateDebut: '2025-07-01' });        // 180 j → fin 2025-12-27
+  assert.equal(a[0].brut, '2025-12-27');
+  assert.equal(a[1].brut, 0);                                           // aucun complément en 2026
+  assert.equal(a[2].brut, false);                                       // suspendu depuis plus d'un an en décembre 2026
+  const b = run({ ancienneteAns: 12, dateDebut: '2025-07-01' });       // 360 j → fin 2026-06-25
+  assert.equal(b[0].brut, '2026-06-25'); assert.equal(b[1].brut, 176);  // du 1er janvier au 25 juin 2026
+  const c = run({ ancienneteAns: 3, dateDebut: '2026-03-01' });        // fin 2026-08-27 ; suspendu < 1 an
+  assert.equal(c[0].brut, '2026-08-27'); assert.equal(c[2].brut, true);
+  assert.equal(run({ ancienneteAns: 0.5, dateDebut: '2025-07-01' })[1].brut, 0);
+});

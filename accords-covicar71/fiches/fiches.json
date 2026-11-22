@@ -1419,6 +1419,148 @@
     "Le texte ne définit pas « horaire hebdomadaire conventionnel » : la pratique de paie (7 h 12 pour 36 h ; 4 h 48 pour 24 h) correspond à une référence de 35 h. Avec 36 h de référence, 24 h donnerait 4 h 40.",
     "L'accord dit aussi « 7 heures » pour le temps complet."
    ]
+  },
+  {
+   "id": "prime-annuelle-arret",
+   "theme": "Prime annuelle et prime de vacances",
+   "question": "Un salarié en arrêt maladie de longue durée a-t-il droit à la prime annuelle (13e mois) ?",
+   "reponse": "La prime annuelle est calculée sur ce qui est payé par l'entreprise. Le complément de salaire de l'employeur compte dans la base ; les indemnités de la Sécurité sociale et de la prévoyance ne comptent pas (accord, art. 3.2). Quand le complément de l'employeur est épuisé et qu'il n'est plus rien versé, la base est nulle et la prime est de 0. La convention exige aussi un contrat en vigueur ou suspendu depuis moins de 1 an au moment du versement (art. 3.6.2).",
+   "synonymes": [
+    "13e mois",
+    "treizième mois",
+    "gratification",
+    "prime annuelle arrêt maladie",
+    "arrêt maladie prime",
+    "prime de fin d'année arrêt",
+    "maladie longue durée",
+    "prévoyance"
+   ],
+   "etiquettes": [
+    "À confirmer : condition de la convention"
+   ],
+   "champs": [
+    {
+     "id": "statut",
+     "label": "Statut",
+     "type": "select",
+     "options": [
+      [
+       "employe",
+       "Employé / agent de maîtrise"
+      ],
+      [
+       "cadre",
+       "Cadre"
+      ]
+     ]
+    },
+    {
+     "id": "ancienneteAns",
+     "label": "Ancienneté (années)",
+     "type": "number",
+     "step": "0.5",
+     "min": 0,
+     "defaut": 3
+    },
+    {
+     "id": "accidentTravail",
+     "label": "Accident du travail / maladie professionnelle",
+     "type": "checkbox",
+     "defaut": false
+    },
+    {
+     "id": "dateDebut",
+     "label": "Date de début de l'arrêt",
+     "type": "date"
+    },
+    {
+     "id": "annee",
+     "label": "Année de la prime",
+     "type": "number",
+     "min": 2000,
+     "defaut": 2026
+    }
+   ],
+   "calcul": "primeEtArret",
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.2 et 3.11)",
+     "regles": [
+      "La prime = 1/12 de la rémunération brute du temps de travail effectué du 1er janvier au 31 décembre.",
+      "Comptent dans la base : le travail, les congés payés, les AT/MP (dans la limite ininterrompue d'un an), la maternité, la paternité, l'adoption, le mandat syndical et le complément de salaire versé par l'entreprise pour maladie ou accident de trajet.",
+      "Ne comptent pas : les indemnités de la Sécurité sociale et des organismes de prévoyance.",
+      "Maladie de plus de 30 jours : prime calculée selon la rémunération acquise sur la période.",
+      "Durée du complément (employés et agents de maîtrise) : 180 jours entre 1 et 10 ans d'ancienneté, 360 jours entre 10 et 25 ans, 540 jours au-delà. Cadres : 540 jours après 1 an."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.2",
+       "page": 24,
+       "extrait": "complément de salaire versé par l'entreprise au titre absence maladie ou accident de trajet"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.2",
+       "page": 24,
+       "extrait": "accident travail, maladie professionnelle (dans la limite ininterrompue d'un an)"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.2",
+       "page": 25,
+       "extrait": "indemnités versées par la sécurité sociale et les organismes de prévoyance"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.2",
+       "page": 25,
+       "extrait": "la prime annuelle est calculée selon la rémunération acquise sur la période"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.11.2",
+       "page": 38,
+       "extrait": "entre 1 et 10 ans d'ancienneté : pendant 180 jours calendaires,"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 3.6 ; version du 28 août 2025)",
+     "regles": [
+      "Condition : être titulaire au moment du versement d'un contrat en vigueur, ou suspendu depuis moins de 1 an.",
+      "Les absences pour maladie ou accident du travail « ayant donné lieu à complément de salaire par l'entreprise » sont traitées comme rémunérées pour le calcul.",
+      "L'accord de substitution ne dit pas s'il écarte la condition de suspension de moins de 1 an : à confirmer."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 3.6.2",
+       "page": 14,
+       "extrait": "Être titulaire au moment du versement d'un contrat de travail en vigueur, ou suspendu depuis moins de 1 an."
+      },
+      {
+       "doc": "cc",
+       "article": "art. 3.6.4 c)",
+       "page": 14,
+       "extrait": "ayant donné lieu à complément de salaire par l'entreprise en application des règles de la présente convention"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point (notion de suspension du contrat pendant l'arrêt)."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Le calcul des dates est approximatif (jours calendaires, carence de 2 jours non déduite) : vérifier avec les états de paie.",
+    "Si l'ancienneté dépasse 10 ans, le complément peut courir en 2026 : une partie de la prime 2026 reste alors due selon l'accord."
+   ]
   }
  ]
 }

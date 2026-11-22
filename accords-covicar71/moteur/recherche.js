@@ -52,7 +52,7 @@ export function chercherFiches(requete, fiches, synonymes = {}) {
   if (!scores.length) return { mode: 'aucune', fiches: [] };
   // Mot large : une seule requête courte qui touche plusieurs fiches de même thème → proposer les boutons.
   // Une fiche nettement devant les autres : on l'ouvre directement.
-  if (scores.length === 1 || scores[0].score >= 1.5 * scores[1].score) return { mode: 'direct', fiches: [scores[0].fiche] };
+  if (scores.length === 1 || scores[0].score >= 1.2 * scores[1].score) return { mode: 'direct', fiches: [scores[0].fiche] };
   const top = scores.slice(0, 8).map(x => x.fiche);
   if (base.length <= 2 && top.length >= 2) return { mode: 'theme', fiches: top, theme: top[0].theme };
   return { mode: 'fiches', fiches: top };

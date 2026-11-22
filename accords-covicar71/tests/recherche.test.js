@@ -32,3 +32,7 @@ test('question réelle : « salarié à 24 heures, journée de solidarité » ou
   assert.equal(r.mode, 'direct'); assert.equal(r.fiches[0].id, 'journee-solidarite');
 });
 test('« préavis » ouvre directement la fiche préavis', () => assert.equal(chercherFiches('préavis', fiches, syn).mode, 'direct'));
+test('question réelle : 13e mois pendant un arrêt maladie → fiche prime annuelle et arrêt', () => {
+  const r = chercherFiches('il est en arrêt maladie depuis un an, a-t-il droit au 13e mois', fiches, syn);
+  assert.equal(r.fiches[0].id, 'prime-annuelle-arret');
+});

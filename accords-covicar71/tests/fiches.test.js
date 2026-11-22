@@ -5,9 +5,9 @@ import { norm } from '../moteur/normalise.js';
 const corpus = JSON.parse(readFileSync(new URL('../data/corpus.json', import.meta.url)));
 const { fiches } = JSON.parse(readFileSync(new URL('../fiches/fiches.json', import.meta.url)));
 
-test('il y a 11 fiches avec identifiant unique', () => {
-  assert.equal(fiches.length, 11);
-  assert.equal(new Set(fiches.map(f => f.id)).size, 11);
+test('il y a 12 fiches avec identifiant unique', () => {
+  assert.equal(fiches.length, 12);
+  assert.equal(new Set(fiches.map(f => f.id)).size, 12);
 });
 for (const f of fiches) {
   test(`fiche ${f.id} : chaque source a document, article, page et un extrait court retrouvé dans le texte`, () => {
