@@ -74,16 +74,17 @@ function ouvrirFiche(f) {
     });
     return h('label', { class: c.type === 'checkbox' ? 'case' : '' }, c.type === 'checkbox' ? [ctl, c.label] : [c.label, ctl]);
   });
-  const resultat = h('div', { class: 'carte' });
+  const resultat = h('div', { class: 'carte reponse-finale' });
   function calculer() {
     if (!f.calcul) return;
     const r = CALCULS[f.calcul](valeurs);
-    remplir(resultat, 
-      h('h3', {}, 'Calcul avec les valeurs saisies plus bas'),
+    remplir(resultat,
+      h('div', { class: 'rf-titre' }, 'Réponse pour ce salarié'),
       r.erreur ? h('p', { class: 'note' }, r.erreur) : null,
       r.info ? h('p', { class: 'note' }, r.info) : null,
-      ...(r.lignes || []).map(l => h('div', {},
-        h('div', { class: 'ligne' }, h('span', {}, h('span', { class: 'badge' }, NIVEAU[l.niveau] || l.niveau), l.label), h('b', {}, l.valeur)),
+      ...(r.lignes || []).map(l => h('div', { class: 'rf-ligne' },
+        h('div', { class: 'rf-label' }, h('span', { class: 'badge' }, NIVEAU[l.niveau] || l.niveau), l.label),
+        h('div', { class: 'rf-valeur' }, l.valeur),
         l.note ? h('div', { class: 'note' }, l.note) : null)));
   }
   const niveaux = h('div', { class: 'niveaux' }, f.niveaux.map(n => h('div', { class: 'carte' },
@@ -94,15 +95,17 @@ function ouvrirFiche(f) {
       h('em', {}, `« ${s.extrait} »`),
       s.note_ocr ? h('div', { class: 'note' }, s.note_ocr) : null,
       DOCS_TITRES[s.doc]?.scan ? tags([n.verifie_image || s.verifie_image ? '✓ Chiffre vérifié sur l\'image' : 'Vérifier le chiffre sur l\'image']) : null)))));
+  const notes = f.notes?.length ? h('div', { class: 'carte' }, h('h3', {}, 'À savoir'), h('ul', {}, f.notes.map(n => h('li', {}, n)))) : null;
+  const textes = h('details', { class: 'textes' }, h('summary', {}, 'Voir les textes, les sources et les détails'), niveaux, notes);
   remplir(vue,
     h('button', { class: 'sec', type: 'button', onclick: () => { accueil(); window.scrollTo(0, 0); } }, '← Retour'),
     h('h2', { style: 'margin-top:12px' }, f.question),
     tags(f.etiquettes),
-    h('div', { class: 'carte reponse' }, h('h3', {}, 'La réponse en bref'), h('p', {}, f.reponse)),
+    h('div', { class: 'carte ' + (f.calcul ? 'enbref' : 'reponse-finale') },
+      h('div', { class: f.calcul ? 'eb-titre' : 'rf-titre' }, f.calcul ? 'En bref' : 'La réponse'), h('p', { class: f.calcul ? '' : 'rf-texte' }, f.reponse)),
+    f.calcul ? h('div', { class: 'carte' }, h('h3', {}, 'Cas du salarié : renseignez les champs'), h('div', { class: 'champs' }, champsEl)) : null,
     f.calcul ? resultat : null,
-    f.calcul ? h('div', { class: 'carte' }, h('h3', {}, 'Précisez le cas du salarié (le calcul ci-dessus se met à jour)'), h('div', { class: 'champs' }, champsEl)) : null,
-    niveaux,
-    f.notes?.length ? h('div', { class: 'carte' }, h('h3', {}, 'À savoir'), h('ul', {}, f.notes.map(n => h('li', {}, n)))) : null);
+    textes);
   calculer(); window.scrollTo(0, 0);
 }
 
