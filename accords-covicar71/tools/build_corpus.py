@@ -10,7 +10,7 @@ DOCS = {
  "syndical": ("Accord droit syndical et CSE central du 1er juin 2025", "08_Accord_droit_syndical_CSEC_2025-06-01", 0, True),
  "pee": ("Règlement du PEE du 9 octobre 2025", "09_Reglement_PEE_2025-10-09", 0, True),
  "percol": ("Règlement du PERCOL du 9 octobre 2025", "10_Reglement_PERCOL_2025-10-09", 0, True),
- "ct": ("Code du travail (articles L3133-7, L3133-8, L3133-10, L3133-11 ; page = ordre des articles)", "CT_Code_du_travail_extraits", 0, False),
+ "ct": ("Code du travail (articles L3133-7, L3133-8, L3133-10, L3133-11 et glossaire jour ouvrable / jour ouvré ; page = ordre des textes)", "CT_Code_du_travail_extraits", 0, False),
  "particip": ("Projet d'accord de participation (non signé)", "11_Projet_accord_participation_NON_SIGNE", 0, False),
 }
 out = {}

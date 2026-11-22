@@ -1136,20 +1136,42 @@
        "article": "art. 7.5.2",
        "page": 51,
        "extrait": "Ces absences ne donneront lieu à aucune retenue de salaire"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 7.5.4",
+       "page": 51,
+       "extrait": "On entend par jour ouvré un jour qui aurait été normalement travaillé en tout ou partie par le salarié concerné."
       }
      ]
     },
     {
      "niveau": "code",
-     "titre": "Code du travail",
+     "titre": "Code du travail (glossaire officiel : ouvré / ouvrable)",
      "regles": [
-      "Information à compléter : Code du travail non fourni dans les sources."
+      "Jour ouvrable : jour de la semaine sauf le jour de repos hebdomadaire et les jours fériés habituellement non travaillés dans l'entreprise.",
+      "Jour ouvré : jour effectivement travaillé dans l'entreprise. Le décompte en jours ouvrables est donc plus large que celui en jours ouvrés (il inclut, par exemple, un jour de la semaine non travaillé par le salarié)."
      ],
-     "sources": []
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "Glossaire : jour ouvrable",
+       "page": 5,
+       "extrait": "jour de la semaine, à l'exception du jour de repos hebdomadaire et des jours fériés habituellement non travaillés dans l'entreprise"
+      },
+      {
+       "doc": "ct",
+       "article": "Glossaire : jour ouvré",
+       "page": 6,
+       "extrait": "jour effectivement travaillé dans l'entreprise"
+      }
+     ]
     }
    ],
    "notes": [
-    "Pour les décès, l'accord distingue enfant à charge ; la convention cite « un enfant ». Les deux textes sont affichés tels quels."
+    "Pour les décès, l'accord distingue enfant à charge ; la convention cite « un enfant ». Les deux textes sont affichés tels quels.",
+    "Jour ouvré = jour normalement travaillé par le salarié (convention, art. 7.5.4 ; glossaire du Code du travail : jour effectivement travaillé dans l'entreprise). Jour ouvrable = tous les jours de la semaine sauf le repos hebdomadaire et les jours fériés habituellement non travaillés (glossaire du Code du travail). Les définitions du glossaire sont une aide officielle, pas un article de loi.",
+    "Dans l'accord (art. 4.1) et la convention (art. 7.5.1), les jours d'événements familiaux sont en jours ouvrés, sauf « 1 semaine » pour le mariage ou le PACS du salarié."
    ],
    "reponse": "Naissance ou adoption : 3 jours ouvrés. Décès du conjoint, du partenaire de PACS ou d'un enfant : 5 jours ouvrés. Choisir l'événement plus bas pour voir l'accord et la convention."
   },
@@ -1757,6 +1779,12 @@
        "article": "art. 4.2.1",
        "page": 45,
        "extrait": "sous réserve que cette absence ne dépasse pas 3 jours consécutifs, portés à 5 jours"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.11",
+       "page": 70,
+       "extrait": "n'impacteront pas le compteur de suivi de la durée annuelle de travail"
       }
      ],
      "verifie_image": true
@@ -1787,6 +1815,12 @@
        "article": "art. 7.6.9 b)",
        "page": 54,
        "extrait": "une autorisation d'absence non rémunérée dans la limite de 5 jours ouvrés"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 7.5.4",
+       "page": 51,
+       "extrait": "On entend par jour ouvré un jour qui aurait été normalement travaillé en tout ou partie par le salarié concerné."
       }
      ]
     },
@@ -1806,17 +1840,34 @@
     },
     {
      "niveau": "code",
-     "titre": "Code du travail",
+     "titre": "Code du travail (glossaire officiel : ouvré / ouvrable)",
      "regles": [
-      "Information à compléter : Code du travail non consulté sur ce point (congé pour enfant malade)."
+      "Jour ouvrable : jour de la semaine sauf le jour de repos hebdomadaire et les jours fériés habituellement non travaillés dans l'entreprise.",
+      "Jour ouvré : jour effectivement travaillé dans l'entreprise. Le décompte en jours ouvrables est donc plus large que celui en jours ouvrés (il inclut, par exemple, un jour de la semaine non travaillé par le salarié)."
      ],
-     "sources": []
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "Glossaire : jour ouvrable",
+       "page": 5,
+       "extrait": "jour de la semaine, à l'exception du jour de repos hebdomadaire et des jours fériés habituellement non travaillés dans l'entreprise"
+      },
+      {
+       "doc": "ct",
+       "article": "Glossaire : jour ouvré",
+       "page": 6,
+       "extrait": "jour effectivement travaillé dans l'entreprise"
+      }
+     ]
     }
    ],
    "notes": [
     "Dans l'accord, l'enfant malade (non hospitalisé) donne lieu à récupération, il n'est pas indiqué « payé » ; l'absence payée de 6 jours concerne l'enfant hospitalisé ou en convalescence.",
     "Le certificat médical est exigé par la convention ; l'accord parle de « justificatifs » pour l'hospitalisation.",
-    "L'accord et la convention ne donnent pas les mêmes jours ni les mêmes âges : les deux sont affichés sans désigner le plus favorable."
+    "L'accord et la convention ne donnent pas les mêmes jours ni les mêmes âges : les deux sont affichés sans désigner le plus favorable.",
+    "Jour ouvré = jour normalement travaillé par le salarié (convention, art. 7.5.4 ; glossaire du Code du travail : jour effectivement travaillé dans l'entreprise). Jour ouvrable = tous les jours de la semaine sauf le repos hebdomadaire et les jours fériés habituellement non travaillés (glossaire du Code du travail). Les définitions du glossaire sont une aide officielle, pas un article de loi.",
+    "Unités : l'accord compte les 6 jours de l'enfant hospitalisé en jours ouvrables ; la convention compte ses 5 jours en jours ouvrés. La limite de « 3 jours consécutifs » de l'enfant malade n'est pas précisée (ouvrés ou ouvrables).",
+    "Modulation : l'accord (art. 5.1.11, p.70) dit que les absences ne donnant pas lieu à maintien de la rémunération n'impactent pas le compteur annuel, et que les absences rémunérées sont décomptées sur l'horaire réel planifié. Le texte ne dit pas expressément comment l'absence « enfant malade » récupérée est traitée dans la modulation : à confirmer."
    ]
   }
  ]
