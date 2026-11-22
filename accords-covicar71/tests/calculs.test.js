@@ -142,3 +142,12 @@ test('prime annuelle d\'un salarié en arrêt — accord art. 3.2 / 3.11.2, conv
   assert.equal(c[0].brut, '2026-08-27'); assert.equal(c[2].brut, true);
   assert.equal(run({ ancienneteAns: 0.5, dateDebut: '2025-07-01' })[1].brut, 0);
 });
+
+test('retraite progressive — accord art. 3.13 (60 ans ; < 2 ans avant l\'âge légal ; 150 trimestres)', () => {
+  const r = p => C.retraiteProgressive(p).lignes;
+  assert.equal(r({ age: 61, moisAvantAgeLegal: 12, trimestres: 160 })[3].brut, true);
+  assert.equal(r({ age: 59, moisAvantAgeLegal: 12, trimestres: 160 })[3].brut, false);    // moins de 60 ans
+  assert.equal(r({ age: 61, moisAvantAgeLegal: 24, trimestres: 160 })[1].brut, false);    // 2 ans pile : pas « moins de 2 ans »
+  assert.equal(r({ age: 61, moisAvantAgeLegal: 12, trimestres: 149 })[2].brut, false);
+  assert.ok(r({ age: 61, moisAvantAgeLegal: 12, trimestres: 160, horaire: 36 })[4].valeur.startsWith('18 h (50 %) ou 21.6 h'));
+});

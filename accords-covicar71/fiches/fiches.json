@@ -1561,6 +1561,124 @@
     "Le calcul des dates est approximatif (jours calendaires, carence de 2 jours non déduite) : vérifier avec les états de paie.",
     "Si l'ancienneté dépasse 10 ans, le complément peut courir en 2026 : une partie de la prime 2026 reste alors due selon l'accord."
    ]
+  },
+  {
+   "id": "retraite-progressive",
+   "theme": "Rupture du contrat, retraite",
+   "question": "Un salarié peut-il prendre la retraite progressive, et les absences comptent-elles ?",
+   "reponse": "Il faut avoir 60 ans, être à moins de 2 ans de l'âge minimum légal de départ, totaliser 150 trimestres validés (tous régimes), faire la demande par écrit 4 mois avant et la faire valider par le manager et la RH (accord, art. 3.13). Aucune condition d'ancienneté dans l'entreprise. Pour les absences, seul compte le nombre de trimestres validés, qui dépend de la caisse de retraite : le texte ne dit rien des arrêts.",
+   "synonymes": [
+    "retraite progressive",
+    "départ progressif",
+    "retraite",
+    "temps partiel retraite",
+    "trimestres",
+    "60 ans",
+    "150 trimestres"
+   ],
+   "etiquettes": [
+    "Information à compléter",
+    "Écart à vérifier",
+    "Vérifier le chiffre sur l'image"
+   ],
+   "champs": [
+    {
+     "id": "age",
+     "label": "Âge du salarié (années)",
+     "type": "number",
+     "min": 0,
+     "defaut": 60
+    },
+    {
+     "id": "moisAvantAgeLegal",
+     "label": "Mois restant avant l'âge minimum légal de départ",
+     "type": "number",
+     "min": 0,
+     "defaut": 12
+    },
+    {
+     "id": "trimestres",
+     "label": "Trimestres validés (tous régimes)",
+     "type": "number",
+     "min": 0,
+     "defaut": 150
+    },
+    {
+     "id": "horaire",
+     "label": "Horaire hebdomadaire actuel (h)",
+     "type": "number",
+     "step": "0.5",
+     "min": 0,
+     "defaut": 36
+    }
+   ],
+   "calcul": "retraiteProgressive",
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.13, p.38-39)",
+     "regles": [
+      "Conditions : 60 ans ; moins de 2 ans avant l'âge minimum légal ; 150 trimestres validés tous régimes ; demande écrite à la RH au moins 4 mois avant ; conditions de mise en œuvre validées avec le manager et la RH.",
+      "Aucune condition d'ancienneté dans l'entreprise n'est écrite.",
+      "Temps de travail réduit à l'équivalent de 50 ou 60 % d'un temps complet.",
+      "Les cotisations retraite (parts patronale et salariale) sont prises en charge par l'employeur à hauteur du différentiel, jusqu'à l'âge légal de départ.",
+      "Un avenant dédié est nécessaire."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.13",
+       "page": 38,
+       "extrait": "Avoir 60 ans"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.13",
+       "page": 38,
+       "extrait": "Totaliser 150 trimestres de retraite validés tous régimes de retraite obligatoires confondus"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.13",
+       "page": 38,
+       "extrait": "dans un délai de quatre mois minimum avant la date souhaitée de mise en œuvre du dispositif"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.13",
+       "page": 39,
+       "extrait": "réduit à l'équivalent de 50 ou 60 % d'un temps complet"
+      }
+     ],
+     "verifie_image": false
+    },
+    {
+     "titre": "Livret CGT (p.11)",
+     "regles": [
+      "Le livret liste trois conditions et omet celle des 60 ans : écart déjà noté dans le tableau.",
+      "Il précise que la retraite anticipée n'est pas cumulable avec la retraite progressive."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Retraite progressive",
+       "page": 11,
+       "extrait": "La retraite anticipée n'est pas cumulable avec retraite progressive."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code de la sécurité sociale / Code du travail",
+     "regles": [
+      "Information à compléter : âge minimum légal (selon l'année de naissance), règles de validation des trimestres pendant un arrêt maladie, durée de la retraite progressive : non fournis dans les sources."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Seul le nombre de trimestres validés compte, pas l'ancienneté : demander un relevé de carrière à la caisse.",
+    "Les passages de la page 39 sont lus sur le texte extrait, pas encore vérifiés sur l'image."
+   ]
   }
  ]
 }

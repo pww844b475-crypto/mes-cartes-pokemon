@@ -211,4 +211,14 @@ export function primeEtArret({ statut = 'employe', ancienneteAns = 0, accidentTr
   return { lignes: l };
 }
 
-export const CALCULS = { primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };
+// ---- 13. Retraite progressive (accord art. 3.13, p.38-39)
+export function retraiteProgressive({ age = 0, moisAvantAgeLegal = 999, trimestres = 0, horaire = 0 }) {
+  const ok = (b, t) => L('accord', t, b ? 'Oui' : 'Non', { brut: b });
+  const lignes = [ok(age >= 60, 'Avoir 60 ans'), ok(moisAvantAgeLegal < 24, 'Être à moins de 2 ans avant l\'âge minimum légal'), ok(trimestres >= 150, 'Totaliser 150 trimestres validés (tous régimes)')];
+  const tout = lignes.every(l => l.brut);
+  lignes.push(L('accord', 'Conditions d\'âge et de trimestres', tout ? 'Réunies (reste la demande écrite 4 mois avant et la validation RH/manager)' : 'Non réunies', { brut: tout }));
+  if (horaire > 0) lignes.push(L('accord', 'Horaire pendant la retraite progressive (50 % ou 60 % d\'un temps complet)', `${r2(horaire * 0.5)} h (50 %) ou ${r2(horaire * 0.6)} h (60 %) par semaine`, { note: 'Pourcentage d\'un temps complet : exemple de l\'accord = 36 h → 18 h ou 21,6 h.' }));
+  return { lignes };
+}
+
+export const CALCULS = { retraiteProgressive, primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };
