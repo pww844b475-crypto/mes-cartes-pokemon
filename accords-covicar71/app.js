@@ -89,7 +89,7 @@ function ouvrirFiche(f) {
     h('h3', {}, n.titre),
     h('ul', {}, n.regles.map(r => h('li', {}, r))),
     n.sources.map(s => h('div', { class: 'cite' },
-      h('b', {}, `${DOCS_TITRES[s.doc]?.titre || s.doc} — ${s.article}, p.${s.page}`),
+      h('b', {}, `${DOCS_TITRES[s.doc]?.titre || s.doc} — ${s.article}${s.doc === 'ct' ? '' : ', p.' + s.page}`),
       h('em', {}, `« ${s.extrait} »`),
       s.note_ocr ? h('div', { class: 'note' }, s.note_ocr) : null,
       DOCS_TITRES[s.doc]?.scan ? tags([n.verifie_image || s.verifie_image ? '✓ Chiffre vérifié sur l\'image' : 'Vérifier le chiffre sur l\'image']) : null)))));
@@ -116,7 +116,7 @@ $('#titre').addEventListener('click', accueil);
     subst: { titre: 'Accord de substitution', scan: true }, nao: { titre: 'NAO 2026', scan: true },
     cc: { titre: 'Convention collective IDCC 2216 (28 août 2025)', scan: false },
     avenant: { titre: 'Avenant intéressement 2026 (non signé)', scan: false }, interess: { titre: 'Accord d\'intéressement 2025', scan: true },
-    pee: { titre: 'Règlement PEE', scan: true }, percol: { titre: 'Règlement PERCOL', scan: true }, livret: { titre: 'Livret CGT', scan: false },
+    pee: { titre: 'Règlement PEE', scan: true }, percol: { titre: 'Règlement PERCOL', scan: true }, livret: { titre: 'Livret CGT', scan: false }, ct: { titre: 'Code du travail (code.travail.gouv.fr, version du 10/08/2016)', scan: false },
   };
   $('#porte').hidden = false;
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});

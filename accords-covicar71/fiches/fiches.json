@@ -1261,7 +1261,6 @@
     "heures de solidarité"
    ],
    "etiquettes": [
-    "Information à compléter",
     "Pratique à confirmer"
    ],
    "champs": [
@@ -1380,11 +1379,40 @@
     },
     {
      "niveau": "code",
-     "titre": "Code du travail",
+     "titre": "Code du travail (articles L3133-7 à L3133-11, version du 10/08/2016)",
      "regles": [
-      "Information à compléter : Code du travail non fourni dans les sources."
+      "Journée de solidarité = une journée supplémentaire de travail non rémunérée pour les salariés (L3133-7).",
+      "Travail non rémunéré dans la limite de 7 heures pour les salariés mensualisés ; pour les temps partiels, cette limite est réduite proportionnellement à la durée contractuelle (L3133-8).",
+      "Les modalités sont fixées par accord d'entreprise (L3133-11) : c'est l'art. 5.9 de l'accord de substitution.",
+      "Changement d'employeur : si le salarié a déjà fait sa journée « au titre de l'année en cours », une nouvelle journée est rémunérée en plus, et il peut la refuser sans faute (L3133-10).",
+      "Ces articles ne fixent aucune date de référence comme le 1er janvier, et ne disent rien d'un salarié embauché en cours d'année sans changement d'employeur."
      ],
-     "sources": []
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3133-7",
+       "page": 1,
+       "extrait": "D'une journée supplémentaire de travail non rémunérée pour les salariés"
+      },
+      {
+       "doc": "ct",
+       "article": "L3133-8",
+       "page": 2,
+       "extrait": "Pour les salariés à temps partiel, la limite de sept heures prévue au 1° du présent article est réduite proportionnellement à la durée contractuelle."
+      },
+      {
+       "doc": "ct",
+       "article": "L3133-10",
+       "page": 3,
+       "extrait": "le salarié peut aussi refuser d'exécuter cette journée supplémentaire de travail sans que ce refus constitue une faute"
+      },
+      {
+       "doc": "ct",
+       "article": "L3133-11",
+       "page": 4,
+       "extrait": "Un accord d'entreprise ou d'établissement ou, à défaut, une convention ou un accord de branche fixe les modalités d'accomplissement de la journée de solidarité."
+      }
+     ]
     }
    ],
    "notes": [

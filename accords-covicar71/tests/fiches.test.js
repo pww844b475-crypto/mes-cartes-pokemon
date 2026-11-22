@@ -28,6 +28,6 @@ for (const f of fiches) {
     assert.ok(nbSources > 0, 'aucune source');
     // le niveau Code du travail doit être signalé comme à compléter
     const ct = f.niveaux.find(n => n.niveau === 'code');
-    assert.ok(ct && /Information à compléter/.test(ct.regles.join(' ')));
+    assert.ok(ct && (ct.sources.length > 0 || /Information à compléter/.test(ct.regles.join(' '))), 'niveau Code du travail sans source ni mention à compléter');
   });
 }
