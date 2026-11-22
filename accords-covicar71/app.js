@@ -62,7 +62,7 @@ async function rechercheTexte(q) {
 
 function ouvrirFiche(f) {
   const valeurs = {};
-  const champsEl = f.champs.map(c => {
+  const champsEl = (f.champs || []).map(c => {
     let ctl;
     if (c.type === 'select') { ctl = h('select', { id: 'c_' + c.id }, c.options.map(([v, l]) => h('option', { value: v }, l))); valeurs[c.id] = c.options[0][0]; }
     else if (c.type === 'checkbox') { ctl = h('input', { id: 'c_' + c.id, type: 'checkbox' }); valeurs[c.id] = false; }
@@ -76,6 +76,7 @@ function ouvrirFiche(f) {
   });
   const resultat = h('div', { class: 'carte' });
   function calculer() {
+    if (!f.calcul) return;
     const r = CALCULS[f.calcul](valeurs);
     remplir(resultat, 
       h('h3', {}, 'Calcul avec les valeurs saisies plus bas'),
@@ -98,8 +99,8 @@ function ouvrirFiche(f) {
     h('h2', { style: 'margin-top:12px' }, f.question),
     tags(f.etiquettes),
     h('div', { class: 'carte reponse' }, h('h3', {}, 'La réponse en bref'), h('p', {}, f.reponse)),
-    resultat,
-    h('div', { class: 'carte' }, h('h3', {}, 'Précisez le cas du salarié (le calcul ci-dessus se met à jour)'), h('div', { class: 'champs' }, champsEl)),
+    f.calcul ? resultat : null,
+    f.calcul ? h('div', { class: 'carte' }, h('h3', {}, 'Précisez le cas du salarié (le calcul ci-dessus se met à jour)'), h('div', { class: 'champs' }, champsEl)) : null,
     niveaux,
     f.notes?.length ? h('div', { class: 'carte' }, h('h3', {}, 'À savoir'), h('ul', {}, f.notes.map(n => h('li', {}, n)))) : null);
   calculer(); window.scrollTo(0, 0);

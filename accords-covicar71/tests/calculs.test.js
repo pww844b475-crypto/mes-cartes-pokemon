@@ -163,3 +163,31 @@ test('enfant malade / hospitalisé — accord art. 4.2.1 et convention art. 7.6.
   assert.ok(r({ situation: 'malade', ageEnfant: 13 })[1].valeur.includes('non rémunérés'));   // convention 12-16 ans
   assert.equal(r({ situation: 'malade', ageEnfant: 17 })[1].brut, 0);
 });
+
+test('délai de protection — accord art. 3.12 et convention art. 7.3.1', () => {
+  const r = p => C.delaiProtection({ statut: 'employe', ...p }).lignes;
+  assert.equal(r({ ancienneteAns: 0.8 })[0].brut, '4 mois');
+  assert.equal(r({ ancienneteAns: 3 })[0].brut, 180);               // 180 jours + 1 mois
+  assert.equal(r({ ancienneteAns: 12 })[0].brut, 360);
+  assert.equal(r({ ancienneteAns: 3, accidentTrajet: true })[0].brut, '2 ans');
+  assert.equal(C.delaiProtection({ statut: 'cadre', ancienneteAns: 3 }).lignes[0].brut, '2 ans');
+  assert.equal(r({ ancienneteAns: 3 })[1].brut, 4);                  // convention : 4 mois, pas de majoration avant 4 ans
+  assert.equal(r({ ancienneteAns: 4 })[1].brut, 6);                  // +2 mois
+  assert.equal(r({ ancienneteAns: 16 })[1].brut, 9);                 // +5 mois
+  assert.equal(r({ ancienneteAns: 0.3 })[1].brut, null);
+});
+test('capital décès — livret CGT p.30 (tableau lu sur l\'image)', () => {
+  const p = x => C.capitalDeces(x).lignes[0].brut;
+  assert.equal(p({ situation: 'seul', nbEnfants: 0 }), 100);
+  assert.equal(p({ situation: 'couple', nbEnfants: 0 }), 150);
+  assert.equal(p({ situation: 'seul', nbEnfants: 1 }), 185);
+  assert.equal(p({ situation: 'couple', nbEnfants: 3 }), 255);       // 185 + 35 + 35
+  assert.equal(p({ situation: 'couple', nbEnfants: 4 }), 305);       // + 50 à partir du 4e
+  const l = C.capitalDeces({ situation: 'couple', nbEnfants: 3, salaireReference: 30000 }).lignes;
+  assert.deepEqual([l[1].brut, l[2].brut], [76500, 38250]);
+});
+test('déménagement — accord art. 4.2.3 (12 mois après ; 6 mois avant ou après)', () => {
+  const d = (motif, m) => C.demenagement({ motif, moisEcart: m }).lignes[0].brut;
+  assert.equal(d('divorce', 12), true); assert.equal(d('divorce', 13), false); assert.equal(d('divorce', -1), false);
+  assert.equal(d('naissance', -6), true); assert.equal(d('naissance', 6), true); assert.equal(d('mariage', 7), false); assert.equal(d('mariage', -7), false);
+});

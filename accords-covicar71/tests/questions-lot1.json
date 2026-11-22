@@ -1,0 +1,192 @@
+[
+ {
+  "n": 38,
+  "question": "Je suis en arrêt maladie : l'entreprise complète-t-elle mon salaire ?",
+  "fiche": "arret-maladie"
+ },
+ {
+  "n": 39,
+  "question": "Combien de jours de carence, et quand ne s'appliquent-ils pas ?",
+  "fiche": "arret-maladie"
+ },
+ {
+  "n": 40,
+  "question": "Pendant combien de jours le complément est-il versé ?",
+  "fiche": "arret-maladie"
+ },
+ {
+  "n": 41,
+  "question": "Comment est calculé le complément de salaire ?",
+  "fiche": "complement-calcul"
+ },
+ {
+  "n": 42,
+  "question": "Que dois-je faire dès que je suis arrêté (délais) ?",
+  "fiche": "arret-formalites"
+ },
+ {
+  "n": 43,
+  "question": "Accident du travail ou de trajet : faut-il de l'ancienneté ?",
+  "fiche": "accident-travail-anciennete"
+ },
+ {
+  "n": 44,
+  "question": "Quand mes droits au complément se rouvrent-ils après un long arrêt ?",
+  "fiche": "complement-reouverture"
+ },
+ {
+  "n": 45,
+  "question": "En CDD, le complément continue-t-il après la fin du contrat ?",
+  "fiche": "complement-cdd"
+ },
+ {
+  "n": 46,
+  "question": "Peut-on me licencier pendant mon arrêt maladie (délai de protection) ?",
+  "fiche": "delai-protection"
+ },
+ {
+  "n": 47,
+  "question": "Que se passe-t-il à la fin du complément de salaire (prévoyance) ?",
+  "fiche": "prevoyance-fin-complement"
+ },
+ {
+  "n": 48,
+  "question": "Capital décès : combien selon ma situation de famille ?",
+  "fiche": "capital-deces-obseques"
+ },
+ {
+  "n": 49,
+  "question": "Frais d'obsèques : quelle prise en charge ?",
+  "fiche": "capital-deces-obseques"
+ },
+ {
+  "n": 50,
+  "question": "Rente éducation et rente de conjoint survivant : montant et durée ?",
+  "fiche": "rentes-survivant-education"
+ },
+ {
+  "n": 51,
+  "question": "Invalidité ou incapacité permanente : quelle rente ?",
+  "fiche": "invalidite-incapacite"
+ },
+ {
+  "n": 52,
+  "question": "Mutuelle : quelles garanties et quelles cotisations ?",
+  "fiche": "mutuelle"
+ },
+ {
+  "n": 53,
+  "question": "Qu'est-ce que la commission de suivi APGIS ?",
+  "fiche": "apgis-commission"
+ },
+ {
+  "n": 54,
+  "question": "Cure thermale : est-elle compensée ou comptée comme du travail effectif ?",
+  "fiche": "cure-thermale"
+ },
+ {
+  "n": 55,
+  "question": "Un tiers est responsable de mon arrêt : que se passe-t-il pour le complément ?",
+  "fiche": "complement-tiers"
+ },
+ {
+  "n": 69,
+  "question": "Combien de jours pour une naissance ou une adoption ?",
+  "fiche": "evenements-familiaux"
+ },
+ {
+  "n": 70,
+  "question": "Combien de jours pour mon mariage ou mon PACS ?",
+  "fiche": "evenements-familiaux"
+ },
+ {
+  "n": 71,
+  "question": "Mariage d'un enfant, frère, sœur ou parent : combien de jours ?",
+  "fiche": "evenements-familiaux"
+ },
+ {
+  "n": 72,
+  "question": "Décès du conjoint, concubin, partenaire PACS ou enfant à charge : combien de jours ?",
+  "fiche": "evenements-familiaux"
+ },
+ {
+  "n": 73,
+  "question": "Décès d'un frère, sœur, parent, beau-parent, gendre ou bru : combien de jours ?",
+  "fiche": "evenements-familiaux"
+ },
+ {
+  "n": 74,
+  "question": "Décès d'un grand-parent, petit-enfant, beau-frère ou belle-sœur : combien de jours ?",
+  "fiche": "evenements-familiaux"
+ },
+ {
+  "n": 75,
+  "question": "Ai-je un jour de plus si je dois voyager à plus de 300 km ?",
+  "fiche": "evenements-familiaux"
+ },
+ {
+  "n": 76,
+  "question": "Baptême ou communion : un jour d'absence ?",
+  "fiche": "evenements-familiaux"
+ },
+ {
+  "n": 77,
+  "question": "Ces jours doivent-ils être pris au moment de l'événement, avec justificatif ?",
+  "fiche": "evenements-familiaux"
+ },
+ {
+  "n": 78,
+  "question": "Mon enfant est hospitalisé : combien de jours payés ?",
+  "fiche": "enfant-malade"
+ },
+ {
+  "n": 79,
+  "question": "Mon enfant est malade : puis-je m'absenter et comment récupérer ?",
+  "fiche": "enfant-malade"
+ },
+ {
+  "n": 80,
+  "question": "Accompagner mon conjoint ou mon enfant en ALD à un rendez-vous médical ?",
+  "fiche": "absence-ald"
+ },
+ {
+  "n": 81,
+  "question": "Combien de jours pour un déménagement ?",
+  "fiche": "demenagement"
+ },
+ {
+  "n": 82,
+  "question": "Sapeur-pompier volontaire : combien de jours ?",
+  "fiche": "pompier-volontaire"
+ },
+ {
+  "n": 83,
+  "question": "Réserviste opérationnel : combien de jours et quel maintien de salaire ?",
+  "fiche": "reserviste"
+ },
+ {
+  "n": 84,
+  "question": "Puis-je donner des jours de congés à un collègue réserviste ?",
+  "fiche": "reserviste"
+ },
+ {
+  "n": 85,
+  "question": "Mécénat de compétences : qui y a droit ?",
+  "fiche": "mecenat-competences"
+ },
+ {
+  "n": 86,
+  "question": "Absences pour passer le permis de conduire ?",
+  "fiche": "permis-de-conduire"
+ },
+ {
+  "n": 87,
+  "question": "Handicap ou ALD : combien de demi-journées d'absence ?",
+  "fiche": "handicap-demi-journees"
+ },
+ {
+  "n": 88,
+  "question": "Congé d'un aidant familial : comment utiliser mon CET ?",
+  "fiche": "cet-aidant"
+ }
+]

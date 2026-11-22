@@ -36,3 +36,10 @@ test('question réelle : 13e mois pendant un arrêt maladie → fiche prime annu
   const r = chercherFiches('il est en arrêt maladie depuis un an, a-t-il droit au 13e mois', fiches, syn);
   assert.equal(r.fiches[0].id, 'prime-annuelle-arret');
 });
+
+import { readFileSync as lire } from 'node:fs';
+const lot1 = JSON.parse(lire(new URL('./questions-lot1.json', import.meta.url)));
+test('lot 1 (absences et maladie) : chacune des 38 questions du tableau ouvre directement la bonne fiche', () => {
+  const rates = lot1.filter(q => { const r = chercherFiches(q.question, fiches, syn); return !(r.mode === 'direct' && r.fiches[0].id === q.fiche); });
+  assert.deepEqual(rates.map(q => `Q${q.n}`), []);
+});

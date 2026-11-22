@@ -883,7 +883,9 @@
     "complément de salaire",
     "indemnité complémentaire",
     "accident du travail",
-    "arret"
+    "arret",
+    "délai de carence",
+    "jours de carence"
    ],
    "etiquettes": [
     "Écart à vérifier",
@@ -1035,7 +1037,19 @@
     "jours pour événement",
     "enterrement",
     "obsèques",
-    "adoption"
+    "adoption",
+    "mariage d'un enfant",
+    "mariage frère sœur",
+    "beau-frère",
+    "belle-sœur",
+    "grand-parent",
+    "petit-enfant",
+    "baptême",
+    "communion",
+    "300 km",
+    "plus de 300 km",
+    "voyager",
+    "déplacement obsèques"
    ],
    "etiquettes": [
     "Vérifier le chiffre sur l'image"
@@ -1715,7 +1729,11 @@
     "hospitalisation enfant",
     "garde d'enfant",
     "certificat médical enfant",
-    "convalescence enfant"
+    "convalescence enfant",
+    "récupérer",
+    "récupération",
+    "s'absenter enfant malade",
+    "mon enfant est malade"
    ],
    "etiquettes": [
     "Écart à vérifier"
@@ -1869,6 +1887,1428 @@
     "Unités : l'accord compte les 6 jours de l'enfant hospitalisé en jours ouvrables ; la convention compte ses 5 jours en jours ouvrés. La limite de « 3 jours consécutifs » de l'enfant malade n'est pas précisée (ouvrés ou ouvrables).",
     "Modulation : l'accord (art. 5.1.11, p.70) dit que les absences ne donnant pas lieu à maintien de la rémunération n'impactent pas le compteur annuel, et que les absences rémunérées sont décomptées sur l'horaire réel planifié. Le texte ne dit pas expressément comment l'absence « enfant malade » récupérée est traitée dans la modulation : à confirmer."
    ]
+  },
+  {
+   "id": "absence-ald",
+   "theme": "Absences autorisées (famille, santé, engagements)",
+   "question": "Puis-je m'absenter pour accompagner mon conjoint ou mon enfant en affection de longue durée à un rendez-vous médical ?",
+   "reponse": "Oui : une journée d'absence autorisée payée, sur justificatif médical attestant des soins ou traitements liés à l'affection de longue durée exonérante (accord, art. 4.2.2).",
+   "synonymes": [
+    "ALD",
+    "affection longue durée",
+    "accompagner conjoint",
+    "accompagner enfant",
+    "rendez-vous médical",
+    "hôpital"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.2.2, p.45)",
+     "regles": [
+      "Accompagnement d'un conjoint ou d'un enfant en ALD exonérante à un rendez-vous médical (hôpital ou ambulatoire) : une journée d'absence autorisée payée.",
+      "Il faut produire un justificatif médical attestant la mise en place de soins ou traitements liés à l'ALD."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.2.2",
+       "page": 45,
+       "extrait": "bénéficiera d'une journée d'absence autorisée payée"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.2.2",
+       "page": 45,
+       "extrait": "justificatif médical attestant la mise en place de soins ou traitements liés à une affection de longue durée"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "demenagement",
+   "theme": "Absences autorisées (famille, santé, engagements)",
+   "question": "Ai-je un jour d'absence pour un déménagement ?",
+   "reponse": "Oui : une journée ouvrée rémunérée, sur justificatif du nouveau domicile et de l'événement familial, si le déménagement a lieu dans les 12 mois suivant un handicap, un divorce, une garde alternée, un décès du conjoint ou l'accueil d'un ascendant dépendant, ou dans les 6 mois avant ou après une naissance, une adoption, un mariage ou un PACS (accord, art. 4.2.3).",
+   "synonymes": [
+    "déménagement",
+    "déménager",
+    "changement d'adresse",
+    "nouveau domicile",
+    "jour pour déménagement"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.2.3, p.46)",
+     "regles": [
+      "1 jour ouvré rémunéré, avec un justificatif valable.",
+      "Dans les 12 mois suivant : handicap du salarié, du conjoint ou d'un enfant ; divorce ; garde alternée ; décès du conjoint ; accueil d'un ascendant dépendant.",
+      "Dans les 6 mois précédant ou suivant : naissance ou adoption ; mariage ou PACS.",
+      "Justificatifs : nouveau domicile, plus la pièce de l'événement (acte de naissance, jugement, acte de mariage, etc.)."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.2.3",
+       "page": 46,
+       "extrait": "autorisation d'absence rémunérée d'1 jour ouvré en cas de déménagement"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.2.3",
+       "page": 46,
+       "extrait": "Dans les 6 mois précédant ou les 6 mois suivant un évènement familial"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Pour les motifs à 12 mois, seul un déménagement après l'événement est prévu."
+   ],
+   "champs": [
+    {
+     "id": "motif",
+     "label": "Événement familial",
+     "type": "select",
+     "options": [
+      [
+       "handicap",
+       "Handicap du salarié, du conjoint ou d'un enfant"
+      ],
+      [
+       "divorce",
+       "Divorce"
+      ],
+      [
+       "garde",
+       "Jugement de garde alternée"
+      ],
+      [
+       "deces",
+       "Décès du conjoint"
+      ],
+      [
+       "ascendant",
+       "Accueil d'un ascendant dépendant"
+      ],
+      [
+       "naissance",
+       "Naissance ou adoption"
+      ],
+      [
+       "mariage",
+       "Mariage ou PACS"
+      ]
+     ]
+    },
+    {
+     "id": "moisEcart",
+     "label": "Mois entre l'événement et le déménagement (négatif = déménagement avant l'événement)",
+     "type": "number",
+     "step": "1",
+     "defaut": 3
+    }
+   ],
+   "calcul": "demenagement"
+  },
+  {
+   "id": "pompier-volontaire",
+   "theme": "Absences autorisées (famille, santé, engagements)",
+   "question": "Sapeur-pompier volontaire : combien de jours d'absence ?",
+   "reponse": "3 jours d'absence autorisés et rémunérés par année pour suivre une formation, sur convocation, en prévenant son supérieur par écrit au moins 2 mois avant (accord, art. 4.2.4).",
+   "synonymes": [
+    "sapeur-pompier",
+    "pompier volontaire",
+    "pompier",
+    "formation pompier"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.2.4, p.47)",
+     "regles": [
+      "3 jours d'absence autorisés et rémunérés par année.",
+      "Conditions : justifier d'une convocation pour suivre une formation et informer par écrit le supérieur au minimum 2 mois avant la formation."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.2.4",
+       "page": 47,
+       "extrait": "bénéficient de 3 jours d'absence autorisés et rémunérés par année"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.2.4",
+       "page": 47,
+       "extrait": "au minimum 2 mois avant la date de la formation"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "reserviste",
+   "theme": "Absences autorisées (famille, santé, engagements)",
+   "question": "Réserviste opérationnel : combien de jours, quel maintien de salaire, et peut-on donner des jours ?",
+   "reponse": "Jusqu'à 10 jours d'absence autorisés par an, avec maintien intégral de la rémunération et des droits de protection sociale. Les salariés en CDI peuvent donner des jours à un fonds dédié, jusqu'à 12 jours par an, et chaque jour donné est abondé d'un jour par l'entreprise, dans la limite de 100 jours (accord, art. 4.2.5).",
+   "synonymes": [
+    "réserviste",
+    "réserve opérationnelle",
+    "réserve militaire",
+    "don de jours",
+    "donner des jours de congés",
+    "fonds dédié",
+    "collègue réserviste"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.2.5, p.47)",
+     "regles": [
+      "Maximum de 10 jours annuels d'absences autorisées ; maintien de l'intégralité de la rémunération ; absences non prises en compte pour la rémunération variable ; maintien des droits à la protection sociale.",
+      "Don de jours : tout salarié en CDI, 12 jours par an maximum, en RTT, jusqu'à 6 jours de congés payés non pris au 31 mai (hors 5e semaine), jours de fractionnement ou jours du CET.",
+      "Chaque jour donné est abondé d'un jour par l'entreprise, dans la limite de 100 jours."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.2.5",
+       "page": 47,
+       "extrait": "Porter à 10 le nombre de jours annuels maximum d'absences autorisées"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.2.5",
+       "page": 47,
+       "extrait": "Maintenir l'intégralité de la rémunération pendant leur activité dans la réserve opérationnelle"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.2.5",
+       "page": 47,
+       "extrait": "Le nombre de jours de congés donnés par salarié est limité à 12 jours par an"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.2.5",
+       "page": 47,
+       "extrait": "chaque jour donné par les salariés est abondé d'un jour supplémentaire par la Société Covicar 71, dans la limite de 100 jours"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "mecenat-competences",
+   "theme": "Absences autorisées (famille, santé, engagements)",
+   "question": "Mécénat de compétences : qui y a droit ?",
+   "reponse": "Les salariés en CDI âgés de 58 ans et plus, qui s'investissent dans une association reconnue d'utilité publique (caractère éducatif, social ou familial) approuvée par la Direction RSE du Groupe : absence payée jusqu'à 2 jours par mois, avec validation de la RH (accord, art. 4.2.6).",
+   "synonymes": [
+    "mécénat de compétences",
+    "mécénat",
+    "association",
+    "58 ans",
+    "fin de carrière",
+    "bénévolat"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.2.6, p.47)",
+     "regles": [
+      "Salariés en CDI de 58 ans et plus.",
+      "Association reconnue d'utilité publique à caractère éducatif, social ou familial, approuvée par la Direction RSE du Groupe.",
+      "Absence payée dans la limite de deux jours par mois, soumise à validation de la Direction des Ressources Humaines."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.2.6",
+       "page": 47,
+       "extrait": "Pour les salariés en CDI âgés de 58 ans et plus"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.2.6",
+       "page": 47,
+       "extrait": "autorisation d'absence payée dans la limite de deux jours par mois"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "permis-de-conduire",
+   "theme": "Absences autorisées (famille, santé, engagements)",
+   "question": "Ai-je droit à une absence pour passer le permis de conduire ?",
+   "reponse": "À vérifier : le livret CGT dit que l'absence pour les épreuves (code et conduite, permis A et B) ne réduit pas le salaire, sur convocation, dans la limite de 2 tentatives par épreuve. Je ne retrouve pas cette règle dans l'accord de substitution, dont l'art. 3.9 ne prévoit qu'une prime de 500 € bruts pour les alternants.",
+   "synonymes": [
+    "permis de conduire",
+    "permis",
+    "code de la route",
+    "examen du permis",
+    "auto-école",
+    "alternant"
+   ],
+   "etiquettes": [
+    "Écart à vérifier",
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.9, p.34-35)",
+     "regles": [
+      "Prime de 500 € bruts pour tout alternant sans permis, au financement du permis, sur duplicata d'inscription à l'auto-école, s'il passe l'examen pendant l'alternance.",
+      "Aucune règle d'absence pour passer les épreuves retrouvée dans les pages 34-35."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.9",
+       "page": 35,
+       "extrait": "une prime de 500 € brut, au financement de son permis de conduire"
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.9)",
+     "regles": [
+      "L'absence pour les épreuves du permis de conduire ne donne pas lieu à réduction de salaire, sur convocation officielle, dans la limite de 2 tentatives par épreuve (code et conduite) et par catégorie A et B.",
+      "Cette règle n'est pas retrouvée dans l'accord : écart à vérifier avec la direction."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Participation au paiement du permis",
+       "page": 9,
+       "extrait": "L'absence pour les épreuves du permis de conduire ne donne pas lieu à réduction de salaire"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "handicap-demi-journees",
+   "theme": "Absences autorisées (famille, santé, engagements)",
+   "question": "Handicap ou affection de longue durée : combien de demi-journées d'absence ?",
+   "reponse": "Deux demi-journées pour les démarches de reconnaissance ou de renouvellement du statut de travailleur handicapé, et/ou deux demi-journées par année civile pour des rendez-vous médicaux liés au handicap ou à une affection de longue durée. À fixer en accord avec l'employeur, sur justificatifs (accord, art. 6.1).",
+   "synonymes": [
+    "handicap",
+    "travailleur handicapé",
+    "RQTH",
+    "demi-journées",
+    "affection longue durée",
+    "rendez-vous médicaux"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 6.1, p.131)",
+     "regles": [
+      "Deux demi-journées d'absence pour les démarches administratives ou médicales liées à la reconnaissance ou au renouvellement du statut de travailleur handicapé.",
+      "Et/ou deux demi-journées par année civile pour des rendez-vous médicaux liés au handicap ou à une pathologie d'une particulière gravité (ALD).",
+      "Congés à fixer en accord avec l'employeur, sur présentation de justificatifs."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 6.1",
+       "page": 131,
+       "extrait": "deux demi-journées d'absence pour les démarches administratives ou médicales"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 6.1",
+       "page": 131,
+       "extrait": "deux demi-journées d'absence par année civile pour se rendre à un ou plusieurs rendez-vous médicaux"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 6.1",
+       "page": 131,
+       "extrait": "devront être fixés en accord avec l'employeur et sont conditionnés à la présentation des justificatifs adéquats"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Livret CGT (p.25)",
+     "regles": [
+      "Reprend les mêmes règles."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Handicap",
+       "page": 25,
+       "extrait": "2 demi-journées d'absence par année civile pour se rendre"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "cet-aidant",
+   "theme": "Absences autorisées (famille, santé, engagements)",
+   "question": "Congé d'aidant familial : comment utiliser mon compte épargne-temps ?",
+   "reponse": "Le salarié peut demander le versement de tout ou partie des jours épargnés sur son CET au plan de Congé de l'Aidant Familial. La demande se fait auprès du CSP Paie, par formulaire (accord, art. 5.4.4). Le détail du plan de congé de l'aidant n'est pas dans les sources.",
+   "synonymes": [
+    "aidant familial",
+    "congé aidant",
+    "CET",
+    "compte épargne temps",
+    "aidant"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.4.4, p.88)",
+     "regles": [
+      "Versement de tout ou partie des jours épargnés sur le CET au plan de Congé de l'Aidant Familial.",
+      "Demande adressée au CSP Paie par formulaire disponible sur l'intranet, ou en version papier pour les salariés sans accès à l'intranet."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.4.4",
+       "page": 88,
+       "extrait": "Le salarié peut demander le versement de tout ou partie des jours épargnés sur son CET"
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.22)",
+     "regles": [
+      "Reprend la même règle."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "CET",
+       "page": 22,
+       "extrait": "Le salarié peut demander le versement de tout ou partie des jours épargnés sur son CET"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : modalités du plan de Congé de l'Aidant Familial non fournies dans les sources."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "arret-formalites",
+   "theme": "Maladie, accident, prévoyance, mutuelle",
+   "question": "Que dois-je faire dès que je suis arrêté (délais) ?",
+   "reponse": "Prévenir la direction sous 48 heures, et justifier l'arrêt dans les 4 jours qui suivent par un certificat médical (ou la feuille de maladie remplie par le médecin) (accord, art. 3.11.1). La convention demande de prévenir aussitôt que possible et de confirmer par lettre postée dans les 3 jours calendaires (art. 7.3.1).",
+   "synonymes": [
+    "arrêt maladie délais",
+    "prévenir",
+    "certificat médical",
+    "48 heures",
+    "4 jours",
+    "justificatif arrêt",
+    "envoyer arrêt"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.11.1, p.36)",
+     "regles": [
+      "Absence notifiée sous 48 heures à la Direction.",
+      "Justifiée dans un délai de 4 jours suivant l'arrêt par un certificat médical ou, à défaut, par la feuille de maladie remplie par le médecin."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.11.1",
+       "page": 36,
+       "extrait": "notifiées sous 48 heures à la Direction"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.11.1",
+       "page": 36,
+       "extrait": "justifiées dans un délai de 4 jours suivant l'arrêt par un certificat médical"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.3.1 ; version du 28 août 2025)",
+     "regles": [
+      "Notifier aussitôt que possible à l'employeur, confirmer par lettre postée dans les 3 jours calendaires (sauf force majeure), justifier par certificat médical ou feuille de maladie signée du médecin."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.3.1 a)",
+       "page": 49,
+       "extrait": "confirmées par lettre postée dans les 3 jours calendaires, sauf cas de force majeure"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Les délais de l'accord (48 h, 4 jours) et de la convention (aussitôt que possible, 3 jours calendaires) diffèrent : les deux sont affichés. Ces formalités ne sont pas dans le livret CGT (onglet « Écarts à vérifier »)."
+   ]
+  },
+  {
+   "id": "complement-calcul",
+   "theme": "Maladie, accident, prévoyance, mutuelle",
+   "question": "Comment est calculé le complément de salaire en arrêt maladie ?",
+   "reponse": "Le complément assure le maintien total de ce qu'auraient été les appointements nets mensuels, calculé sur la rémunération effective des 3 derniers mois (hors primes exceptionnelles et gratifications), limitée au plafond de la Sécurité sociale pour les employés et ouvriers (accord, art. 3.11.2). Il est versé pour toutes les journées complètes d'absence.",
+   "synonymes": [
+    "calcul complément de salaire",
+    "complément de salaire",
+    "maintien de salaire",
+    "indemnité complémentaire",
+    "plafond sécurité sociale",
+    "salaire net maintenu"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.11.2, p.37)",
+     "regles": [
+      "Maintien total des appointements nets mensuels que le salarié aurait perçus s'il avait travaillé (hors jours de carence).",
+      "Base : rémunération effective des 3 derniers mois, hors primes exceptionnelles et gratifications, limitée au plafond de la Sécurité sociale pour les employés et ouvriers.",
+      "Cadres et agents de maîtrise : sans tenir compte des indemnités versées au titre de frais.",
+      "Versé pour toutes les journées complètes d'absence."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.11.2",
+       "page": 37,
+       "extrait": "assurer aux salariés le maintien total de ce qu'auraient été leurs appointements nets mensuels"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.11.2",
+       "page": 37,
+       "extrait": "de la rémunération effective des trois derniers mois (hors primes exceptionnelles et gratifications)"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.4 et annexe I ; version du 28 août 2025)",
+     "regles": [
+      "L'employeur complète la valeur brute des prestations en espèces (indemnités journalières de la Sécurité sociale, d'un régime de prévoyance, ou versées par un tiers responsable).",
+      "Annexe I : maintien de tout ou partie de la rémunération nette mensuelle."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.4.1",
+       "page": 50,
+       "extrait": "l'employeur complétera, dans les conditions fixées pour chaque catégorie professionnelle par les annexes I, II et III"
+      },
+      {
+       "doc": "cc",
+       "article": "annexe I art. 3",
+       "page": 114,
+       "extrait": "le maintien de tout ou partie de ce qu'aurait été sa rémunération nette mensuelle"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Le plafond de la Sécurité sociale n'est pas dans les sources : valeur à compléter."
+   ]
+  },
+  {
+   "id": "complement-reouverture",
+   "theme": "Maladie, accident, prévoyance, mutuelle",
+   "question": "Quand mes droits au complément se rouvrent-ils après un long arrêt ?",
+   "reponse": "Quand la durée maximale d'indemnisation est atteinte sur un arrêt ininterrompu, il faut 6 mois après la reprise effective du travail avant la réouverture des droits (accord, art. 3.11.1). La convention limite la durée totale d'indemnisation sur les 12 mois précédents à celle à laquelle l'ancienneté donne droit (art. 7.4.2).",
+   "synonymes": [
+    "réouverture des droits",
+    "droits au complément",
+    "6 mois après la reprise",
+    "reprise du travail",
+    "nouvel arrêt",
+    "épuisé ses droits"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.11.1, p.37)",
+     "regles": [
+      "Pour un arrêt ininterrompu qui a atteint les durées limites : 6 mois doivent s'écouler après la reprise effective du travail avant la réouverture des droits."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.11.1",
+       "page": 37,
+       "extrait": "une période de 6 mois doit s'écouler après la reprise effective du travail avant la réouverture de ses droits"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.4.2 ; version du 28 août 2025)",
+     "regles": [
+      "Pour calculer les indemnités d'un mois, on tient compte de celles déjà perçues sur les 12 mois précédents : la durée totale d'indemnisation ne dépasse pas celle à laquelle l'ancienneté donne droit.",
+      "L'ancienneté s'apprécie au premier jour de l'absence."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.4.2",
+       "page": 50,
+       "extrait": "la durée totale d'indemnisation ne dépasse pas celle à laquelle l'ancienneté de l'intéressé lui donne droit"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "L'accord (6 mois après la reprise) et la convention (12 mois glissants) ne fonctionnent pas de la même façon : les deux sont affichés sans trancher."
+   ]
+  },
+  {
+   "id": "complement-cdd",
+   "theme": "Maladie, accident, prévoyance, mutuelle",
+   "question": "En CDD, le complément de salaire continue-t-il après la fin du contrat ?",
+   "reponse": "Non : pour le personnel en CDD, le versement de l'indemnité complémentaire cesse à la date de fin de contrat (accord, art. 3.11.1).",
+   "synonymes": [
+    "CDD arrêt maladie",
+    "fin de CDD",
+    "contrat à durée déterminée",
+    "complément CDD",
+    "indemnité complémentaire CDD"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.11.1, p.37)",
+     "regles": [
+      "Pour le personnel en CDD, le versement de l'indemnité complémentaire cesse à la date de fin de contrat."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.11.1",
+       "page": 37,
+       "extrait": "le versement de l'indemnité complémentaire cesse à la date de fin de contrat"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "complement-tiers",
+   "theme": "Maladie, accident, prévoyance, mutuelle",
+   "question": "Un tiers est responsable de mon arrêt : que se passe-t-il pour le complément ?",
+   "reponse": "Les indemnités complémentaires versées par l'entreprise ne le sont qu'à titre d'avance : le salarié doit les rembourser en priorité dès le paiement par le tiers responsable ou son assureur, et la réclamation doit faire état de la perte totale de salaire (accord, art. 3.11.1).",
+   "synonymes": [
+    "tiers responsable",
+    "accident causé par un tiers",
+    "assurance du responsable",
+    "avance sur indemnités",
+    "remboursement complément"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.11.1, p.37)",
+     "regles": [
+      "Si la responsabilité d'un tiers est à l'origine de l'arrêt, les indemnités complémentaires de l'entreprise sont une avance.",
+      "Elles doivent être remboursées en priorité par le salarié dès paiement par le tiers responsable ou son assurance.",
+      "La réclamation doit faire état de la perte totale de salaire."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.11.1",
+       "page": 37,
+       "extrait": "ne le seront qu'à titre d'avance et devront lui être remboursées en priorité par le bénéficiaire"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.4.1)",
+     "regles": [
+      "Les sommes versées par les responsables d'un accident ou leurs assurances comptent parmi les prestations que l'employeur complète (hors assurance individuelle du salarié)."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.4.1",
+       "page": 50,
+       "extrait": "les responsables d'un accident ou leurs assurances"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "accident-travail-anciennete",
+   "theme": "Maladie, accident, prévoyance, mutuelle",
+   "question": "Accident du travail ou de trajet : faut-il de l'ancienneté pour le complément ?",
+   "reponse": "Non : le complément est versé sans condition d'ancienneté pour les accidents du travail et de trajet (accord, art. 3.11.1), alors qu'il faut 1 an pour une maladie. La convention ramène de 1 an à 1 mois la condition d'ancienneté en cas d'accident du travail ou de maladie professionnelle (annexe I, art. 3.6.3).",
+   "synonymes": [
+    "accident du travail",
+    "accident de trajet",
+    "maladie professionnelle",
+    "AT",
+    "MP",
+    "ancienneté accident du travail"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.11.1, p.37)",
+     "regles": [
+      "Complément après 1 an d'ancienneté pour maladie, sans condition d'ancienneté pour les accidents du travail et de trajet.",
+      "Le délai de carence ne s'applique pas en cas d'accident du travail."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.11.1",
+       "page": 37,
+       "extrait": "sans condition d'ancienneté pour les accidents de travail et de trajet"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (annexe I art. 3.6.3 ; version du 28 août 2025)",
+     "regles": [
+      "En cas d'accident du travail ou de maladie professionnelle, la condition d'ancienneté de 1 an est ramenée à 1 mois.",
+      "Protection de l'emploi : articles L. 1226-6 à L. 1226-22 du Code du travail."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "annexe I art. 3.6.3",
+       "page": 114,
+       "extrait": "la condition d'ancienneté de 1 an de présence continue dans l'entreprise est ramenée à 1 mois"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 7.3.2",
+       "page": 50,
+       "extrait": "conformément aux dispositions des articles L. 1226-6 à L. 1226-22 du code du travail"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "L'accord ne mentionne pas de minimum d'ancienneté pour les AT/trajet ; la convention ramène la condition à 1 mois pour les AT/MP. Les deux textes sont affichés sans trancher."
+   ]
+  },
+  {
+   "id": "delai-protection",
+   "theme": "Maladie, accident, prévoyance, mutuelle",
+   "question": "Peut-on me licencier pendant mon arrêt maladie (délai de protection) ?",
+   "reponse": "Pendant le délai de protection, le contrat est maintenu : pour un employé, 4 mois entre 6 mois et 1 an d'ancienneté, puis la durée du complément de salaire plus 1 mois ; 2 ans pour un accident de trajet et pour les agents de maîtrise et cadres (accord, art. 3.12). La convention prévoit 4 mois pour le remplacement définitif, majorés selon l'ancienneté (art. 7.3.1).",
+   "synonymes": [
+    "licencier pendant arrêt maladie",
+    "délai de protection",
+    "licenciement malade",
+    "remplacement définitif",
+    "protection emploi maladie",
+    "priorité de réembauchage"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.12, p.38)",
+     "regles": [
+      "Employés, maladie : de 6 mois à 1 an d'ancienneté, 4 mois ; au-delà de 1 an, durée du complément de salaire majorée de 1 mois.",
+      "Employés, accident de trajet : 2 ans. Agents de maîtrise et cadres, maladie ou accident de trajet : 2 ans."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.12",
+       "page": 38,
+       "extrait": "entre 6 mois et 1 an d'ancienneté : 4 mois"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.12",
+       "page": 38,
+       "extrait": "au-delà de 1 an d'ancienneté : durée du complément de salaire majoré de 1 mois"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.3.1 ; version du 28 août 2025)",
+     "regles": [
+      "Pas de licenciement pour remplacement définitif avant 4 mois d'arrêt, si 6 mois de présence effective au premier jour de l'arrêt ; majoration de 2 mois après 4 ans, 3 mois après 8 ans, 4 mois après 12 ans, 5 mois après 15 ans.",
+      "Priorité de réembauchage pendant 6 mois à compter de la fin de l'indisponibilité. Les délais ne s'opposent pas à un licenciement pour une autre cause que le remplacement définitif."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.3.1 b)",
+       "page": 50,
+       "extrait": "ne pourra avoir lieu avant l'expiration d'un délai de 4 mois dès lors qu'il justifie de 6 mois de présence effective"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 7.3.1 b)",
+       "page": 50,
+       "extrait": "majoré de 2 mois après 4 ans de présence, 3 mois après 8 ans de présence"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 7.3.1 d)",
+       "page": 50,
+       "extrait": "pendant 6 mois à compter de la fin de son indisponibilité, d'une priorité de réembauchage"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Le délai de protection ne s'applique pas à un licenciement pour une autre cause que le remplacement définitif (convention, art. 7.3.1 f)."
+   ],
+   "champs": [
+    {
+     "id": "statut",
+     "label": "Statut",
+     "type": "select",
+     "options": [
+      [
+       "employe",
+       "Employé / ouvrier"
+      ],
+      [
+       "maitrise",
+       "Agent de maîtrise"
+      ],
+      [
+       "cadre",
+       "Cadre"
+      ]
+     ]
+    },
+    {
+     "id": "ancienneteAns",
+     "label": "Ancienneté (années)",
+     "type": "number",
+     "step": "0.5",
+     "min": 0,
+     "defaut": 3
+    },
+    {
+     "id": "accidentTrajet",
+     "label": "Accident de trajet",
+     "type": "checkbox",
+     "defaut": false
+    }
+   ],
+   "calcul": "delaiProtection"
+  },
+  {
+   "id": "prevoyance-fin-complement",
+   "theme": "Maladie, accident, prévoyance, mutuelle",
+   "question": "Que se passe-t-il à la fin du complément de salaire de l'employeur (prévoyance) ?",
+   "reponse": "Selon le livret CGT, la prévoyance prend le relais : après le même délai de franchise que le complément de l'employeur (180 jours avant 10 ans d'ancienneté, 360 jours de 10 à 25 ans, 540 jours au-delà), elle verse une indemnité journalière égale à 27,5 % du salaire de référence (tranches 1 et 2), en complément du régime obligatoire. Le contrat APGIS n'est pas fourni : à compléter.",
+   "synonymes": [
+    "prévoyance",
+    "APGIS",
+    "fin du complément",
+    "indemnité journalière prévoyance",
+    "27,5",
+    "délai de franchise",
+    "relais prévoyance"
+   ],
+   "etiquettes": [
+    "Source secondaire : livret CGT",
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.15, p.40)",
+     "regles": [
+      "Mutuelle et prévoyance : contrat conclu entre l'entreprise et l'APGIS pour le niveau de garanties et de cotisations ; il pourra évoluer en cas de nouveau contrat.",
+      "Le contrat APGIS n'est pas dans le dossier."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.15",
+       "page": 40,
+       "extrait": "ont fait l'objet d'un contrat conclu entre l'entreprise et l'APGIS"
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.10 et p.31, pages images)",
+     "regles": [
+      "Après la durée du complément, la prévoyance prend le relais pour compléter les indemnités journalières de la Sécurité sociale.",
+      "Incapacité temporaire : indemnité journalière de 27,5 % du salaire de référence (tranches 1 et 2), en complément du régime obligatoire, après un délai de franchise de 180 jours (moins de 10 ans d'ancienneté), 360 jours (10 à 25 ans), 540 jours (plus de 25 ans)."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Complément de salaire",
+       "page": 10,
+       "extrait": "Après ce délai, la prévoyance prend le relais pour compléter les indemnités journalières de la sécurité sociale."
+      },
+      {
+       "doc": "livret",
+       "article": "Garantie en cas d'arrêt de travail",
+       "page": 31,
+       "extrait": "indemnité journalière, en complément de celle servie par le Régime Obligatoire, égale à 27,5 % du salaire de référence (tranches 1 et 2)",
+       "ocr_corrige": true,
+       "note_ocr": "Chiffre lu sur l'image de la page (page scannée du livret)."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : contrat APGIS (brochure) non fourni ; le livret CGT est une source secondaire."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Les chiffres de la prévoyance viennent du livret CGT (page image, lue à l'œil), pas du contrat APGIS signé : à vérifier avec la brochure.",
+    "Le « salaire de référence (tranches 1 et 2) » n'est pas défini dans les sources."
+   ]
+  },
+  {
+   "id": "capital-deces-obseques",
+   "theme": "Maladie, accident, prévoyance, mutuelle",
+   "question": "Capital décès et frais d'obsèques : combien selon ma situation de famille ?",
+   "reponse": "Selon le livret CGT (tableau de la prévoyance) : capital de 100 % du salaire de référence (célibataire, veuf, divorcé sans enfant), 150 % (marié, pacsé ou en concubinage sans enfant), 185 % avec un enfant à charge, plus 35 % par enfant supplémentaire (2e et 3e) et 50 % à partir du 4e. Capital supplémentaire de 50 % en cas de décès par accident. Frais d'obsèques : jusqu'à 160 % du plafond mensuel de la Sécurité sociale pour le participant, 60 % pour le conjoint ou un enfant, dans la limite des frais réels.",
+   "synonymes": [
+    "capital décès",
+    "décès",
+    "obsèques",
+    "frais d'obsèques",
+    "prévoyance décès",
+    "PTIA",
+    "double effet",
+    "capital"
+   ],
+   "etiquettes": [
+    "Source secondaire : livret CGT",
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Livret CGT (p.30, page image lue à l'œil)",
+     "regles": [
+      "Capital décès / PTIA toutes causes : 100 % (célibataire, veuf, divorcé, séparé sans enfant) ; 150 % (marié, pacsé, concubinage sans enfant) ; 185 % (avec un enfant à charge) ; + 35 % par enfant supplémentaire du 2e au 3e ; + 50 % à partir du 4e.",
+      "Par accident : capital supplémentaire de 50 % du capital toutes causes. Double effet : 100 % du capital décès toutes causes.",
+      "Frais d'obsèques, dans la limite des frais réellement engagés : participant 160 %, conjoint 60 %, enfant à charge 60 % du plafond mensuel de la Sécurité sociale."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Garantie décès – PTIA",
+       "page": 30,
+       "extrait": "Participant avec un enfant à charge : 185 %",
+       "ocr_corrige": true,
+       "note_ocr": "Chiffre lu sur l'image de la page (page scannée du livret)."
+      },
+      {
+       "doc": "livret",
+       "article": "Garantie décès – PTIA",
+       "page": 30,
+       "extrait": "Majoration par enfant à charge supplémentaire (du 2ème au 3ème enfant) + 35 %",
+       "ocr_corrige": true,
+       "note_ocr": "Chiffre lu sur l'image de la page (page scannée du livret)."
+      },
+      {
+       "doc": "livret",
+       "article": "Garantie frais d'obsèques",
+       "page": 30,
+       "extrait": "Participant : 160 % ; conjoint : 60 % ; enfant à charge : 60 % du plafond mensuel de la Sécurité sociale",
+       "ocr_corrige": true,
+       "note_ocr": "Chiffre lu sur l'image de la page (page scannée du livret)."
+      }
+     ]
+    },
+    {
+     "titre": "Accord de substitution (art. 3.15, p.40)",
+     "regles": [
+      "Renvoie au contrat APGIS, non fourni."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.15",
+       "page": 40,
+       "extrait": "ont fait l'objet d'un contrat conclu entre l'entreprise et l'APGIS"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : contrat APGIS (brochure) non fourni ; plafond mensuel de la Sécurité sociale non fourni."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Chiffres du livret CGT, pas du contrat APGIS : à vérifier avec la brochure. Avec un enfant à charge, le capital est de 185 % quelle que soit la situation de famille.",
+    "Le plafond mensuel de la Sécurité sociale et la définition du salaire de référence ne sont pas dans les sources."
+   ],
+   "champs": [
+    {
+     "id": "situation",
+     "label": "Situation de famille",
+     "type": "select",
+     "options": [
+      [
+       "seul",
+       "Célibataire, veuf, divorcé, séparé sans enfant à charge"
+      ],
+      [
+       "couple",
+       "Marié, pacsé ou en concubinage sans enfant à charge"
+      ]
+     ]
+    },
+    {
+     "id": "nbEnfants",
+     "label": "Nombre d'enfants à charge",
+     "type": "number",
+     "min": 0,
+     "defaut": 0
+    },
+    {
+     "id": "salaireReference",
+     "label": "Salaire de référence annuel (tranches 1 et 2), si connu (€)",
+     "type": "number",
+     "min": 0,
+     "defaut": 0
+    }
+   ],
+   "calcul": "capitalDeces"
+  },
+  {
+   "id": "rentes-survivant-education",
+   "theme": "Maladie, accident, prévoyance, mutuelle",
+   "question": "Rente de conjoint survivant et rente éducation : montant et durée ?",
+   "reponse": "Selon le livret CGT : rente temporaire de conjoint survivant égale à 10 % du salaire de référence (tranches 1 et 2) par an ; rente éducation de 15 % du salaire de référence par enfant à charge, jusqu'au 18e anniversaire inclus, ou jusqu'au 26e anniversaire au plus tard en cas de poursuite d'études, et viagère pour l'enfant handicapé.",
+   "synonymes": [
+    "rente éducation",
+    "rente conjoint survivant",
+    "rente",
+    "orphelin",
+    "enfant à charge décès",
+    "survivant"
+   ],
+   "etiquettes": [
+    "Source secondaire : livret CGT",
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Livret CGT (p.30-31, pages images lues à l'œil)",
+     "regles": [
+      "Rente temporaire de conjoint survivant : 10 % du salaire de référence (tranches 1 et 2) par an.",
+      "Rente éducation, par enfant à charge : 15 % du salaire de référence jusqu'au 18e anniversaire inclus ; 15 % jusqu'au 26e anniversaire au plus tard si poursuite d'études.",
+      "La rente devient viagère pour l'enfant handicapé (définition à l'article 3.2.1 des conditions générales)."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Rente de conjoint survivant",
+       "page": 30,
+       "extrait": "Rente temporaire annuelle égale à 10 % du salaire de référence (tranches 1 et 2)",
+       "ocr_corrige": true,
+       "note_ocr": "Chiffre lu sur l'image de la page (page scannée du livret)."
+      },
+      {
+       "doc": "livret",
+       "article": "Rente éducation",
+       "page": 31,
+       "extrait": "jusqu'à son 26ème anniversaire au plus tard (si poursuite d'études) : 15 %",
+       "ocr_corrige": true,
+       "note_ocr": "Chiffre lu sur l'image de la page (page scannée du livret)."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : contrat APGIS (brochure) non fourni."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Chiffres du livret CGT, pas du contrat APGIS : à vérifier avec la brochure. La durée de la rente de conjoint survivant n'est pas indiquée dans le tableau lu."
+   ]
+  },
+  {
+   "id": "invalidite-incapacite",
+   "theme": "Maladie, accident, prévoyance, mutuelle",
+   "question": "Invalidité ou incapacité permanente : quelle rente ?",
+   "reponse": "Selon le livret CGT, rente (y compris celle du régime obligatoire) en pourcentage du salaire de référence (tranches 1 et 2) : invalidité 1re catégorie 50 %, 2e et 3e catégories 75 % ; en cas d'accident du travail ou maladie professionnelle, incapacité permanente de 66 % ou plus : 75 %, de 33 % à moins de 66 % : 50 %.",
+   "synonymes": [
+    "invalidité",
+    "incapacité permanente",
+    "rente invalidité",
+    "catégorie d'invalidité",
+    "IPP",
+    "taux d'incapacité"
+   ],
+   "etiquettes": [
+    "Source secondaire : livret CGT",
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Livret CGT (p.31, page image lue à l'œil)",
+     "regles": [
+      "Invalidité totale ou partielle (hors AT/MP) : 3e catégorie 75 % ; 2e catégorie 75 % ; 1re catégorie 50 % du salaire de référence (tranches 1 et 2), rente régime obligatoire comprise.",
+      "Incapacité permanente (AT/MP) : taux de 66 % ou plus : 75 % ; taux de 33 % ou plus et inférieur à 66 % : 50 %."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Invalidité totale ou partielle",
+       "page": 31,
+       "extrait": "3ème catégorie 75 % ; 2ème catégorie 75 % ; 1ère catégorie 50 %",
+       "ocr_corrige": true,
+       "note_ocr": "Chiffre lu sur l'image de la page (page scannée du livret)."
+      },
+      {
+       "doc": "livret",
+       "article": "Incapacité permanente",
+       "page": 31,
+       "extrait": "taux d'incapacité permanente supérieur ou égal à 66 % : 75 %",
+       "ocr_corrige": true,
+       "note_ocr": "Chiffre lu sur l'image de la page (page scannée du livret)."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : contrat APGIS (brochure) non fourni."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Chiffres du livret CGT, pas du contrat APGIS : à vérifier avec la brochure."
+   ]
+  },
+  {
+   "id": "mutuelle",
+   "theme": "Maladie, accident, prévoyance, mutuelle",
+   "question": "Mutuelle : quelles garanties et quelles cotisations ?",
+   "reponse": "Information à compléter : l'accord (art. 3.15) renvoie à un contrat conclu entre l'entreprise et l'APGIS, qui fixe garanties et cotisations. Ce contrat n'est pas dans le dossier. Il pourra évoluer en cas de nouveau contrat.",
+   "synonymes": [
+    "mutuelle",
+    "complémentaire santé",
+    "garanties mutuelle",
+    "cotisations mutuelle",
+    "APGIS mutuelle",
+    "frais de santé"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 3.15, p.40)",
+     "regles": [
+      "Les dispositions de mutuelle et de prévoyance font l'objet d'un contrat entre l'entreprise et l'APGIS (garanties et cotisations pour l'ensemble du personnel).",
+      "En cas de signature d'un nouveau contrat, ces dispositions pourront évoluer."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 3.15",
+       "page": 40,
+       "extrait": "ont fait l'objet d'un contrat conclu entre l'entreprise et l'APGIS"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : brochure APGIS à ajouter."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "À ajouter plus tard : la brochure APGIS (mutuelle et prévoyance)."
+   ]
+  },
+  {
+   "id": "apgis-commission",
+   "theme": "Maladie, accident, prévoyance, mutuelle",
+   "question": "Qu'est-ce que la commission de suivi du régime APGIS ?",
+   "reponse": "Créée pour 2026 par la NAO : une commission de suivi du régime APGIS, qui se réunit au mois d'avril pour étudier le résultat de l'exercice 2025 du régime de santé et prévoyance. Chaque organisation syndicale représentative peut y désigner un membre (NAO 2026, partie 6).",
+   "synonymes": [
+    "commission de suivi",
+    "APGIS",
+    "commission APGIS",
+    "suivi du régime",
+    "résultat santé prévoyance"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "NAO 2026 (partie 6, p.15)",
+     "regles": [
+      "Commission de suivi du régime APGIS créée pour 2026, réunie en avril pour étudier le résultat de l'exercice 2025 du régime de santé et de prévoyance.",
+      "Chaque organisation syndicale représentative peut y être représentée par un membre qu'elle désigne."
+     ],
+     "sources": [
+      {
+       "doc": "nao",
+       "article": "partie 6",
+       "page": 15,
+       "extrait": "une commission de suivi du régime APGIS"
+      },
+      {
+       "doc": "nao",
+       "article": "partie 6",
+       "page": 15,
+       "extrait": "se réunira au mois d'avril afin d'étudier le résultat de l'exercice 2025"
+      }
+     ],
+     "verifie_image": false
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "cure-thermale",
+   "theme": "Maladie, accident, prévoyance, mutuelle",
+   "question": "Cure thermale : est-elle compensée ou comptée comme du travail effectif ?",
+   "reponse": "Les absences pour cure thermale, justifiées par un certificat médical, comptent comme temps de travail effectif pour les congés payés, dans la limite de 1 mois (moins de 2 ans d'ancienneté) ou de 2 mois (plus de 2 ans) (accord, art. 4.1.5). En revanche, les cures thermales sont exclues du complément de salaire pour le personnel employé/ouvrier (art. 3.11.1).",
+   "synonymes": [
+    "cure thermale",
+    "cure",
+    "thermalisme",
+    "curiste",
+    "congés payés cure"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.1.5 et 3.11.1, p.43 et p.37)",
+     "regles": [
+      "Cure thermale justifiée par certificat médical : temps de travail effectif pour le décompte des congés payés, dans la limite de 1 mois (moins de 2 ans d'ancienneté) ou 2 mois (plus de 2 ans).",
+      "Le complément de salaire n'est pas versé pendant les périodes de cure thermale pour le personnel employé/ouvrier."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.1.5",
+       "page": 43,
+       "extrait": "dans la limite de 1 mois si le salarié à moins de 2 ans d'ancienneté"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 3.11.1",
+       "page": 37,
+       "extrait": "à l'exclusion des périodes pour cure thermale pour le personnel"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
   }
  ]
 }

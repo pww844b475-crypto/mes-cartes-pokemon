@@ -236,4 +236,38 @@ export function enfantMalade({ situation = 'hospitalise', ageEnfant = 0, nbEnfan
   return { lignes: l };
 }
 
-export const CALCULS = { enfantMalade, retraiteProgressive, primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };
+// ---- 15. Délai de protection en cas de maladie (accord art. 3.12 p.38 ; convention art. 7.3.1 p.49-50)
+export function delaiProtection({ statut = 'employe', ancienneteAns = 0, accidentTrajet = false }) {
+  const l = [];
+  if (statut !== 'employe') l.push(L('accord', 'Agents de maîtrise et cadres (maladie ou accident de trajet)', '2 ans', { brut: '2 ans' }));
+  else if (accidentTrajet) l.push(L('accord', 'Employé, accident de trajet', '2 ans', { brut: '2 ans' }));
+  else if (ancienneteAns < 0.5) l.push(L('accord', 'Employé, maladie', 'Pas de délai prévu (moins de 6 mois d\'ancienneté)', { brut: null }));
+  else if (ancienneteAns < 1) l.push(L('accord', 'Employé, maladie (6 mois à 1 an)', '4 mois', { brut: '4 mois' }));
+  else { const j = ancienneteAns < 10 ? 180 : ancienneteAns < 25 ? 360 : 540; l.push(L('accord', 'Employé, maladie (plus de 1 an)', `durée du complément (${j} jours) + 1 mois`, { brut: j })); }
+  if (ancienneteAns < 0.5) l.push(L('convention', 'Maladie ou accident non professionnel', 'Pas de délai prévu (6 mois de présence effective requis)', { brut: null }));
+  else { const maj = ancienneteAns >= 15 ? 5 : ancienneteAns >= 12 ? 4 : ancienneteAns >= 8 ? 3 : ancienneteAns >= 4 ? 2 : 0; l.push(L('convention', 'Maladie ou accident non professionnel (accident de trajet compris)', `4 mois, majoré de ${maj} mois = ${4 + maj} mois`, { brut: 4 + maj, note: 'Majoration lue comme un palier (2, 3, 4 ou 5 mois), pas comme un cumul.' })); }
+  return { lignes: l };
+}
+
+// ---- 16. Capital décès (livret CGT p.30, tableau lu sur l'image ; contrat APGIS non fourni)
+export function capitalDeces({ situation = 'seul', nbEnfants = 0, salaireReference = 0 }) {
+  let pct;
+  if (nbEnfants >= 1) pct = 185 + 35 * Math.min(Math.max(nbEnfants - 1, 0), 2) + 50 * Math.max(nbEnfants - 3, 0);
+  else pct = situation === 'couple' ? 150 : 100;
+  const l = [L('accord', 'Capital décès, toutes causes (% du salaire de référence, tranches 1 et 2)', `${pct} %`, { brut: pct })];
+  if (salaireReference > 0) {
+    const cap = r2(salaireReference * pct / 100);
+    l.push(L('accord', 'Capital décès', `${cap} €`, { brut: cap }), L('accord', 'Capital supplémentaire si décès par accident (+ 50 % du capital)', `${r2(cap / 2)} €`, { brut: r2(cap / 2) }));
+  }
+  return { lignes: l };
+}
+
+// ---- 17. Absence pour déménagement (accord art. 4.2.3 p.46)
+export const MOTIFS_DEMENAGEMENT = { handicap: 12, divorce: 12, garde: 12, deces: 12, ascendant: 12, naissance: 6, mariage: 6 };
+export function demenagement({ motif = 'handicap', moisEcart = 0 }) {
+  const g = MOTIFS_DEMENAGEMENT[motif];
+  const ok = g === 12 ? (moisEcart >= 0 && moisEcart <= 12) : (moisEcart >= -6 && moisEcart <= 6);
+  return { lignes: [L('accord', 'Absence rémunérée de 1 jour ouvré pour déménagement', ok ? 'Oui, si les justificatifs sont fournis' : 'Non : en dehors du délai', { brut: ok, note: g === 12 ? 'Délai : dans les 12 mois suivant l\'événement.' : 'Délai : dans les 6 mois précédant ou suivant l\'événement.' })] };
+}
+
+export const CALCULS = { delaiProtection, capitalDeces, demenagement, enfantMalade, retraiteProgressive, primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };

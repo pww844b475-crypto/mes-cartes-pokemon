@@ -41,8 +41,12 @@ export function chercherFiches(requete, fiches, synonymes = {}) {
   const scores = fiches.map(indexerFiche).map(ix => {
     let s = 0;
     for (const t of req) {
-      s += tokMatch(t, ix.motsQuestion) * 3 + tokMatch(t, ix.motsSyn) * 2 + tokMatch(t, ix.motsTheme);
+      const poids = base.includes(t) ? 1 : 0.4; // mots issus du dictionnaire de synonymes : poids réduit
+      s += poids * (tokMatch(t, ix.motsQuestion) * 3 + tokMatch(t, ix.motsSyn) * 2 + tokMatch(t, ix.motsTheme));
     }
+    // expression exacte déclarée dans la fiche (synonyme) retrouvée dans la question : forte priorité
+    const nq = ' ' + norm(requete) + ' ';
+    for (const syn of (ix.f.synonymes || [])) { const ns = norm(syn); if (ns.length >= 4 && nq.includes(' ' + ns + ' ')) s += (ns.split(' ').length >= 3 ? 2 * ns.split(' ').length + 2 : 2 + ns.split(' ').length); }
     // couverture : au-delà d'un mot, plus de la moitié des mots cherchés (ou leurs synonymes) doivent se retrouver dans la fiche
     const mots = [...ix.motsQuestion, ...ix.motsSyn, ...ix.motsTheme];
     const couverts = base.filter(t => etendre([t], synonymes).some(u => tokMatch(u, mots) > 0)).length;
