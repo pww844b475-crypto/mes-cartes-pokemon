@@ -151,3 +151,15 @@ test('retraite progressive — accord art. 3.13 (60 ans ; < 2 ans avant l\'âge 
   assert.equal(r({ age: 61, moisAvantAgeLegal: 12, trimestres: 149 })[2].brut, false);
   assert.ok(r({ age: 61, moisAvantAgeLegal: 12, trimestres: 160, horaire: 36 })[4].valeur.startsWith('18 h (50 %) ou 21.6 h'));
 });
+
+test('enfant malade / hospitalisé — accord art. 4.2.1 et convention art. 7.6.9', () => {
+  const r = p => C.enfantMalade(p).lignes;
+  assert.equal(r({ situation: 'hospitalise', ageEnfant: 8 })[0].brut, 6);
+  assert.equal(r({ situation: 'hospitalise', ageEnfant: 16 })[0].brut, 0);
+  assert.equal(r({ situation: 'malade', ageEnfant: 8, nbEnfantsMoins16: 1 })[0].brut, 3);
+  assert.equal(r({ situation: 'malade', ageEnfant: 8, nbEnfantsMoins16: 3 })[0].brut, 5);
+  assert.equal(r({ situation: 'malade', ageEnfant: 0.5, nbEnfantsMoins16: 1 })[0].brut, 5);
+  assert.ok(r({ situation: 'malade', ageEnfant: 8 })[1].valeur.includes('payés'));            // convention < 12 ans
+  assert.ok(r({ situation: 'malade', ageEnfant: 13 })[1].valeur.includes('non rémunérés'));   // convention 12-16 ans
+  assert.equal(r({ situation: 'malade', ageEnfant: 17 })[1].brut, 0);
+});

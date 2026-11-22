@@ -221,4 +221,19 @@ export function retraiteProgressive({ age = 0, moisAvantAgeLegal = 999, trimestr
   return { lignes };
 }
 
-export const CALCULS = { retraiteProgressive, primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };
+// ---- 14. Enfant malade / hospitalisé (accord art. 4.2.1 p.45 ; convention art. 7.6.9 p.53-54)
+export function enfantMalade({ situation = 'hospitalise', ageEnfant = 0, nbEnfantsMoins16 = 1 }) {
+  const l = [];
+  const hosp = situation === 'hospitalise';
+  if (hosp) l.push(L('accord', 'Enfant hospitalisé ou en convalescence après hospitalisation', ageEnfant < 16 ? '6 jours ouvrables rémunérés par année civile, sur justificatifs' : 'Non prévu pour un enfant de 16 ans ou plus', { brut: ageEnfant < 16 ? 6 : 0 }));
+  else {
+    const max = (nbEnfantsMoins16 >= 3 || ageEnfant < 1) ? 5 : 3;
+    l.push(L('accord', 'Enfant malade (non hospitalisé)', `Absence avec récupération, autant de fois que nécessaire, ${max} jours consécutifs maximum`, { brut: max, note: 'Récupération en accord avec l\'encadrement ; elle ne peut pas être compensée par la suppression du temps de pause.' }));
+  }
+  if (ageEnfant < 12) l.push(L('convention', 'Enfant de moins de 12 ans (hospitalisé ou à soigner)', '5 jours ouvrés payés par année civile, quel que soit le nombre d\'enfants', { brut: 5 }));
+  else if (ageEnfant < 16) l.push(L('convention', 'Enfant de 12 à moins de 16 ans (malade ou convalescence après hospitalisation)', '5 jours ouvrés maximum, non rémunérés ; possibilité de les récupérer', { brut: 5 }));
+  else l.push(L('convention', 'Enfant de 16 ans ou plus', 'Non prévu par ces articles', { brut: 0 }));
+  return { lignes: l };
+}
+
+export const CALCULS = { enfantMalade, retraiteProgressive, primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };

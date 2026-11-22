@@ -1679,6 +1679,145 @@
     "Seul le nombre de trimestres validés compte, pas l'ancienneté : demander un relevé de carrière à la caisse.",
     "Les passages de la page 39 sont lus sur le texte extrait, pas encore vérifiés sur l'image."
    ]
+  },
+  {
+   "id": "enfant-malade",
+   "theme": "Absences autorisées (famille, santé, engagements)",
+   "question": "Enfant malade ou enfant hospitalisé : combien de jours d'absence, et à quel âge ?",
+   "reponse": "Deux régimes différents. Enfant hospitalisé (ou en convalescence après hospitalisation), moins de 16 ans : 6 jours ouvrables rémunérés par année civile, sur justificatifs (accord, art. 4.2.1). Enfant malade, sans hospitalisation : absence donnant lieu à récupération, 3 jours consécutifs maximum (5 si 3 enfants de moins de 16 ans ou enfant de moins d'un an). La convention a ses propres règles, selon que l'enfant a moins de 12 ans ou de 12 à 16 ans : voir plus bas.",
+   "synonymes": [
+    "enfant malade",
+    "enfant hospitalisé",
+    "enfants malades",
+    "jours enfant malade",
+    "hospitalisation enfant",
+    "garde d'enfant",
+    "certificat médical enfant",
+    "convalescence enfant"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "champs": [
+    {
+     "id": "situation",
+     "label": "Situation de l'enfant",
+     "type": "select",
+     "options": [
+      [
+       "hospitalise",
+       "Hospitalisé ou en convalescence après hospitalisation"
+      ],
+      [
+       "malade",
+       "Malade, non hospitalisé"
+      ]
+     ]
+    },
+    {
+     "id": "ageEnfant",
+     "label": "Âge de l'enfant (années)",
+     "type": "number",
+     "step": "0.5",
+     "min": 0,
+     "defaut": 8
+    },
+    {
+     "id": "nbEnfantsMoins16",
+     "label": "Nombre d'enfants de moins de 16 ans à charge",
+     "type": "number",
+     "min": 0,
+     "defaut": 1
+    }
+   ],
+   "calcul": "enfantMalade",
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 4.2.1, p.45)",
+     "regles": [
+      "Hospitalisé ou en convalescence après hospitalisation, moins de 16 ans : 6 jours ouvrables rémunérés par année civile, sous justificatifs, par demi-journée possible ; temps partiel : au prorata de l'horaire hebdomadaire.",
+      "Enfant malade : absence donnant lieu à récupération, autant de fois que nécessaire, 3 jours consécutifs maximum, 5 jours si 3 enfants de moins de 16 ans ou enfant de moins d'un an.",
+      "La récupération se fait en accord avec l'encadrement et ne peut pas être compensée par la suppression du temps de pause."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 4.2.1",
+       "page": 45,
+       "extrait": "de 6 jours ouvrables est octroyée pour les enfants, hospitalisés ou en convalescence suite à une hospitalisation, de moins de 16 ans"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.2.1",
+       "page": 45,
+       "extrait": "Une autorisation d'absence donnant lieu à récupération est octroyée à la mère (ou au père) de famille autant de fois que nécessaire"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 4.2.1",
+       "page": 45,
+       "extrait": "sous réserve que cette absence ne dépasse pas 3 jours consécutifs, portés à 5 jours"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 7.6.9 ; version du 28 août 2025)",
+     "regles": [
+      "Sur présentation d'un certificat médical (ou feuille de maladie signée du médecin) attestant la présence nécessaire d'un parent.",
+      "Moins de 12 ans : 5 jours ouvrés payés par année civile, quel que soit le nombre d'enfants (hospitalisé ou à soigner).",
+      "Moins de 16 ans : 5 jours ouvrés maximum non rémunérés, récupérables, pour soigner un enfant malade ou en convalescence.",
+      "Deux parents dans la même entreprise : les autorisations ne se cumulent pas. « Hospitalisé » = prise en charge Sécurité sociale au titre de l'hospitalisation (milieu hospitalier, domicile ou ambulatoire)."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 7.6.9",
+       "page": 53,
+       "extrait": "sur présentation d'un certificat médical ou, à défaut, sur présentation d'une feuille de maladie signée par le médecin"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 7.6.9 a)",
+       "page": 53,
+       "extrait": "autorisation d'absence payée de 5 jours ouvrés ou d'une durée équivalente fractionnée"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 7.6.9 b)",
+       "page": 54,
+       "extrait": "une autorisation d'absence non rémunérée dans la limite de 5 jours ouvrés"
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.14)",
+     "regles": [
+      "Reprend les mêmes règles que l'accord (6 jours ouvrables rémunérés pour hospitalisés ; récupération pour maladie)."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Absence pour enfants hospitalisés ou malades",
+       "page": 14,
+       "extrait": "Une autorisation d'absence rémunérée de 6 jours ouvrables par année civile est octroyée"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point (congé pour enfant malade)."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Dans l'accord, l'enfant malade (non hospitalisé) donne lieu à récupération, il n'est pas indiqué « payé » ; l'absence payée de 6 jours concerne l'enfant hospitalisé ou en convalescence.",
+    "Le certificat médical est exigé par la convention ; l'accord parle de « justificatifs » pour l'hospitalisation.",
+    "L'accord et la convention ne donnent pas les mêmes jours ni les mêmes âges : les deux sont affichés sans désigner le plus favorable."
+   ]
   }
  ]
 }
