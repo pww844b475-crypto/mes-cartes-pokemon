@@ -123,3 +123,9 @@ test('journée de solidarité — salarié arrivé en cours d\'année : pratique
   assert.equal(r.lignes[1].brut, 288);
   assert.equal(C.journeeSolidarite({ statut: 'employe', horaireSalarie: 24 }).lignes[0].brut, 288);   // 35 h par défaut
 });
+
+test('journée de solidarité — exemple RH : CDI à 30 h par semaine, référence 35 h = 6 h 00', () => {
+  const r = C.journeeSolidarite({ statut: 'employe', horaireSalarie: 30, horaireConv: '35' });
+  assert.equal(r.lignes[0].brut, 360);
+  assert.ok(r.lignes[0].valeur.startsWith('6 h 00'));
+});

@@ -1305,7 +1305,7 @@
     },
     {
      "id": "arriveeEnCours",
-     "label": "Salarié arrivé en cours d'année (non présent au 1er janvier)",
+     "label": "Nouveau contrat commençant après le 1er janvier (pas dans les effectifs au 1er janvier)",
      "type": "checkbox",
      "defaut": false
     }
@@ -1371,9 +1371,10 @@
      "regles": [
       "Le logiciel de paie applique 7 h 12 pour un temps plein à 36 h (7,20 h) et 4 h 48 pour 24 h par semaine.",
       "Quand la valeur exacte ne peut pas être saisie, 3 minutes d'écart sont ajoutées dans le logiciel pour compléter.",
-      "Les états de journée de solidarité sont remis à zéro au 1er janvier : un salarié dont le contrat commence le 2 janvier (ou plus tard) n'a pas de journée de solidarité à faire pour cette année-là ; il la fera l'année suivante. Il faut avoir un contrat au 1er janvier.",
+      "Règle de la base contrat au 1er janvier : un salarié déjà dans les effectifs au 1er janvier doit la faire. Un nouveau contrat (par exemple un CDI) qui commence à partir du 2 janvier n'a pas de journée de solidarité à faire pour cette année-là ; il la fera l'année suivante. Le nombre d'heures se calcule sur la base du contrat (exemple : CDI entré le 26 décembre à 30 h par semaine : 7 h × 30 ÷ 35 = 6 h 00, à faire avant le 31 mai suivant).",
       "La journée doit être faite avant la fin de la période (31 mai). Si elle n'est pas faite, elle est reportée sur l'exercice suivant (texte : accord art. 5.9, p.59). Exception évoquée quand le retard est dû à l'employeur : détail non retrouvé dans l'accord, à confirmer.",
-      "Source de cette règle : non retrouvée dans les textes du dossier. L'accord (art. 5.9, p.59) cite, pour les CDD de plus de 4 mois, la présence « au premier jour de la période de référence » (1er juin). La convention collective ne fixe pas de date dans les passages sur la journée de solidarité (p.31 : plafond de 1 600 heures du forfait annuel ; p.51 ; annexes salaires : renvoi aux articles L. 3133-7 et suivants du Code du travail, non fourni). À confirmer avec le Code du travail ou un document de l'entreprise."
+      "Source de cette règle : non retrouvée dans les textes du dossier. L'accord (art. 5.9, p.59) cite, pour les CDD de plus de 4 mois, la présence « au premier jour de la période de référence » (1er juin). La convention collective ne fixe pas de date dans les passages sur la journée de solidarité (p.31 : plafond de 1 600 heures du forfait annuel ; p.51 ; annexes salaires : renvoi aux articles L. 3133-7 et suivants du Code du travail, non fourni). À confirmer avec le Code du travail ou un document de l'entreprise.",
+      "Origine : pratique héritée des accords Casino (selon un référent RH). L'accord de substitution remplace ces accords après une période de survie (préambule, p.3), mais son art. 5.9 ne reprend pas cette règle en toutes lettres. Information à confirmer."
      ],
      "sources": []
     },
