@@ -1251,7 +1251,7 @@
    "id": "journee-solidarite",
    "theme": "Nuit, dimanche, jours fériés, solidarité",
    "question": "Combien d'heures dois-je faire pour la journée de solidarité ?",
-   "reponse": "Temps complet : 7 heures de plus sur l'année. Temps partiel : 7 h × horaire hebdomadaire du salarié ÷ horaire hebdomadaire conventionnel (36 h de temps de présence), soit 4 h 40 pour 24 h par semaine. Encadrement : une unité sur les jours de RTT.",
+   "reponse": "Le texte donne la formule : 7 h × horaire hebdomadaire du salarié ÷ horaire hebdomadaire conventionnel (encadrement : une unité de RTT). Avec 35 h comme référence : 4 h 48 pour 24 h par semaine, et 7 h 12 (7,20 h) pour un temps plein à 36 h. Avec 36 h comme référence : 4 h 40 pour 24 h. À confirmer : le texte ne précise pas la référence, et il parle aussi de « 7 heures » pour le temps complet.",
    "synonymes": [
     "journée de solidarité",
     "solidarité",
@@ -1293,12 +1293,12 @@
      "type": "select",
      "options": [
       [
-       "36",
-       "36 h de temps de présence (accord, art. 5.1.2)"
-      ],
-      [
        "35",
        "35 h de travail effectif (accord, art. 5.2.1)"
+      ],
+      [
+       "36",
+       "36 h de temps de présence (accord, art. 5.1.2)"
       ]
      ]
     }
@@ -1368,7 +1368,8 @@
     }
    ],
    "notes": [
-    "Le texte ne définit pas précisément « horaire hebdomadaire conventionnel » : 36 h de temps de présence (art. 5.1.2) est retenu par défaut ; 35 h de travail effectif donne 4 h 48 pour 24 h."
+    "Le texte ne définit pas « horaire hebdomadaire conventionnel ». Avec 35 h : 24 h → 4 h 48 ; 36 h (temps plein en présence) → 7 h 12. Avec 36 h : 24 h → 4 h 40. Le texte dit aussi « 7 heures » pour le temps complet.",
+    "Les valeurs 7 h 15 et 7 h 20 données oralement ne figurent dans aucun texte du dossier : à confirmer avec le bulletin de paie ou un document de l'entreprise."
    ]
   }
  ]

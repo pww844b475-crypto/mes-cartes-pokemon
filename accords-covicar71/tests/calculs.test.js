@@ -109,3 +109,10 @@ test('journée de solidarité — accord art. 5.9 (7 h × horaire ÷ horaire con
   assert.equal(val(C.journeeSolidarite({ statut: 'employe', horaireSalarie: 24, horaireConv: '36' })).startsWith('4 h 40'), true);
   assert.equal(m('encadrement', 36, '36'), 1);
 });
+
+test('journée de solidarité — lecture avec 35 h de référence (4 h 48 pour 24 h ; 7 h 12 pour un 36 h)', () => {
+  const m = (h, c) => C.journeeSolidarite({ statut: 'employe', horaireSalarie: h, horaireConv: c }).lignes[0].brut;
+  assert.equal(m(24, '35'), 288);   // 7 × 24 ÷ 35 = 4,8 h
+  assert.equal(m(36, '35'), 432);   // 7 × 36 ÷ 35 = 7,2 h = 7 h 12
+  assert.equal(C.journeeSolidarite({ statut: 'employe', horaireSalarie: 36, horaireConv: '35' }).lignes[0].valeur.startsWith('7 h 12'), true);
+});
