@@ -116,3 +116,10 @@ test('journée de solidarité — lecture avec 35 h de référence (4 h 48 pour 
   assert.equal(m(36, '35'), 432);   // 7 × 36 ÷ 35 = 7,2 h = 7 h 12
   assert.equal(C.journeeSolidarite({ statut: 'employe', horaireSalarie: 36, horaireConv: '35' }).lignes[0].valeur.startsWith('7 h 12'), true);
 });
+
+test('journée de solidarité — salarié arrivé en cours d\'année : pratique RH signalée, calcul conservé', () => {
+  const r = C.journeeSolidarite({ statut: 'employe', horaireSalarie: 24, horaireConv: '35', arriveeEnCours: true });
+  assert.equal(r.lignes[0].niveau, 'pratique');
+  assert.equal(r.lignes[1].brut, 288);
+  assert.equal(C.journeeSolidarite({ statut: 'employe', horaireSalarie: 24 }).lignes[0].brut, 288);   // 35 h par défaut
+});

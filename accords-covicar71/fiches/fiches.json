@@ -1251,7 +1251,7 @@
    "id": "journee-solidarite",
    "theme": "Nuit, dimanche, jours fériés, solidarité",
    "question": "Combien d'heures dois-je faire pour la journée de solidarité ?",
-   "reponse": "Le texte donne la formule : 7 h × horaire hebdomadaire du salarié ÷ horaire hebdomadaire conventionnel (encadrement : une unité de RTT). Avec 35 h comme référence : 4 h 48 pour 24 h par semaine, et 7 h 12 (7,20 h) pour un temps plein à 36 h. Avec 36 h comme référence : 4 h 40 pour 24 h. À confirmer : le texte ne précise pas la référence, et il parle aussi de « 7 heures » pour le temps complet.",
+   "reponse": "Dans le logiciel de paie : 7 h 12 pour un temps plein à 36 h et 4 h 48 pour un salarié à 24 h par semaine (formule de l'accord : 7 h × horaire du salarié ÷ 35). Encadrement : une unité de RTT. Condition : à vérifier sur la présence du salarié (voir « Pratique RH » plus bas).",
    "synonymes": [
     "journée de solidarité",
     "solidarité",
@@ -1261,7 +1261,8 @@
     "heures de solidarité"
    ],
    "etiquettes": [
-    "Information à compléter"
+    "Information à compléter",
+    "Pratique à confirmer"
    ],
    "champs": [
     {
@@ -1301,6 +1302,12 @@
        "36 h de temps de présence (accord, art. 5.1.2)"
       ]
      ]
+    },
+    {
+     "id": "arriveeEnCours",
+     "label": "Salarié arrivé en cours d'année (non présent au 1er janvier)",
+     "type": "checkbox",
+     "defaut": false
     }
    ],
    "calcul": "journeeSolidarite",
@@ -1359,6 +1366,17 @@
      ]
     },
     {
+     "niveau": "pratique",
+     "titre": "Pratique RH (indiquée par un référent RH, non écrite dans les textes du dossier)",
+     "regles": [
+      "Le logiciel de paie applique 7 h 12 pour un temps plein à 36 h (7,20 h) et 4 h 48 pour 24 h par semaine.",
+      "Quand la valeur exacte ne peut pas être saisie, 3 minutes d'écart sont ajoutées dans le logiciel pour compléter.",
+      "Le salarié doit être présent au 1er janvier : un salarié arrivé en cours d'année n'a pas de journée de solidarité à faire.",
+      "Écart avec le texte : l'accord (art. 5.9, p.59) cite pour les CDD de plus de 4 mois la présence « au premier jour de la période de référence » (1er juin). Il ne mentionne pas le 1er janvier. Information à confirmer auprès de la direction ou dans un document de l'entreprise."
+     ],
+     "sources": []
+    },
+    {
      "niveau": "code",
      "titre": "Code du travail",
      "regles": [
@@ -1368,8 +1386,8 @@
     }
    ],
    "notes": [
-    "Le texte ne définit pas « horaire hebdomadaire conventionnel ». Avec 35 h : 24 h → 4 h 48 ; 36 h (temps plein en présence) → 7 h 12. Avec 36 h : 24 h → 4 h 40. Le texte dit aussi « 7 heures » pour le temps complet.",
-    "Les valeurs 7 h 15 et 7 h 20 données oralement ne figurent dans aucun texte du dossier : à confirmer avec le bulletin de paie ou un document de l'entreprise."
+    "Le texte ne définit pas « horaire hebdomadaire conventionnel » : la pratique de paie (7 h 12 pour 36 h ; 4 h 48 pour 24 h) correspond à une référence de 35 h. Avec 36 h de référence, 24 h donnerait 4 h 40.",
+    "L'accord dit aussi « 7 heures » pour le temps complet."
    ]
   }
  ]

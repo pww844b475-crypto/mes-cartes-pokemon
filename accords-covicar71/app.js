@@ -5,7 +5,7 @@ import { chercherFiches, chercherTexte } from './moteur/recherche.js';
 const $ = s => document.querySelector(s);
 const vue = $('#vue');
 let FICHES = [], SYN = {}, CORPUS = null, DOCS_TITRES = {};
-const NIVEAU = { accord: 'Accord', convention: 'Convention', nao: 'NAO 2026', code: 'Code du travail' };
+const NIVEAU = { accord: 'Accord', convention: 'Convention', nao: 'NAO 2026', code: 'Code du travail', pratique: 'Pratique RH' };
 
 function h(tag, attrs = {}, ...enfants) {
   const el = document.createElement(tag);
