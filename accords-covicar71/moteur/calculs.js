@@ -179,4 +179,14 @@ export function remiseAchats({ achats = 0, ancienneteMois = 0 }) {
   ] };
 }
 
-export const CALCULS = { congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };
+// ---- 11. Journée de solidarité (accord de substitution art. 5.9, p.59 ; horaire de référence art. 5.1.2, p.64)
+export function journeeSolidarite({ statut = 'employe', horaireSalarie = 0, horaireConv = '36' }) {
+  if (statut === 'encadrement') return { lignes: [L('accord', 'Journée de solidarité (encadrement)', '1 unité sur le quota annuel de jours de RTT', { brut: 1 })] };
+  const conv = Number(horaireConv);
+  if (!(horaireSalarie > 0) || !(conv > 0)) return { lignes: [], erreur: 'Renseigner l\'horaire hebdomadaire du salarié.' };
+  const minutes = Math.round((7 * 60 * horaireSalarie) / conv);
+  const hm = `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`;
+  return { lignes: [L('accord', 'Heures de solidarité à ajouter sur l\'année', `${hm} (formule : 7 h × ${horaireSalarie} ÷ ${conv})`, { brut: minutes })] };
+}
+
+export const CALCULS = { journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };

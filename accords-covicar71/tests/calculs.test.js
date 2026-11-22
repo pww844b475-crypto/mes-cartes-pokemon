@@ -100,3 +100,12 @@ test('remise sur achats — accord art. 3.2 et NAO 2026', () => {
   assert.deepEqual([brut(g, 0), brut(g, 1)], [1100, 1560]);   // plafonds 11 000 × 10 % ; 13 000 × 12 %
   assert.equal(brut(C.remiseAchats({ achats: 5000, ancienneteMois: 2 })), 0);
 });
+
+test('journée de solidarité — accord art. 5.9 (7 h × horaire ÷ horaire conventionnel)', () => {
+  const m = (statut, h, c) => C.journeeSolidarite({ statut, horaireSalarie: h, horaireConv: c }).lignes[0].brut;
+  assert.equal(m('employe', 36, '36'), 420);   // temps complet : 7 h 00
+  assert.equal(m('employe', 24, '36'), 280);   // 7 × 24 ÷ 36 = 4,667 h = 4 h 40
+  assert.equal(m('employe', 24, '35'), 288);   // 7 × 24 ÷ 35 = 4,8 h = 4 h 48
+  assert.equal(val(C.journeeSolidarite({ statut: 'employe', horaireSalarie: 24, horaireConv: '36' })).startsWith('4 h 40'), true);
+  assert.equal(m('encadrement', 36, '36'), 1);
+});

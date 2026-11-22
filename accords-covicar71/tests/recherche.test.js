@@ -27,3 +27,8 @@ test('l\'extrait de la recherche de texte contient le mot cherché', () => {
   const r = chercherTexte('hospitalisation', corpus, 5);
   assert.ok(r.length > 0 && r.every(x => norm(x.extrait).includes('hospitalisation')));
 });
+test('question réelle : « salarié à 24 heures, journée de solidarité » ouvre directement la fiche', () => {
+  const r = chercherFiches('je suis un salarié à 24 heures, combien ai-je de journée de solidarité', fiches, syn);
+  assert.equal(r.mode, 'direct'); assert.equal(r.fiches[0].id, 'journee-solidarite');
+});
+test('« préavis » ouvre directement la fiche préavis', () => assert.equal(chercherFiches('préavis', fiches, syn).mode, 'direct'));

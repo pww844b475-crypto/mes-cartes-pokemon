@@ -46,11 +46,13 @@ export function chercherFiches(requete, fiches, synonymes = {}) {
     // couverture : au-delà d'un mot, plus de la moitié des mots cherchés (ou leurs synonymes) doivent se retrouver dans la fiche
     const mots = [...ix.motsQuestion, ...ix.motsSyn, ...ix.motsTheme];
     const couverts = base.filter(t => etendre([t], synonymes).some(u => tokMatch(u, mots) > 0)).length;
-    if (base.length >= 2 && couverts / base.length <= 0.5) s = 0;
+    if (base.length === 2 ? couverts < 2 : base.length >= 3 && couverts < 2) s = 0;
     return { fiche: ix.f, score: s };
   }).filter(x => x.score >= 2).sort((a, b) => b.score - a.score);
   if (!scores.length) return { mode: 'aucune', fiches: [] };
   // Mot large : une seule requête courte qui touche plusieurs fiches de même thème → proposer les boutons.
+  // Une fiche nettement devant les autres : on l'ouvre directement.
+  if (scores.length === 1 || scores[0].score >= 1.5 * scores[1].score) return { mode: 'direct', fiches: [scores[0].fiche] };
   const top = scores.slice(0, 8).map(x => x.fiche);
   if (base.length <= 2 && top.length >= 2) return { mode: 'theme', fiches: top, theme: top[0].theme };
   return { mode: 'fiches', fiches: top };

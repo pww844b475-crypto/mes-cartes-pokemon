@@ -26,7 +26,7 @@ label{display:flex;flex-direction:column;gap:4px;font-size:.92rem}
 label.case{flex-direction:row;align-items:center;gap:10px}
 .niveaux{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
 .ligne{display:flex;justify-content:space-between;gap:12px;padding:.45rem 0;border-bottom:1px dashed var(--bord)}
-.ligne b{white-space:nowrap;text-align:right}
+.ligne{flex-wrap:wrap}.ligne b{text-align:right;max-width:100%}
 .badge{font-size:.72rem;font-weight:700;border-radius:6px;padding:.05rem .4rem;background:var(--bord);margin-right:6px}
 .note{font-size:.85rem;color:var(--alerte)}
 .cite{font-size:.88rem;border-left:3px solid var(--bord);padding:.1rem 0 .1rem .6rem;margin:.5rem 0}
@@ -35,3 +35,5 @@ label.case{flex-direction:row;align-items:center;gap:10px}
 .porte{display:grid;place-items:center;min-height:100vh;padding:16px}
 .porte form{background:var(--carte);border:1px solid var(--bord);border-radius:16px;padding:20px;width:min(420px,100%);display:grid;gap:12px}
 ul{padding-left:1.2rem;margin:.3rem 0}
+.reponse{border:2px solid var(--rouge);font-size:1.08rem}
+.reponse h3{color:var(--rouge)}

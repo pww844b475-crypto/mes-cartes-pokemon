@@ -43,7 +43,8 @@ const boutonFiche = f => h('button', { class: 'sec', type: 'button', onclick: ()
 
 function recherche(q) {
   const r = chercherFiches(q, FICHES, SYN);
-  if (r.mode === 'theme') remplir(vue, h('h2', {}, 'Qu\'est-ce que vous cherchez ?'), h('div', { class: 'liste' }, r.fiches.map(boutonFiche)));
+  if (r.mode === 'direct') ouvrirFiche(r.fiches[0]);
+  else if (r.mode === 'theme') remplir(vue, h('h2', {}, 'Qu\'est-ce que vous cherchez ?'), h('div', { class: 'liste' }, r.fiches.map(boutonFiche)));
   else if (r.mode === 'fiches') remplir(vue, h('div', { class: 'liste' }, r.fiches.map(boutonFiche)));
   else rechercheTexte(q);
 }
@@ -77,7 +78,7 @@ function ouvrirFiche(f) {
   function calculer() {
     const r = CALCULS[f.calcul](valeurs);
     remplir(resultat, 
-      h('h3', {}, 'Résultat calculé'),
+      h('h3', {}, 'Calcul avec les valeurs saisies plus bas'),
       r.erreur ? h('p', { class: 'note' }, r.erreur) : null,
       r.info ? h('p', { class: 'note' }, r.info) : null,
       ...(r.lignes || []).map(l => h('div', {},
@@ -92,12 +93,14 @@ function ouvrirFiche(f) {
       h('em', {}, `« ${s.extrait} »`),
       s.note_ocr ? h('div', { class: 'note' }, s.note_ocr) : null,
       DOCS_TITRES[s.doc]?.scan ? tags([n.verifie_image || s.verifie_image ? '✓ Chiffre vérifié sur l\'image' : 'Vérifier le chiffre sur l\'image']) : null)))));
-  remplir(vue, 
+  remplir(vue,
     h('button', { class: 'sec', type: 'button', onclick: () => { accueil(); window.scrollTo(0, 0); } }, '← Retour'),
     h('h2', { style: 'margin-top:12px' }, f.question),
     tags(f.etiquettes),
-    h('div', { class: 'carte' }, h('h3', {}, 'Questions au salarié'), h('div', { class: 'champs' }, champsEl)),
-    resultat, niveaux,
+    h('div', { class: 'carte reponse' }, h('h3', {}, 'La réponse en bref'), h('p', {}, f.reponse)),
+    resultat,
+    h('div', { class: 'carte' }, h('h3', {}, 'Précisez le cas du salarié (le calcul ci-dessus se met à jour)'), h('div', { class: 'champs' }, champsEl)),
+    niveaux,
     f.notes?.length ? h('div', { class: 'carte' }, h('h3', {}, 'À savoir'), h('ul', {}, f.notes.map(n => h('li', {}, n)))) : null);
   calculer(); window.scrollTo(0, 0);
 }

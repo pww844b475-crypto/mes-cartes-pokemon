@@ -91,7 +91,8 @@
    ],
    "notes": [
     "La saisie « jours d'absence » est un nombre de jours normalement travaillés."
-   ]
+   ],
+   "reponse": "Le nombre de jours acquis n'est pas fixé par l'accord : il renvoie à la loi (Code du travail non fourni : information à compléter). Les congés se prennent du 1er juin au 31 mai ; une semaine complète compte pour 6 jours."
   },
   {
    "id": "preavis",
@@ -216,7 +217,8 @@
    ],
    "notes": [
     "Le préavis du salarié démissionnaire employé n'a pas de condition d'ancienneté dans le texte lu."
-   ]
+   ],
+   "reponse": "Employé ou ouvrier : 1 mois, et 2 mois en cas de licenciement avec au moins 2 ans d'ancienneté. Agent de maîtrise : au moins 2 mois. Cadre : 3 mois. Sauf faute grave ou lourde (convention, annexes I à III, art. 5.1)."
   },
   {
    "id": "indemnite-licenciement",
@@ -418,7 +420,8 @@
    ],
    "notes": [
     "Les deux niveaux sont affichés côte à côte sans désigner le plus favorable."
-   ]
+   ],
+   "reponse": "Employé licencié avec au moins 2 ans de présence : 50 % d'un mois de salaire de référence ; dès 3 ans : 75 % plus 25 % par année supplémentaire, dans la limite de 6 mois (accord, art. 3.4). La convention a un autre barème : les deux sont affichés plus bas."
   },
   {
    "id": "prime-annuelle",
@@ -528,7 +531,8 @@
    ],
    "notes": [
     "La prime de vacances (NAO 2026) fait l'objet d'une fiche distincte à venir."
-   ]
+   ],
+   "reponse": "Oui si le salarié a au moins 6 mois d'ancienneté à fin novembre. Montant : 1/12 de la rémunération brute de l'année ; 75 % en acompte début décembre, le solde avec la paie de décembre (accord, art. 3.2)."
   },
   {
    "id": "interessement-2026",
@@ -660,7 +664,8 @@
    "notes": [
     "Sans avenant signé, ce sont les grilles de repli de l'accord qui s'appliquent (onglet « Écarts à vérifier »). La copie de l'avenant reçue n'est pas signée.",
     "Le montant affiché est un total de grilles : le seuil déclencheur, le plafond individuel et la formule de répartition ne sont pas calculés."
-   ]
+   ],
+   "reponse": "Les grilles 2026 donnent jusqu'à 100 € (critère 1), 150 € (démarque) et 150 € (NPS), au prorata de la présence, si le seuil de déclenchement est atteint. L'avenant reçu n'est pas signé."
   },
   {
    "id": "abondement-pee",
@@ -748,7 +753,8 @@
    ],
    "notes": [
     "La note * du règlement renvoie au plafond de la sécurité sociale en vigueur : valeur à compléter."
-   ]
+   ],
+   "reponse": "L'entreprise abonde à 220 % sur les 50 premiers euros, puis 180 %, 150 %, 125 %, 100 %, puis 16,8 % jusqu'à 1 150 € de versements. Plafond d'abondement : 580,30 € (règlement du PEE, art. 5)."
   },
   {
    "id": "majoration-nuit",
@@ -863,7 +869,8 @@
    ],
    "notes": [
     "Les taux de l'accord et de la convention diffèrent : les deux sont affichés avec leur source."
-   ]
+   ],
+   "reponse": "Accord : +30 % de 22 h à 5 h, +10 % de 21 h à 22 h et de 5 h à 6 h. Convention : +20 % de 22 h à 5 h, +5 % de 21 h à 22 h. Les deux textes diffèrent : ils sont affichés côte à côte."
   },
   {
    "id": "arret-maladie",
@@ -1011,7 +1018,8 @@
    ],
    "notes": [
     "Le niveau de prise en charge par la prévoyance (APGIS) n'est pas dans les sources : Information à compléter."
-   ]
+   ],
+   "reponse": "Après 1 an d'ancienneté (sans condition pour un accident du travail), l'entreprise complète les indemnités de la Sécurité sociale. Carence : 2 jours (accord) ou 7 jours (convention). Durée (employés, accord) : 180 jours de 1 à 10 ans, 360 jours de 10 à 25 ans, 540 jours au-delà."
   },
   {
    "id": "evenements-familiaux",
@@ -1142,7 +1150,8 @@
    ],
    "notes": [
     "Pour les décès, l'accord distingue enfant à charge ; la convention cite « un enfant ». Les deux textes sont affichés tels quels."
-   ]
+   ],
+   "reponse": "Naissance ou adoption : 3 jours ouvrés. Décès du conjoint, du partenaire de PACS ou d'un enfant : 5 jours ouvrés. Choisir l'événement plus bas pour voir l'accord et la convention."
   },
   {
    "id": "remise-achats",
@@ -1235,6 +1244,131 @@
    ],
    "notes": [
     "Écart avec le livret CGT (onglet « Écarts à vérifier ») : le livret indique 11 000 € et 12 % temporaire ; les textes signés indiquent 13 000 € en 2026."
+   ],
+   "reponse": "10 % sur les achats, dans la limite de 11 000 € par an, après 3 mois d'ancienneté (accord, art. 3.2). NAO 2026 : 12 % du 1er avril 2026 au 31 mars 2027, plafond de 13 000 € pour 2026."
+  },
+  {
+   "id": "journee-solidarite",
+   "theme": "Nuit, dimanche, jours fériés, solidarité",
+   "question": "Combien d'heures dois-je faire pour la journée de solidarité ?",
+   "reponse": "Temps complet : 7 heures de plus sur l'année. Temps partiel : 7 h × horaire hebdomadaire du salarié ÷ horaire hebdomadaire conventionnel (36 h de temps de présence), soit 4 h 40 pour 24 h par semaine. Encadrement : une unité sur les jours de RTT.",
+   "synonymes": [
+    "journée de solidarité",
+    "solidarité",
+    "lundi de Pentecôte",
+    "pentecôte",
+    "7 heures",
+    "heures de solidarité"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "champs": [
+    {
+     "id": "statut",
+     "label": "Statut",
+     "type": "select",
+     "options": [
+      [
+       "employe",
+       "Employé"
+      ],
+      [
+       "encadrement",
+       "Encadrement (agent de maîtrise, cadre)"
+      ]
+     ]
+    },
+    {
+     "id": "horaireSalarie",
+     "label": "Horaire hebdomadaire du salarié (h)",
+     "type": "number",
+     "step": "0.25",
+     "min": 0,
+     "defaut": 24
+    },
+    {
+     "id": "horaireConv",
+     "label": "Horaire hebdomadaire conventionnel de référence",
+     "type": "select",
+     "options": [
+      [
+       "36",
+       "36 h de temps de présence (accord, art. 5.1.2)"
+      ],
+      [
+       "35",
+       "35 h de travail effectif (accord, art. 5.2.1)"
+      ]
+     ]
+    }
+   ],
+   "calcul": "journeeSolidarite",
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.9)",
+     "regles": [
+      "Le lundi de Pentecôte reste férié chômé ; la journée de solidarité s'ajoute à la durée annuelle de présence.",
+      "Temps complet : +7 heures. Temps partiel : une journée au prorata de l'horaire contractuel : 7 h × régime horaire hebdomadaire ÷ horaire hebdomadaire conventionnel.",
+      "Encadrement : une unité sur le quota annuel de jours de RTT.",
+      "CDD de plus de 4 mois présent au 1er juin : même principe que les employés. Période de référence : du 1er juin au 31 mai.",
+      "Si le nombre d'heures n'est pas atteint à la fin de la période, le solde négatif est reporté sur l'exercice suivant."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.9",
+       "page": 59,
+       "extrait": "Pour les salariés employés à temps complet, la durée annuelle de présence sera augmentée de 7 heures"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.9",
+       "page": 59,
+       "extrait": "la durée annuelle de présence sera augmentée de la valeur d'une journée de travail calculée au prorata de l'horaire contractuel"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.9",
+       "page": 59,
+       "extrait": "7h x Régime horaire hebdomadaire / Horaire hebdomadaire conventionnel",
+       "ocr_corrige": true,
+       "note_ocr": "Formule lue sur l'image de la page 59 (le texte extrait la déformait)."
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.2",
+       "page": 64,
+       "extrait": "L'horaire hebdomadaire de travail est fixé à 36 heures de temps de présence"
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (version du 28 août 2025)",
+     "regles": [
+      "Le travail dû au titre de la journée de solidarité s'ajoute, dans la limite de 7 heures, au plafond de 1 600 heures."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 5.5 (forfait annuel en heures)",
+       "page": 31,
+       "extrait": "Le travail dû au titre de la journée de solidarité s'ajoute, dans la limite de 7 heures, au plafond de 1 600 heures."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non fourni dans les sources."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Le texte ne définit pas précisément « horaire hebdomadaire conventionnel » : 36 h de temps de présence (art. 5.1.2) est retenu par défaut ; 35 h de travail effectif donne 4 h 48 pour 24 h."
    ]
   }
  ]
