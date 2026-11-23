@@ -3393,7 +3393,7 @@
    "id": "conges-pointage",
    "theme": "Congés payés et congés d'ancienneté",
    "question": "Comment mes jours de congés sont-ils décomptés ? (temps partiel, semaine = 6 jours)",
-   "reponse": "Une semaine complète de congés est décomptée pour 6 jours. À temps partiel (moins de 5 jours travaillés par semaine), un jour pris compte pour plusieurs jours : jours décomptés = 6 × jours d'absence ÷ jours travaillés par semaine, arrondi à l'entier inférieur. Exemples : à 3 jours par semaine, 1 jour pris = 2 jours décomptés ; à 4 jours par semaine, 1 jour pris = 1 jour et 2 jours pris = 3 jours (accord, art. 4.1.2).",
+   "reponse": "Une semaine complète de congés est décomptée pour 6 jours, même à temps partiel (à 3 jours par semaine : 3 jours pris = 6 jours décomptés, pas 12). Pour un jour isolé à temps partiel (moins de 5 jours travaillés par semaine) : jours décomptés = 6 × jours d'absence ÷ jours travaillés par semaine, arrondi à l'entier inférieur ; à 3 jours par semaine, 1 jour pris = 2 jours décomptés. Si un jour férié chômé dans l'entreprise tombe dans la semaine de congés, il n'est pas décompté : la semaine compte 5 jours au lieu de 6 (accord, art. 4.1.2 ; Code du travail numérique).",
    "synonymes": [
     "décompte des congés",
     "semaine de congés",
@@ -3406,7 +3406,13 @@
     "salarié à temps partiel",
     "3 jours par semaine",
     "4 jours par semaine",
-    "décompte temps partiel"
+    "décompte temps partiel",
+    "jour férié pendant les congés",
+    "férié dans la semaine de congés",
+    "semaine entière temps partiel",
+    "jour férié congés",
+    "5 jours semaine de congés",
+    "1er mai congés"
    ],
    "etiquettes": [],
    "niveaux": [
@@ -3442,16 +3448,38 @@
     },
     {
      "niveau": "code",
-     "titre": "Code du travail",
+     "titre": "Code du travail numérique (fiche officielle consultée)",
      "regles": [
-      "Information à compléter : Code du travail non consulté sur le décompte en jours ; pour l'acquisition légale, voir la fiche « Combien de jours de congés payés ai-je acquis ? »."
+      "Jour férié habituellement chômé dans l'entreprise : il n'est pas décompté des congés payés. En jours ouvrables (semaine de 6 jours), une semaine de congés avec un férié chômé compte 5 jours.",
+      "Jour férié habituellement travaillé dans l'entreprise : il est décompté (la semaine compte 6 jours)."
      ],
-     "sources": []
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "Fiche « Jour férié pendant les congés »",
+       "page": 41,
+       "extrait": "Le jour férié n'est pas décompté des congés payés."
+      },
+      {
+       "doc": "ct",
+       "article": "Fiche « Jour férié pendant les congés »",
+       "page": 41,
+       "extrait": "le salarié pose 5 jours de congés (lundi 12, mardi 13, mercredi 14, vendredi 16 et samedi 17 août)"
+      },
+      {
+       "doc": "ct",
+       "article": "Fiche « Jour férié pendant les congés »",
+       "page": 41,
+       "extrait": "ce jour est comptabilisé : le salarié pose 6 jours de congés"
+      }
+     ]
     }
    ],
    "notes": [
-    "Exemple : un salarié qui travaille 3 jours par semaine et prend 1 jour de congé se voit décompter 2 jours (6 × 1 ÷ 3). S'il prend ses 3 jours de la semaine, 6 jours sont décomptés : une semaine complète.",
-    "Pour un horaire de 5 ou 6 jours par semaine, c'est la règle « semaine complète = 6 jours » qui s'applique ; les jours isolés sont comptés selon cette même proportion.",
+    "Exemple : un salarié à 3 jours par semaine qui prend sa semaine entière se voit décompter 6 jours ; si un jour férié chômé tombe dans cette semaine, 5 jours.",
+    "Un jour isolé compte plus d'un jour à temps partiel : 1 jour pris à 3 jours par semaine = 2 jours décomptés.",
+    "Les fériés chômés dans l'entreprise sont les 6 jours fériés chômés par an de l'accord (art. 5.8) et le 1er mai ; les autres fériés ouverts sont décomptés.",
+    "Pour un horaire de 5 ou 6 jours par semaine, c'est la règle « semaine complète = 6 jours » qui s'applique.",
     "La saisie « jours d'absence » est un nombre de jours normalement travaillés."
    ],
    "champs": [
@@ -3471,6 +3499,14 @@
      "min": 0,
      "step": "1",
      "defaut": 5
+    },
+    {
+     "id": "joursFeriesChomes",
+     "label": "Jours fériés chômés dans l'entreprise pendant ces congés",
+     "type": "number",
+     "min": 0,
+     "step": "1",
+     "defaut": 0
     }
    ],
    "calcul": "congesPointage",
@@ -5310,6 +5346,1187 @@
    ],
    "calcul": "periodeEssai",
    "categorie": "contrat"
+  },
+  {
+   "id": "heures-sup-seuil",
+   "theme": "Heures supplémentaires, annualisation, temps partiel",
+   "categorie": "temps",
+   "question": "À partir de quand mes heures sont-elles supplémentaires et majorées ? Faut-il l'accord du responsable ?",
+   "reponse": "L'accord donne deux repères, sans les concilier : sont des heures supplémentaires les heures au-delà de 36 heures de temps de présence par semaine, et les heures au-delà de 35 h de travail effectif sont majorées de 25 % jusqu'à la 43e heure puis de 50 %. Une heure supplémentaire doit être demandée ou autorisée par la Direction ou le responsable : le salarié ne peut pas la décider seul. La semaine est comptée du lundi 0 h au dimanche minuit. Le livret CGT annonce 39 h et la 44e heure : écart à vérifier.",
+   "synonymes": [
+    "heures supplémentaires",
+    "heures sup",
+    "majoration heures supplémentaires",
+    "25 %",
+    "50 %",
+    "43e heure",
+    "35 heures",
+    "36 heures de présence",
+    "39 heures",
+    "44e heure",
+    "autorisation heures supplémentaires",
+    "accord du responsable",
+    "semaine civile",
+    "seuil heures sup"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.2.1, p.65)",
+     "regles": [
+      "Pour un horaire organisé sur la semaine : heures supplémentaires = heures accomplies au-delà de 36 heures de temps de présence par semaine.",
+      "Heures au-delà de 35 h de travail effectif hors modulation : majoration de 25 % au-delà de la 35e heure et jusqu'à la 43e heure, 50 % au-delà de la 43e heure.",
+      "Le recours aux heures supplémentaires requiert la demande ou l'autorisation préalable et expresse de la Direction ; sans cela, elles ne sont pas comptées comme heures supplémentaires.",
+      "Le temps de travail et les heures supplémentaires sont décomptés par semaine civile, du lundi 0 h au dimanche minuit."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.2.1",
+       "page": 65,
+       "extrait": "les heures accomplies au-delà de 36 heures de temps de présence par semaine",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.2.1",
+       "page": 65,
+       "extrait": "Les heures effectuées au-delà de 35 h de travail effectif et qui n'entrent pas dans le cadre de la modulation",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.2.1",
+       "page": 65,
+       "extrait": "Majoration de 25 % au-delà de la 35e heure et jusqu'à la 43e heure",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.2.1",
+       "page": 65,
+       "extrait": "Majoration de 50 % au-delà de la 43e heure.",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.2.1",
+       "page": 65,
+       "extrait": "ne peut résulter de la propre initiative du salarié mais requiert la demande ou l'autorisation préalable et expresse de la Direction",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.2.1",
+       "page": 65,
+       "extrait": "soit du lundi à 00:00 heure au dimanche minuit",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Convention collective (art. 5.8, p.33 ; version du 28 août 2025)",
+     "regles": [
+      "Les heures supplémentaires sont rémunérées conformément aux dispositions légales et réglementaires."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 5.8",
+       "page": 33,
+       "extrait": "Les heures supplémentaires sont rémunérées conformément aux dispositions légales et réglementaires."
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.21)",
+     "regles": [
+      "Le livret indique : heures au-delà de 39 h majorées à 25 %, et à partir de la 44e heure à 50 %. Cet écart avec l'accord est signalé dans votre tableau et n'est pas tranché."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Temps complet",
+       "page": 21,
+       "extrait": "Les heures effectuées au-delà de 39h sont majorées à 25 % et, à partir de la 44e heure, à 50 %."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "Durée légale : 35 heures par semaine (L3121-27). Toute heure au-delà est une heure supplémentaire (L3121-28).",
+      "À défaut d'accord : majoration de 25 % pour chacune des huit premières heures supplémentaires, puis 50 % (L3121-36)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3121-27",
+       "page": 42,
+       "extrait": "est fixée à trente-cinq heures par semaine"
+      },
+      {
+       "doc": "ct",
+       "article": "L3121-36",
+       "page": 44,
+       "extrait": "majoration de salaire de 25 % pour chacune des huit premières heures supplémentaires"
+      },
+      {
+       "doc": "ct",
+       "article": "L3121-36",
+       "page": 44,
+       "extrait": "Les heures suivantes donnent lieu à une majoration de 50 %"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "L'accord cite deux seuils (36 h de temps de présence et 35 h de travail effectif). Les deux lectures sont affichées sans trancher. Pour un salarié à l'annualisation, les heures entre 36 h et 39 h ne sont pas des heures supplémentaires (voir la fiche annualisation).",
+    "La majoration légale (25 % puis 50 %) est celle écrite dans l'accord pour le seuil de 35 h."
+   ],
+   "champs": [
+    {
+     "id": "heuresEffectives",
+     "label": "Heures de travail effectif dans la semaine",
+     "type": "number",
+     "min": 0,
+     "step": "0.25",
+     "defaut": 40
+    },
+    {
+     "id": "heuresPresence",
+     "label": "Heures de temps de présence dans la semaine",
+     "type": "number",
+     "min": 0,
+     "step": "0.25",
+     "defaut": 41
+    },
+    {
+     "id": "tauxHoraire",
+     "label": "Taux horaire de base (€), si connu",
+     "type": "number",
+     "min": 0,
+     "step": "0.01",
+     "defaut": 0
+    }
+   ],
+   "calcul": "heuresSup"
+  },
+  {
+   "id": "heures-sup-contingent",
+   "theme": "Heures supplémentaires, annualisation, temps partiel",
+   "categorie": "temps",
+   "question": "Quel est le contingent annuel d'heures supplémentaires ?",
+   "reponse": "180 heures par année civile et par salarié, et 130 heures pour les agents de maîtrise (accord, art. 5.2.2). La convention fixe aussi 180 heures : information du CSE jusqu'à 130 heures, consultation préalable pour les 50 heures suivantes, avis du CSE au-delà. Les heures au-delà du contingent ouvrent droit à une contrepartie obligatoire en repos.",
+   "synonymes": [
+    "contingent annuel",
+    "contingent d'heures supplémentaires",
+    "180 heures",
+    "130 heures",
+    "dépassement du contingent",
+    "contrepartie obligatoire en repos",
+    "contingent agents de maîtrise"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.2.2, p.65)",
+     "regles": [
+      "Contingent annuel : 180 heures par année civile et par salarié, sauf agents de maîtrise : 130 heures."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.2.2",
+       "page": 65,
+       "extrait": "Le contingent annuel d'heures supplémentaires est fixé à 180 heures par année civile et par salarié",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.2.2",
+       "page": 65,
+       "extrait": "hormis pour les salariés agents de maîtrise où il est fixé à 130 heures",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Convention collective (art. 5.8.1 à 5.8.3, p.33 ; version du 28 août 2025)",
+     "regles": [
+      "Contingent annuel : 180 heures. Le recours aux 130 premières heures fait l'objet d'une information du CSE ; les 50 suivantes d'une consultation préalable ; au-delà, avis du CSE.",
+      "Les heures au-delà du contingent donnent lieu à une contrepartie obligatoire en repos, à prendre dans un délai maximum de 6 mois, par journées ou demi-journées."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 5.8.1",
+       "page": 33,
+       "extrait": "Le contingent annuel d'heures supplémentaires, à compter de l'année 2003, est fixé à 180 heures."
+      },
+      {
+       "doc": "cc",
+       "article": "art. 5.8.1",
+       "page": 33,
+       "extrait": "Les 50 heures suivantes feront obligatoirement l'objet d'une consultation préalable de cette même instance"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 5.8.3",
+       "page": 33,
+       "extrait": "doit être pris dans un délai maximum de 6 mois suivant l'ouverture du droit"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "Les heures effectuées au-delà du contingent annuel ouvrent droit à une contrepartie obligatoire sous forme de repos (L3121-30)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3121-30",
+       "page": 45,
+       "extrait": "Les heures effectuées au delà de ce contingent annuel ouvrent droit à une contrepartie obligatoire sous forme de repos"
+      }
+     ]
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "heures-sup-paiement",
+   "theme": "Heures supplémentaires, annualisation, temps partiel",
+   "categorie": "temps",
+   "question": "Mes heures supplémentaires sont-elles payées ou récupérées ?",
+   "reponse": "Dans l'annualisation, les heures excédentaires sont, au choix du salarié et dans la limite du contingent annuel, payées ou remplacées par un repos compensateur ; au-delà du contingent, elles sont automatiquement remplacées par du repos (accord, art. 5.1.9.1). La convention permet de compenser intégralement heures et majorations en repos, selon les règles de chaque entreprise ; la contrepartie obligatoire en repos se prend sous 6 mois.",
+   "synonymes": [
+    "heures supplémentaires payées",
+    "récupérer les heures",
+    "repos compensateur",
+    "repos compensateur équivalent",
+    "payées ou récupérées",
+    "heures excédentaires",
+    "récupération heures sup"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.1.9.1, p.69)",
+     "regles": [
+      "Heures excédentaires par rapport à l'horaire annuel de référence : au choix du salarié, dans la limite du contingent annuel, soit payées, soit remplacées par un repos compensateur.",
+      "Au-delà du contingent annuel : automatiquement remplacées par un repos compensateur."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.1.9.1",
+       "page": 69,
+       "extrait": "au choix du salarié, dans la limite du contingent annuel d'heures supplémentaires",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.9.1",
+       "page": 69,
+       "extrait": "Au-delà du contingent annuel, ces heures sont automatiquement remplacées par un repos compensateur",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Convention collective (art. 5.8.2 et 5.8.3, p.33 ; version du 28 août 2025)",
+     "regles": [
+      "Les heures supplémentaires et leurs majorations peuvent être intégralement compensées en temps de repos selon les règles de chaque entreprise ; ce repos équivalent n'est pas imputé sur le contingent.",
+      "Contrepartie obligatoire en repos après le contingent : à prendre sous 6 mois, par journées ou demi-journées."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 5.8.2",
+       "page": 33,
+       "extrait": "Les heures supplémentaires, ainsi que les majorations s'y rapportant, pourront être intégralement compensées en temps de repos"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 5.8.3",
+       "page": 33,
+       "extrait": "doit être pris dans un délai maximum de 6 mois suivant l'ouverture du droit"
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.20)",
+     "regles": [
+      "Reprend la règle de l'accord : payées ou remplacées par un repos compensateur."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Modulation des horaires",
+       "page": 20,
+       "extrait": "soit remplacées par un repos compensateur."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "annualisation-principe",
+   "theme": "Heures supplémentaires, annualisation, temps partiel",
+   "categorie": "temps",
+   "question": "Qu'est-ce que l'annualisation et quelles sont les limites hebdomadaires ?",
+   "reponse": "Le temps de travail des employés à temps complet en CDI (niveaux 1 à 4) est organisé sur l'année, du 1er juin au 31 mai, sur une moyenne de 36 heures de temps de présence par semaine. La semaine varie entre 33 h et 39 h. La durée annuelle de référence est de 1 656 h 10 en année normale et 1 663 h 23 en année bissextile (journée de solidarité incluse). Les heures entre 36 h et 39 h ne sont pas des heures supplémentaires ; celles au-delà de 39 h, ou au-delà de la durée annuelle, le sont.",
+   "synonymes": [
+    "annualisation",
+    "modulation",
+    "33 heures",
+    "39 heures",
+    "36 heures",
+    "1656 heures",
+    "1656 h 10",
+    "1663",
+    "période de référence",
+    "haute activité",
+    "basse activité",
+    "limite haute",
+    "limite basse",
+    "compteur annualisation",
+    "employés niveaux 1 à 4"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.1.2 à 5.1.5, p.66-68)",
+     "regles": [
+      "Salariés concernés : employés (niveaux 1 à 4) à temps complet en CDI ; les CDD et intérimaires peuvent être intégrés.",
+      "Période de référence : du 1er juin de l'année N au 31 mai de l'année N+1.",
+      "Moyenne de 36 h de temps de présence par semaine ; haute activité : 39 h au plus ; basse activité : 33 h au moins (plus ou moins 3 h).",
+      "Durée annuelle de référence : 1 656 h 10 en année normale, 1 663 h 23 en année bissextile, journée de solidarité incluse ; chaque salarié a une semaine de repos.",
+      "Heures supplémentaires : au-delà de 39 h par semaine, et au-delà de la durée annuelle de référence (déduction faite de celles déjà payées). Les heures entre 36 h et 39 h ne sont pas supplémentaires et ne sont pas majorées."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.1.2",
+       "page": 66,
+       "extrait": "les employés (niveaux 1 à 4 inclus)",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.3",
+       "page": 67,
+       "extrait": "La période de référence de l'annualisation débutera le 1er juin de l'année N pour s'achever le 31 mai de l'année N+1",
+       "ocr_corrige": true,
+       "note_ocr": "Le texte extrait lisait « 1° juin » ; l'image de la page 67 montre « 1er juin ».",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.4",
+       "page": 67,
+       "extrait": "la limite supérieure de l'annualisation est fixée à 39 heures de temps de présence hebdomadaire",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.4",
+       "page": 67,
+       "extrait": "la limite inférieure de l'annualisation est fixée à 33 heures de temps de présence hebdomadaire",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.4",
+       "page": 67,
+       "extrait": "1656 heures et 10 minutes (journée de solidarité incluse) en année normale et de 1663 heures et 23 minutes en année bissextile",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.5",
+       "page": 68,
+       "extrait": "au-delà de 36 heures de temps de présence par semaine dans la limite supérieure ne constituent pas des heures supplémentaires",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.20)",
+     "regles": [
+      "Modulation de plus ou moins 3 h pour un temps plein, période du 1er juin au 31 mai."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Modulation des horaires",
+       "page": 20,
+       "extrait": "dans la limite de plus ou moins 3h pour un temps plein"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Pour un salarié à temps partiel : voir la fiche « modulation du temps partiel ».",
+    "La durée annuelle de 1 656 h 10 comprend la journée de solidarité (accord, art. 5.1.4)."
+   ],
+   "champs": [
+    {
+     "id": "presenceSemaine",
+     "label": "Heures de temps de présence de la semaine",
+     "type": "number",
+     "min": 0,
+     "step": "0.25",
+     "defaut": 38
+    }
+   ],
+   "calcul": "annualisation"
+  },
+  {
+   "id": "annualisation-compteur",
+   "theme": "Heures supplémentaires, annualisation, temps partiel",
+   "categorie": "temps",
+   "question": "Où voir mon compteur de modulation ?",
+   "reponse": "Un compteur d'heures de modulation est ouvert au nom de chaque salarié : il cumule les heures faites en plus ou en moins par rapport à la moyenne de référence depuis le début de la période d'annualisation. Il figure sur le bulletin de paie, en bas à gauche selon le livret (accord, art. 5.1.8). Il est arrêté à la fin de chaque période d'annualisation.",
+   "synonymes": [
+    "compteur de modulation",
+    "compteur d'heures",
+    "bulletin de paie compteur",
+    "où voir mon compteur",
+    "solde d'heures",
+    "compteur annualisation",
+    "bulletin de paye"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.1.8, p.68-69)",
+     "regles": [
+      "Compteur d'heures de modulation ouvert au nom de chaque salarié : heures faites en plus ou en moins par rapport à l'horaire moyen de référence.",
+      "Établi pour chaque période de paie, cumul depuis le début de la période d'annualisation ; il figure sur le bulletin de paye.",
+      "Arrêté à la fin de chaque période d'annualisation, sauf rupture du contrat qui entraîne une régularisation immédiate."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.1.8",
+       "page": 68,
+       "extrait": "Un compteur d'heures de modulation sera ouvert au nom de chaque salarié",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.8",
+       "page": 69,
+       "extrait": "Ce compteur figure sur le bulletin de paye.",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.8",
+       "page": 69,
+       "extrait": "Le compteur est arrêté à la fin de chaque période d'annualisation",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.20)",
+     "regles": [
+      "Le compteur figure en bas à gauche du bulletin de paie."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Modulation des horaires",
+       "page": 20,
+       "extrait": "Ce compteur figure en bas à gauche du bulletin de paie."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "annualisation-deficit",
+   "theme": "Heures supplémentaires, annualisation, temps partiel",
+   "categorie": "temps",
+   "question": "Mes heures déficitaires sont-elles reportées ?",
+   "reponse": "Les heures déficitaires du fait du salarié sont reportées sur l'exercice suivant, dans la limite d'une semaine maximum (accord, art. 5.1.9.2). Le livret CGT reprend la même règle. L'accord ne dit pas ce qui se passe pour les heures déficitaires qui ne sont pas du fait du salarié.",
+   "synonymes": [
+    "heures déficitaires",
+    "report heures",
+    "déficit d'heures",
+    "heures en moins",
+    "compteur négatif",
+    "une semaine maxi",
+    "report sur l'exercice suivant"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.1.9.2, p.69)",
+     "regles": [
+      "Les heures déficitaires du fait du salarié font l'objet d'un report sur l'exercice suivant dans la limite d'une semaine maximum."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.1.9.2",
+       "page": 69,
+       "extrait": "Les heures déficitaires du fait du salarié feront l'objet d'un report sur l'exercice suivant dans la limite d'une semaine maxi.",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.20)",
+     "regles": [
+      "Même règle."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Heures déficitaires",
+       "page": 20,
+       "extrait": "Les heures déficitaires feront l'objet d'un report sur l'exercice suivant dans la limite d'une semaine maxi."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Information à compléter : traitement des heures déficitaires qui ne sont pas du fait du salarié (non précisé dans le texte)."
+   ]
+  },
+  {
+   "id": "annualisation-depart",
+   "theme": "Heures supplémentaires, annualisation, temps partiel",
+   "categorie": "temps",
+   "question": "Annualisation : que devient mon compteur d'heures si je pars ou si je suis embauché en cours d'année ?",
+   "reponse": "À l'embauche en cours de période, la durée de travail tient compte de la date d'entrée et de la fin de la période. En cas de départ, le temps de préavis sert d'abord à régulariser les heures excédentaires ou déficitaires ; si cela ne suffit pas, il y a paiement ou déduction sur le solde de tout compte, sur la base de l'horaire réel (accord, art. 5.1.10 et 5.1.7).",
+   "synonymes": [
+    "départ en cours d'année annualisation",
+    "rupture annualisation",
+    "solde de tout compte heures",
+    "régularisation du compteur",
+    "embauche en cours d'année annualisation",
+    "heures de modulation au départ",
+    "préavis régularisation heures"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.1.7, 5.1.8 et 5.1.10, p.68-69)",
+     "regles": [
+      "Embauche en cours de période : la durée du travail tient compte de la date d'entrée et de la date de fin de la période d'annualisation.",
+      "Départ : le temps de préavis est utilisé pour régulariser les heures excédentaires ou déficitaires ; sinon, régularisation entre heures réellement effectuées et heures théoriques, par paiement ou déduction sur le solde de tout compte.",
+      "En cas de rupture du contrat, le compteur est régularisé immédiatement ; la rémunération est régularisée sur la base de l'horaire réel."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.1.10.2",
+       "page": 69,
+       "extrait": "Le temps de préavis éventuel sera utilisé, afin de régulariser la situation de l'intéressé",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.10.2",
+       "page": 69,
+       "extrait": "Il sera procédé soit au paiement, soit à la déduction sur le solde de tout compte.",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.7",
+       "page": 68,
+       "extrait": "sa rémunération devra être régularisée sur la base de son horaire réel de travail",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "heures-complementaires",
+   "theme": "Heures supplémentaires, annualisation, temps partiel",
+   "categorie": "temps",
+   "question": "Heures complémentaires à temps partiel : limite et majoration ?",
+   "reponse": "Des heures complémentaires peuvent être faites par des volontaires, sans dépasser le tiers de la durée du contrat ni les limites contractuelles, ni la durée légale ou conventionnelle. Celles effectuées au-delà du 1/10 de la durée hebdomadaire du contrat sont majorées de 25 % (accord, art. 5.1.5, chapitre temps partiel). La loi impose une majoration d'au moins 10 % et interdit qu'elles portent le salarié au niveau de la durée légale.",
+   "synonymes": [
+    "heures complémentaires",
+    "temps partiel heures en plus",
+    "un tiers",
+    "1/10",
+    "majoration 25 % temps partiel",
+    "volontaires heures complémentaires",
+    "limite heures complémentaires"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.1.5, p.81-82)",
+     "regles": [
+      "Heures complémentaires : sans dépasser le tiers de la durée hebdomadaire ou mensuelle, ni les limites contractuelles, ni la durée légale ou conventionnelle hebdomadaire.",
+      "Au-delà du 1/10 de la durée hebdomadaire du contrat : majoration de 25 %.",
+      "Seules des personnes volontaires les effectuent."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.1.5",
+       "page": 81,
+       "extrait": "Des heures complémentaires peuvent être effectuées sans pouvoir dépasser le tiers de la durée hebdomadaire ou mensuelle",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.5",
+       "page": 82,
+       "extrait": "Elles ne doivent pas avoir pour effet de dépasser la durée légale ou conventionnelle hebdomadaire",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.5",
+       "page": 82,
+       "extrait": "Les heures complémentaires ne sont effectuées que par des personnes volontaires",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.21)",
+     "regles": [
+      "Reprend ces règles et ajoute « ni dépasser 36 h hebdo » : le texte de l'accord parle de la durée légale ou conventionnelle, sans chiffrer."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Heures complémentaires",
+       "page": 21,
+       "extrait": "Les heures complémentaires effectuées au-delà d'1/10 du temps contrat sont majorées de 25 %."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "Les heures complémentaires ne peuvent pas porter la durée du salarié au niveau de la durée légale ou conventionnelle (L3123-9).",
+      "Un accord de branche étendu peut fixer le taux de majoration, qui ne peut pas être inférieur à 10 % (L3123-21)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3123-9",
+       "page": 46,
+       "extrait": "au niveau de la durée légale du travail ou, si elle est inférieure, au niveau de la durée de travail fixée conventionnellement"
+      },
+      {
+       "doc": "ct",
+       "article": "L3123-21",
+       "page": 47,
+       "extrait": "Ce taux ne peut être inférieur à 10 %"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "La durée « légale ou conventionnelle » est de 35 h (loi) ou de 36 h de présence (accord) : le texte ne tranche pas."
+   ],
+   "champs": [
+    {
+     "id": "horaireContrat",
+     "label": "Horaire hebdomadaire du contrat (h)",
+     "type": "number",
+     "min": 0,
+     "step": "0.25",
+     "defaut": 24
+    },
+    {
+     "id": "heuresCompl",
+     "label": "Heures complémentaires effectuées dans la semaine",
+     "type": "number",
+     "min": 0,
+     "step": "0.25",
+     "defaut": 5
+    }
+   ],
+   "calcul": "heuresComplementaires"
+  },
+  {
+   "id": "temps-partiel-minimum",
+   "theme": "Heures supplémentaires, annualisation, temps partiel",
+   "categorie": "temps",
+   "question": "Quel est le temps minimum d'un contrat à temps partiel ?",
+   "reponse": "Toutes les embauches se font sur une base de 30 heures par semaine minimum (pauses comprises), avec annualisation et modulation. Dérogation : au moins 10 heures par semaine pour les salariés qui le demandent expressément ou qui relèvent à titre principal d'un autre régime que le régime général (étudiants…), avec vérification de la couverture sociale (accord, art. 5.1.1, chapitre temps partiel). La loi prévoit 24 heures minimum par semaine à défaut d'accord.",
+   "synonymes": [
+    "temps partiel minimum",
+    "30 heures",
+    "10 heures",
+    "24 heures",
+    "contrat étudiant",
+    "temps contrat minimum",
+    "embauche temps partiel",
+    "durée minimale"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.1.1, p.80)",
+     "regles": [
+      "Embauches sur une base de 30 h hebdomadaires minimum (pauses comprises), avec annualisation et modulation, hors contrat étudiant et situation individuelle spécifique.",
+      "Dérogation : au moins 10 h par semaine pour les salariés le désirant expressément ou justifiant d'une affiliation à un autre régime à titre principal (étudiants…) ; les chefs d'établissement vérifient la couverture sociale."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.1.1",
+       "page": 80,
+       "extrait": "Toutes les embauches s'effectueront sur une base horaire hebdomadaire de 30 h minimum (pauses comprises)",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.1",
+       "page": 80,
+       "extrait": "l'horaire régulier de base pourra être d'au moins 10h par semaine",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.21)",
+     "regles": [
+      "Temps contrat minimum à l'embauche : 30 h, avec modulation ; seuls les contrats étudiants ou la demande expresse du salarié peuvent être inférieurs."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Temps partiel",
+       "page": 21,
+       "extrait": "Le temps contrat minimum à l'embauche est de 30h, avec modulation du temps de travail."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "À défaut d'accord, durée minimale de 24 heures par semaine (L3123-27)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3123-27",
+       "page": 48,
+       "extrait": "la durée minimale de travail du salarié à temps partiel est fixée à vingt-quatre heures par semaine"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "L'accord (30 h, 10 h en dérogation) est plus favorable que le minimum légal de 24 h à défaut d'accord."
+   ]
+  },
+  {
+   "id": "temps-partiel-priorite",
+   "theme": "Heures supplémentaires, annualisation, temps partiel",
+   "categorie": "temps",
+   "question": "Passer du temps partiel au temps plein (ou l'inverse) : ai-je une priorité, puis-je revenir en arrière ?",
+   "reponse": "Temps partiel vers temps plein : priorité sur les emplois de mêmes caractéristiques dans l'établissement, sinon dans l'entreprise ; la revalorisation du volume horaire est proposée en priorité avant toute embauche, si le salarié a les compétences. Temps plein vers temps partiel : priorité d'accès et 3 mois pour tester ; ensuite, en cas de changement important de vie de famille (décès du conjoint, divorce…), retour au contrat initial sous 1 mois (accord, art. 5.1.1).",
+   "synonymes": [
+    "priorité temps plein",
+    "passer à temps plein",
+    "passer à temps partiel",
+    "revenir à temps plein",
+    "3 mois d'expérimentation",
+    "changement de vie de famille",
+    "revalorisation volume horaire",
+    "augmenter mes heures"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.1.1, p.80)",
+     "regles": [
+      "Temps partiel vers temps plein : priorité sur les emplois de mêmes caractéristiques dans le même établissement ou, à défaut, dans l'entreprise.",
+      "Revalorisation du volume horaire proposée prioritairement à tout salarié à temps partiel qui en fait la demande et a les compétences requises, avant toute embauche (hors contrats étudiants).",
+      "Temps plein vers temps partiel : priorité d'accès, délai d'expérimentation de 3 mois ; passé ce délai, en cas de changement important de vie de famille, retour au contrat initial sous 1 mois, sur le poste d'origine ou un poste de mêmes caractéristiques."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.1.1",
+       "page": 80,
+       "extrait": "bénéficient d'une priorité sur les emplois de mêmes caractéristiques dans le même établissement",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.1",
+       "page": 80,
+       "extrait": "ils bénéficient d'un délai d'expérimentation du nouveau régime horaire de 3 mois",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.1",
+       "page": 80,
+       "extrait": "ils retrouvent dans un délai de 1 mois suite à leur demande leur contrat de travail initial",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "temps-partiel-modulation",
+   "theme": "Heures supplémentaires, annualisation, temps partiel",
+   "categorie": "temps",
+   "question": "Modulation du temps partiel : quelles limites ?",
+   "reponse": "Les horaires peuvent varier de plus ou moins 4 heures par semaine pour les salariés à temps partiel dont le contrat est de 26 h minimum et qui ont choisi l'annualisation. Tableau : contrat de 26 h, de 22 h à 30 h ; 28 h, de 24 h à 32 h ; 30 h, de 26 h à 34 h. Pas de modulation sous 26 h. La rémunération mensuelle est lissée sur l'horaire contractuel (accord, art. 5.2, chapitre temps partiel).",
+   "synonymes": [
+    "modulation temps partiel",
+    "plus ou moins 4 heures",
+    "26 heures",
+    "annualisation temps partiel",
+    "limites hautes et basses",
+    "tableau modulation",
+    "temps partiel annualisé",
+    "horaire variable temps partiel"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.2, p.82-83)",
+     "regles": [
+      "Modulation de plus ou moins 4 h par semaine pour les salariés à temps partiel titulaires d'un contrat de 26 h minimum et ayant choisi l'annualisation.",
+      "Limites : 26 h → de 22 h à 30 h ; 28 h → de 24 h à 32 h ; 30 h → de 26 h à 34 h.",
+      "Les semaines de moins de 30 h se répartissent sur 4 jours, au-delà sur 5 jours.",
+      "La rémunération mensuelle est lissée sur l'horaire contractuel ; l'écart en fin de période est régularisé (repos ou paiement au choix si en faveur du salarié ; report d'une semaine maxi s'il est en faveur de l'entreprise)."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.2",
+       "page": 82,
+       "extrait": "dans la limite de plus ou moins 4 h pour les salariés à temps partiel",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.2",
+       "page": 82,
+       "extrait": "titulaires d'un contrat de travail de 26h minimum",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.2",
+       "page": 82,
+       "extrait": "Horaire actuel 26 h : limite haute 30 h, limite basse 22 h",
+       "ocr_corrige": true,
+       "note_ocr": "Le texte extrait du tableau lisait « 2h » pour la limite basse de 26 h ; l'image de la page 82 montre « 22 h ».",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.2.3",
+       "page": 83,
+       "extrait": "La moyenne du temps de présence hebdomadaire appréciée à la fin de la période de référence de l'annualisation devra être égale à l'horaire contractuel",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.20)",
+     "regles": [
+      "Modulation de plus ou moins 4 h pour un temps partiel, pas de modulation pour les contrats inférieurs à 26 h."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Modulation des horaires",
+       "page": 20,
+       "extrait": "plus ou moins 4h pour un temps partiel (pas de modulation pour les contrats inférieurs à 26h)"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [],
+   "champs": [
+    {
+     "id": "horaire",
+     "label": "Horaire hebdomadaire du contrat (h)",
+     "type": "number",
+     "min": 0,
+     "step": "1",
+     "defaut": 28
+    }
+   ],
+   "calcul": "modulationTempsPartiel"
+  },
+  {
+   "id": "forfait-jours-cadres",
+   "theme": "Heures supplémentaires, annualisation, temps partiel",
+   "categorie": "temps",
+   "question": "Forfait jours des cadres : conditions, nombre de jours et suivi de la charge de travail ?",
+   "reponse": "Un cadre autonome peut se voir proposer un forfait annuel en jours, par convention individuelle écrite. Le nombre de jours à travailler est de 216 par an, journée de solidarité incluse (211 jours pour les cadres de magasin hors directeurs, avec 5 jours de repos forfaitaires). Repos minimum de 12 heures entre deux journées, repos hebdomadaire complet plus une journée ou deux demi-journées, entretien annuel sur la charge de travail, relevé mensuel, et nombre de jours travaillés sur le bulletin de paie (accord, chapitre 6). Un entretien spécifique sur la charge de travail est prévu au second semestre 2026 (NAO 2026).",
+   "synonymes": [
+    "forfait jours",
+    "cadre forfait jours",
+    "216 jours",
+    "211 jours",
+    "charge de travail",
+    "repos 12 heures",
+    "entretien annuel cadre",
+    "forfait en jours",
+    "jours travaillés cadre",
+    "suivi de la charge"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (chapitre 6, art. 5.1, p.74-77)",
+     "regles": [
+      "Cadres autonomes, convention individuelle écrite ; année de référence du 1er juin au 31 mai.",
+      "216 jours travaillés par an, journée de solidarité incluse ; 211 jours pour les cadres travaillant en magasin (hors directeurs et stagiaires directeurs de supermarchés) avec 5 jours de repos forfaitaires.",
+      "Repos minimum de 12 heures entre 2 journées ; repos hebdomadaire d'une journée entière (en principe le dimanche) plus une journée ou deux demi-journées ; 36 heures consécutives de repos au minimum.",
+      "Entretien individuel au moins une fois par an sur la charge de travail ; relevé mensuel des jours travaillés ; nombre de jours travaillés sur le bulletin de paie ; point trimestriel du manager."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.1.1",
+       "page": 74,
+       "extrait": "conclusion d'une convention individuelle écrite avec chaque salarié concerné",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.2",
+       "page": 75,
+       "extrait": "le nombre de jours devant être travaillé dans l'année est fixé à 216 jours, journée de solidarité incluse",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.2",
+       "page": 75,
+       "extrait": "Leur durée du travail, pour un droit complet à congés payés, est donc de 211 jours sur l'année",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.4",
+       "page": 76,
+       "extrait": "l'exigence d'un temps de repos minimum de 12 heures entre 2 journées de travail doit être respectée"
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1.6",
+       "page": 77,
+       "extrait": "le nombre de jours travaillés sur la période en cours figurera sur le bulletin de paie"
+      }
+     ]
+    },
+    {
+     "titre": "NAO 2026 (partie 7, p.16)",
+     "regles": [
+      "Un entretien spécifique sur la charge de travail des cadres au forfait jours sera organisé au second semestre 2026, pour renforcer le suivi des repos quotidiens et hebdomadaires."
+     ],
+     "sources": [
+      {
+       "doc": "nao",
+       "article": "partie 7",
+       "page": 16,
+       "extrait": "un entretien spécifique sera organisé au second semestre 2026"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Les pages 76-77 de l'accord (repos, entretiens, relevé) sont lues sur le texte extrait ; seules les pages 74 et 75 sont vérifiées sur l'image."
+   ]
+  },
+  {
+   "id": "agents-maitrise-duree",
+   "theme": "Heures supplémentaires, annualisation, temps partiel",
+   "categorie": "temps",
+   "question": "Durée du travail des agents de maîtrise ?",
+   "reponse": "Les agents de maîtrise sont rémunérés sur une base incluant les majorations d'heures supplémentaires, avec une moyenne maximale de 42 h de travail effectif par semaine sur 12 semaines consécutives. Durée moyenne : 40 h de présence (35 h légales + 3 h supplémentaires à 25 % = 38 h de travail effectif). Ceux qui travaillent en magasin ont 19 jours de RTT par an, journée de solidarité comprise. Contingent d'heures supplémentaires : 130 h (accord, chapitre 5).",
+   "synonymes": [
+    "agents de maîtrise",
+    "agent de maîtrise",
+    "maîtrise durée du travail",
+    "40 heures de présence",
+    "38 heures",
+    "42 heures",
+    "19 jours de RTT",
+    "RTT maîtrise",
+    "RTT",
+    "contingent 130 heures"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (chapitre 5, art. 5.1 à 5.3, p.71-73)",
+     "regles": [
+      "Rémunération sur une base comprenant les majorations pour heures supplémentaires, moyenne maximale de 42 h de travail effectif par semaine sur une période quelconque de 12 semaines consécutives.",
+      "Durée moyenne : 40 h de présence par semaine (35 h légales + 3 h supplémentaires à 25 % = 38 h de travail effectif).",
+      "Agents de maîtrise en magasin : 19 jours de RTT par an, journée de solidarité comprise (exercice du 1er juin au 31 mai) ; durée hebdomadaire de présence de référence : 43 h 63.",
+      "Contingent annuel d'heures supplémentaires : 130 h.",
+      "Limites : durée quotidienne de 10 h au plus (12 h de travail effectif possible), 42 h en moyenne sur 12 semaines, 48 h maximum par semaine ; repos minimum de 12 h entre 2 jours de travail ; RTT choisis pour moitié par le salarié, pour moitié par la Direction."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.1",
+       "page": 71,
+       "extrait": "avec une moyenne maximale de 42h de travail effectif par semaine calculée sur une période quelconque de 12 semaines consécutives",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1",
+       "page": 71,
+       "extrait": "leur durée du travail moyenne est fixée comme suit à 40h de présence par semaine",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1",
+       "page": 71,
+       "extrait": "Les agents de maîtrise travaillant en magasins bénéficient de 19 jours de RTT sur l'année en ce compris la journée de solidarité",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.1",
+       "page": 71,
+       "extrait": "Le contingent annuel d'heures supplémentaires est fixé à 130h pour cette catégorie de personnel",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.2.1",
+       "page": 72,
+       "extrait": "la durée maximale quotidienne des agents de maîtrise ne peut dépasser 10 heures"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "La page 72 de l'accord (10 h, 12 h, 48 h, repos) est lue sur le texte extrait ; la page 71 est vérifiée sur l'image."
+   ]
   }
  ],
  "categories": [
@@ -5332,7 +6549,7 @@
    "nom": "Temps de travail",
    "icone": "⏱️",
    "couleur": "#c0561b",
-   "description": "Nuit, dimanche, journée de solidarité"
+   "description": "Heures sup, annualisation, temps partiel, nuit, solidarité"
   },
   {
    "id": "conges",

@@ -285,3 +285,40 @@ test('période d\'essai — convention annexes I à III art. 2, L1221-25', () =>
   assert.equal(e('employe', 100)[1].brut, '2 semaines'); assert.equal(e('employe', 100)[3].brut, '1 mois');   // palier légal seul
   assert.equal(e('maitrise', 5)[2].brut, 24); assert.equal(e('maitrise', 20)[2].brut, 48);
 });
+
+test('congés — temps partiel : semaine entière = 6 jours, jour férié chômé dans la semaine = 5', () => {
+  const p = (h, a, f) => C.congesPointage({ joursHebdo: h, joursAbsence: a, joursFeriesChomes: f }).lignes[0].brut;
+  assert.equal(p(3, 3, 0), 6);   // semaine entière à 3 jours : 6 et non 12
+  assert.equal(p(3, 3, 1), 5);   // un férié chômé dans la semaine
+  assert.equal(p(5, 5, 1), 5);
+  assert.equal(p(2, 2, 0), 6);
+  assert.equal(p(3, 3, 7), 0);   // jamais négatif
+});
+
+test('heures supplémentaires — accord art. 5.2.1, L3121-36', () => {
+  const h = p => C.heuresSup(p).lignes;
+  assert.equal(h({ heuresEffectives: 35 })[0].brut, 0);
+  assert.equal(h({ heuresEffectives: 40 })[0].brut, 5);
+  assert.equal(h({ heuresEffectives: 45, tauxHoraire: 12 })[1].brut, 36);       // (8 × 25 % + 2 × 50 %) × 12 €
+  assert.equal(h({ heuresEffectives: 45, tauxHoraire: 12 })[2].brut, 156);      // 10 h × 12 € + 36 €
+  assert.equal(h({ heuresEffectives: 40, tauxHoraire: 12 })[1].brut, 15);       // 5 h × 25 % × 12 €
+  assert.equal(h({ heuresEffectives: 0, heuresPresence: 38 }).at(-2).brut, 2);  // lecture « 36 h de présence »
+  assert.equal(h({ heuresEffectives: 0, heuresPresence: 35 }).at(-2).brut, 0);
+});
+test('annualisation — accord art. 5.1.4 et 5.1.5 (33 h à 39 h, moyenne 36 h)', () => {
+  const a = p => C.annualisation({ presenceSemaine: p }).lignes;
+  assert.equal(a(36)[0].brut, 0); assert.ok(a(36)[1].valeur.startsWith('Dans la plage'));
+  assert.equal(a(39)[2].brut, 0); assert.equal(a(39.5)[2].brut, 0.5);
+  assert.equal(a(32)[0].brut, -4); assert.ok(a(32)[1].valeur.startsWith('En dessous'));
+});
+test('heures complémentaires — accord art. 5.1.5 (tiers, 1/10, 25 %)', () => {
+  const c = p => C.heuresComplementaires(p).lignes.map(l => l.brut);
+  assert.deepEqual(c({ horaireContrat: 24, heuresCompl: 5 }), [8, 2.4, 2.6, 29]);
+  assert.deepEqual(c({ horaireContrat: 30, heuresCompl: 2 }), [10, 2, 0, 32]);
+  assert.deepEqual(c({ horaireContrat: 20, heuresCompl: 8 }), [6.67, 2, 6, 28]);
+});
+test('modulation du temps partiel — accord art. 5.2 (tableau lu sur l\'image)', () => {
+  const m = h => C.modulationTempsPartiel({ horaire: h }).lignes.map(l => l.brut);
+  assert.deepEqual(m(26), [30, 22]); assert.deepEqual(m(28), [32, 24]); assert.deepEqual(m(30), [34, 26]);
+  assert.deepEqual(m(32), [36, 28]); assert.deepEqual(m(25), [null]);
+});

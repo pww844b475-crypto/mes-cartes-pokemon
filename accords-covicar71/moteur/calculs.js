@@ -4,11 +4,14 @@ export const r2 = x => Math.round((x + Number.EPSILON) * 100) / 100;
 const L = (niveau, label, valeur, extra = {}) => ({ niveau, label, valeur, ...extra });
 
 // ---- 1. Congés payés : décompte des jours à pointer (accord de substitution art. 4.1.2, p.42)
-export function congesPointage({ joursHebdo, joursAbsence }) {
+export function congesPointage({ joursHebdo, joursAbsence, joursFeriesChomes = 0 }) {
   if (!(joursHebdo >= 1 && joursHebdo <= 6) || !(joursAbsence >= 0)) return { lignes: [], erreur: 'Renseigner les jours de travail par semaine (1 à 6) et les jours d\'absence.' };
   const aPointer = joursHebdo >= 5 ? (joursAbsence / joursHebdo) * 6 : (6 * joursAbsence) / joursHebdo;
-  const v = Math.floor(aPointer + 1e-9);
-  return { lignes: [L('accord', 'Jours de congés à pointer', `${v} jour(s)`, { brut: v })] };
+  const base = Math.floor(aPointer + 1e-9);
+  const feries = Math.max(0, Math.floor(joursFeriesChomes));
+  const v = Math.max(0, base - feries);
+  const note = feries > 0 ? `${base} jours moins ${feries} jour(s) férié(s) chômé(s) dans l'entreprise, qui ne sont pas décomptés (fiche officielle du Code du travail numérique). Un férié habituellement travaillé dans l'entreprise reste décompté.` : undefined;
+  return { lignes: [L('accord', 'Jours de congés à pointer', `${v} jour(s)`, { brut: v, note })] };
 }
 
 // ---- 2. Préavis (convention, annexe I art. 5.1 p.114 ; annexe II art. 5.1 p.123 ; annexe III art. 5.1 p.128)
@@ -371,4 +374,46 @@ export function periodeEssai({ statut = 'employe', joursPresence = 0 }) {
   ] };
 }
 
-export const CALCULS = { allocationRetraite, periodeEssai, congesAcquis, fractionnement, congeAnciennete, indemniteConges, grossesse, maternite, paternite, congeParentalAnciennete, delaiProtection, capitalDeces, demenagement, enfantMalade, retraiteProgressive, primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };
+// ---- 28. Heures supplémentaires (accord art. 5.2.1 p.65 ; Code du travail L3121-27, L3121-36)
+export function heuresSup({ heuresEffectives = 0, heuresPresence = 0, tauxHoraire = 0 }) {
+  const hs = Math.max(0, heuresEffectives - 35), h25 = Math.min(hs, 8), h50 = Math.max(hs - 8, 0);
+  const l = [L('accord', 'Lecture « 35 h de travail effectif » : heures supplémentaires', `${r2(hs)} h dont ${r2(h25)} h à 25 % et ${r2(h50)} h à 50 %`, { brut: r2(hs) })];
+  if (tauxHoraire > 0 && hs > 0) { const maj = r2(tauxHoraire * (h25 * 0.25 + h50 * 0.5)); l.push(L('accord', 'Majoration correspondante', `${maj} €`, { brut: maj }), L('accord', 'Total pour ces heures (taux de base + majoration)', `${r2(tauxHoraire * hs + maj)} €`, { brut: r2(tauxHoraire * hs + maj) })); }
+  const hp = Math.max(0, heuresPresence - 36);
+  l.push(L('accord', 'Lecture « 36 h de temps de présence » : heures supplémentaires', `${r2(hp)} h`, { brut: r2(hp), note: 'L\'accord cite les deux seuils (36 h de présence et 35 h de travail effectif) : écart à vérifier, non tranché. Les majorations (25 % puis 50 %) sont écrites pour le seuil de 35 h de travail effectif.' }));
+  l.push(L('code', 'Selon la loi : heures au-delà de 35 h (25 % les 8 premières, 50 % ensuite)', `${r2(hs)} h dont ${r2(h25)} h à 25 % et ${r2(h50)} h à 50 %`, { brut: r2(hs) }));
+  return { lignes: l };
+}
+
+// ---- 29. Annualisation, temps complet (accord art. 5.1.4 à 5.1.5 p.67-68)
+export function annualisation({ presenceSemaine = 0 }) {
+  const p = presenceSemaine, ecart = r2(p - 36);
+  const pos = p > 39 ? 'Au-dessus de la limite haute de 39 h : les heures au-delà sont des heures supplémentaires' : p < 33 ? 'En dessous de la limite basse de 33 h' : 'Dans la plage de 33 h à 39 h';
+  return { lignes: [
+    L('accord', 'Écart avec la moyenne de 36 h de présence (compteur de modulation)', `${ecart > 0 ? '+' : ''}${ecart} h`, { brut: ecart, note: 'Les heures entre 36 h et 39 h ne sont ni supplémentaires ni majorées : elles se compensent sur l\'année.' }),
+    L('accord', 'Position dans la plage de l\'annualisation', pos),
+    L('accord', 'Heures supplémentaires cette semaine (au-delà de 39 h)', `${r2(Math.max(0, p - 39))} h`, { brut: r2(Math.max(0, p - 39)) }),
+  ] };
+}
+
+// ---- 30. Heures complémentaires à temps partiel (accord art. 5.1.5 p.81-82 ; Code du travail L3123-9, L3123-21)
+export function heuresComplementaires({ horaireContrat = 0, heuresCompl = 0 }) {
+  const tiers = r2(horaireContrat / 3), dixieme = r2(horaireContrat / 10), total = r2(horaireContrat + heuresCompl);
+  const maj = r2(Math.max(0, heuresCompl - dixieme)), sans = r2(Math.min(heuresCompl, dixieme));
+  return { lignes: [
+    L('accord', 'Limite : un tiers de la durée du contrat', `${tiers} h par semaine`, { brut: tiers, note: heuresCompl > tiers ? 'Limite dépassée.' : undefined }),
+    L('accord', 'Heures complémentaires sans majoration (jusqu\'à 1/10 du contrat)', `${sans} h`, { brut: sans }),
+    L('accord', 'Heures complémentaires majorées de 25 % (au-delà de 1/10)', `${maj} h`, { brut: maj }),
+    L('accord', 'Durée totale de la semaine', `${total} h`, { brut: total, note: 'Elle ne doit pas atteindre la durée légale (35 h) ou conventionnelle (36 h de présence selon l\'accord) : ' + (total >= 35 ? 'seuil atteint ou dépassé.' : 'seuil respecté.') }),
+  ] };
+}
+
+// ---- 31. Modulation du temps partiel (accord art. 5.2 p.82)
+export function modulationTempsPartiel({ horaire = 0 }) {
+  if (horaire < 26) return { lignes: [L('accord', 'Modulation des horaires', 'Pas de modulation prévue pour un contrat inférieur à 26 h', { brut: null })] };
+  const tab = { 26: [30, 22], 28: [32, 24], 30: [34, 26] };
+  const [haut, bas] = tab[horaire] || [horaire + 4, horaire - 4];
+  return { lignes: [L('accord', 'Limite haute de la semaine', `${haut} h`, { brut: haut }), L('accord', 'Limite basse de la semaine', `${bas} h`, { brut: bas, note: tab[horaire] ? undefined : 'Le tableau de l\'accord ne donne que 26 h, 28 h et 30 h ; la règle générale est de plus ou moins 4 h.' })] };
+}
+
+export const CALCULS = { heuresSup, annualisation, heuresComplementaires, modulationTempsPartiel, allocationRetraite, periodeEssai, congesAcquis, fractionnement, congeAnciennete, indemniteConges, grossesse, maternite, paternite, congeParentalAnciennete, delaiProtection, capitalDeces, demenagement, enfantMalade, retraiteProgressive, primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };

@@ -55,3 +55,9 @@ test('lot 3 (rupture du contrat et retraite) : chacune des 15 questions du table
   const rates = lot3.filter(q => { const r = chercherFiches(q.question, fiches, syn); return !(r.mode === 'direct' && r.fiches[0].id === q.fiche); });
   assert.deepEqual(rates.map(q => `Q${q.n}`), []);
 });
+
+const lot4 = JSON.parse(lire(new URL('./questions-lot4.json', import.meta.url)));
+test('lot 4 (heures supplémentaires, annualisation, temps partiel) : chacune des 15 questions du tableau ouvre directement la bonne fiche', () => {
+  const rates = lot4.filter(q => { const r = chercherFiches(q.question, fiches, syn); return !(r.mode === 'direct' && r.fiches[0].id === q.fiche); });
+  assert.deepEqual(rates.map(q => `Q${q.n}`), []);
+});
