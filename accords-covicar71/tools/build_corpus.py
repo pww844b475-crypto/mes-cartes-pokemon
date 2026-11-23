@@ -22,5 +22,9 @@ for k, (titre, d, off, scan) in DOCS.items():
         t = open(os.path.join(base, f"p{i}.txt"), encoding="utf-8", errors="replace").read()
         pages[str(i)] = re.sub(r"[ \t]+", " ", t).strip()
     out[k] = {"titre": titre, "offset": off, "scan": scan, "pages": pages}
-json.dump(out, open("data/corpus.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+# Corpus complet : usage local (tests de citations), jamais publié.
+json.dump(out, open("data/corpus-complet.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+# Corpus public : sans le projet de participation non signé, la copie non signée de l'avenant, le livret CGT et la brochure de la convention collective.
+EXCLUS_PUBLIC = {"particip", "avenant", "livret", "cc"}
+json.dump({k: v for k, v in out.items() if k not in EXCLUS_PUBLIC}, open("data/corpus.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
 print({k: len(v["pages"]) for k, v in out.items()})

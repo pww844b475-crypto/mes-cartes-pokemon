@@ -150,6 +150,6 @@ $('#titre').addEventListener('click', accueil);
     avenant: { titre: 'Avenant intéressement 2026 (non signé)', scan: false }, interess: { titre: 'Accord d\'intéressement 2025', scan: true },
     pee: { titre: 'Règlement PEE', scan: true }, percol: { titre: 'Règlement PERCOL', scan: true }, livret: { titre: 'Livret CGT', scan: false }, ct: { titre: 'Code du travail (code.travail.gouv.fr, version du 10/08/2016)', scan: false },
   };
-  $('#porte').hidden = false;
+  if (EMPREINTE_MDP) $('#porte').hidden = false; else { $('#appli').hidden = false; accueil(); }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();

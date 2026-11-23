@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { norm } from '../moteur/normalise.js';
-const corpus = JSON.parse(readFileSync(new URL('../data/corpus.json', import.meta.url)));
+const corpus = JSON.parse(readFileSync(new URL('../data/corpus-complet.json', import.meta.url)));
 const { fiches } = JSON.parse(readFileSync(new URL('../fiches/fiches.json', import.meta.url)));
 
 test('les fiches ont un identifiant unique', () => {

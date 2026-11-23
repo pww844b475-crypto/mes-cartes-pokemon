@@ -5,7 +5,7 @@ import { norm } from '../moteur/normalise.js';
 import { chercherFiches, chercherTexte } from '../moteur/recherche.js';
 const { fiches } = JSON.parse(readFileSync(new URL('../fiches/fiches.json', import.meta.url)));
 const syn = JSON.parse(readFileSync(new URL('../fiches/synonymes.json', import.meta.url)));
-const corpus = JSON.parse(readFileSync(new URL('../data/corpus.json', import.meta.url)));
+const corpus = JSON.parse(readFileSync(new URL('../data/corpus-complet.json', import.meta.url)));
 
 test('normalisation : accents, majuscules, ponctuation', () => assert.equal(norm('  Préavis, DÉMISSION !'), 'preavis demission'));
 test('recherche ignore accents et casse', () => assert.equal(chercherFiches('PREAVIS', fiches, syn).fiches[0].id, 'preavis'));
