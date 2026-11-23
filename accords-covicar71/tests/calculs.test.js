@@ -351,3 +351,37 @@ test('comparaison accord / convention : les lignes comparables portent cmp', () 
   const m = C.arretMaladie({ statut: 'employe', ancienneteAns: 3 }).lignes.filter(x => x.cmp);
   assert.deepEqual(m.map(x => x.cmp.s), ['moins', 'moins']);
 });
+
+test('travailleur de nuit — accord art. 5.6 (270 h, 36 nuits) et convention art. 5.11.2 (300 h)', () => {
+  const t = p => C.travailleurDeNuit(p).lignes.map(l => l.brut);
+  assert.deepEqual(t({ joursParSemaine: 2 }), [true, true]);
+  assert.deepEqual(t({ heuresNuit: 280 }), [true, false]);      // entre 270 et 300 heures
+  assert.deepEqual(t({ heuresNuit: 300 }), [true, true]);
+  assert.deepEqual(t({ nuits: 36 }), [true, false]);
+  assert.deepEqual(t({ heuresNuit: 100, nuits: 10, joursParSemaine: 1 }), [false, false]);
+});
+test('repos compensateur de nuit — accord art. 5.6 (7/14/21 h ; cadres 1/2/3 jours) et convention art. 5.11.3', () => {
+  const r = p => C.reposNuit(p).lignes.map(l => l.brut);
+  assert.deepEqual(r({ heuresNuit: 269 }), [0, 1]);
+  assert.deepEqual(r({ heuresNuit: 270 }), [7, 1]);
+  assert.deepEqual(r({ heuresNuit: 900 }), [14, 2]);
+  assert.deepEqual(r({ heuresNuit: 1300 }), [21, 2]);
+  assert.deepEqual(r({ statut: 'cadre', nuits: 35 }), [0]);
+  assert.deepEqual(r({ statut: 'cadre', nuits: 36 }), [1]);
+  assert.deepEqual(r({ statut: 'cadre', nuits: 120 }), [2]);
+  assert.deepEqual(r({ statut: 'cadre', nuits: 171 }), [3]);
+});
+test('dimanche — accord art. 5.7 (60 % / 100 %) et convention art. 5.13 (30 % ou 20 % / 100 %)', () => {
+  const d = p => C.dimanche(p).lignes.map(l => l.brut);
+  assert.deepEqual(d({ type: 'habituel', grandeSurface: true }), [60, 30]);
+  assert.deepEqual(d({ type: 'habituel', grandeSurface: false }), [60, 20]);
+  assert.deepEqual(d({ type: 'exceptionnel' }), [100, 100]);
+  assert.ok(C.dimanche({ type: 'habituel', heures: 4, tauxHoraire: 12 }).lignes[0].valeur.includes('28.8'));   // 4 h × 12 € × 60 %
+  assert.ok(C.dimanche({ type: 'habituel', heures: 4, tauxHoraire: 12 }).lignes[1].valeur.includes('14.4'));   // × 30 %
+});
+test('jour férié travaillé — accord art. 5.8 (2 fois le taux), convention art. 5.14 (1 fois), L3133-6 (1er mai)', () => {
+  const f = p => C.ferieTravaille(p).lignes.map(l => l.brut);
+  assert.deepEqual(f({ heures: 7, tauxHoraire: 12 }), [168, 84]);
+  assert.deepEqual(f({ heures: 7, tauxHoraire: 12, premierMai: true }), [168, 84, 84]);
+  assert.deepEqual(f({ heures: 7 }), [2, 1]);
+});

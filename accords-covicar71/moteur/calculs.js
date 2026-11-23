@@ -431,4 +431,53 @@ export function participationRepartition({ salaireAnnuel = 0, plafondSecu = 0, m
   ] };
 }
 
-export const CALCULS = { participationRepartition, heuresSup, annualisation, heuresComplementaires, modulationTempsPartiel, allocationRetraite, periodeEssai, congesAcquis, fractionnement, congeAnciennete, indemniteConges, grossesse, maternite, paternite, congeParentalAnciennete, delaiProtection, capitalDeces, demenagement, enfantMalade, retraiteProgressive, primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };
+// ---- 33. Travailleur de nuit (accord art. 5.6 p.55 ; convention art. 5.11.2 p.35 ; L3122-5)
+export function travailleurDeNuit({ joursParSemaine = 0, heuresNuit = 0, nuits = 0 }) {
+  const regle1 = joursParSemaine >= 2;
+  const acc = regle1 || heuresNuit >= 270 || nuits >= 36, cc = regle1 || heuresNuit >= 300;
+  return { lignes: [
+    L('accord', 'Travailleur de nuit selon l\'accord', acc ? 'Oui' : 'Non', { brut: acc, note: 'Au moins 2 fois par semaine 3 h entre 21 h et 6 h, ou au moins 270 heures ou 36 nuits du 1er juin au 31 mai.' }),
+    L('convention', 'Travailleur de nuit selon la convention', cc ? 'Oui' : 'Non', { brut: cc, note: 'Au moins 2 fois par semaine 3 h de nuit, ou au moins 300 heures de travail effectif sur 12 mois. Ces dispositions de la convention s\'appliquent en l\'absence d\'accord d\'entreprise.' }),
+  ] };
+}
+
+// ---- 34. Repos compensateur du travail de nuit (accord art. 5.6 p.56 ; convention art. 5.11.3 p.35-36)
+export function reposNuit({ statut = 'employe', heuresNuit = 0, nuits = 0 }) {
+  const l = [];
+  if (statut === 'cadre') {
+    const j = nuits >= 171 ? 3 : nuits >= 120 ? 2 : nuits >= 36 ? 1 : 0;
+    l.push(L('accord', 'Cadre au forfait jours : repos compensateur payé', j ? `${j} jour(s) de repos compensateur` : 'Aucun (moins de 36 nuits)', { brut: j }));
+    return { lignes: l };
+  }
+  const h = heuresNuit >= 1300 ? 21 : heuresNuit >= 900 ? 14 : heuresNuit >= 270 ? 7 : 0;
+  l.push(L('accord', 'Repos compensateur payé (heures de nuit du 1er juin au 31 mai)', h ? `${h} heures de repos compensateur` : 'Aucun (moins de 270 heures)', { brut: h }));
+  const j = heuresNuit >= 900 ? 2 : heuresNuit >= 300 ? 1 : heuresNuit > 0 ? 1 : 0;
+  l.push(L('convention', 'Repos compensateur du travailleur de nuit', j ? `${j} jour(s) ouvré(s)` : 'Aucun', { brut: j, note: heuresNuit > 0 && heuresNuit < 300 ? '1 jour proratisé si le salarié fait au moins 3 h de nuit 2 fois par semaine. Ces dispositions s\'appliquent en l\'absence d\'accord d\'entreprise.' : 'Ces dispositions s\'appliquent en l\'absence d\'accord d\'entreprise.' }));
+  return { lignes: l };
+}
+
+// ---- 35. Majoration du travail du dimanche (accord art. 5.7 p.57 ; convention art. 5.13.2 et 5.13.3 p.38)
+export function dimanche({ type = 'habituel', heures = 0, tauxHoraire = 0, grandeSurface = true }) {
+  const l = [];
+  const euros = p => tauxHoraire > 0 ? ` = ${r2(heures * tauxHoraire * p / 100)} €` : '';
+  if (type === 'exceptionnel') {
+    l.push(L('accord', 'Dimanche exceptionnel : majoration', `+100 %${euros(100)}`, { brut: 100, cmp: { g: 'dim', v: 100, s: 'plus' }, note: 'Cette majoration remplace la majoration légale des heures supplémentaires. Le repos hebdomadaire est décalé, non supprimé, dans la quinzaine.' }));
+    l.push(L('convention', 'Dimanche occasionnel : majoration', `+100 %${euros(100)}`, { brut: 100, cmp: { g: 'dim', v: 100, s: 'plus' }, note: 'Repos décalé dans la quinzaine ; volontariat pour certaines dérogations.' }));
+  } else {
+    l.push(L('accord', 'Dimanche habituel (employés, ouvertures habituelles) : majoration', `+60 %${euros(60)}`, { brut: 60, cmp: { g: 'dim', v: 60, s: 'plus' }, note: 'Cette majoration remplace la majoration légale des heures supplémentaires.' }));
+    const p = grandeSurface ? 30 : 20;
+    l.push(L('convention', grandeSurface ? 'Dimanche habituel, commerce de plus de 400 m² : majoration d\'au moins' : 'Dimanche habituel, commerce de 400 m² ou moins, sans 1,5 jour de repos consécutif : majoration de', `+${p} %${euros(p)}`, { brut: p, cmp: { g: 'dim', v: p, s: 'plus' }, note: grandeSurface ? 'Jusqu\'à 13 h, sans condition de repos consécutif.' : undefined }));
+  }
+  return { lignes: l };
+}
+
+// ---- 36. Jour férié travaillé (accord art. 5.8 p.58 ; convention art. 5.14 p.38-39 ; L3133-6 pour le 1er mai)
+export function ferieTravaille({ heures = 0, tauxHoraire = 0, premierMai = false }) {
+  const e = k => tauxHoraire > 0 ? r2(heures * tauxHoraire * k) : null;
+  const l = [L('accord', 'Jour férié travaillé : indemnité en plus du maintien du salaire mensuel (heures effectuées + majoration de 100 %)', tauxHoraire > 0 ? `${e(2)} € (soit 2 fois le taux de base)` : '2 fois le taux de base', { brut: e(2) ?? 2, cmp: { g: 'ferie', v: 2, s: 'plus' }, note: 'Montant de l\'indemnité : heures effectuées réellement, plus une majoration égale à 100 % du taux normal.' })];
+  l.push(L('convention', 'Jour férié travaillé : au choix du salarié, paiement au taux horaire des heures effectuées en plus du salaire mensuel, ou repos payé d\'égale durée', tauxHoraire > 0 ? `${e(1)} € ou ${r2(heures)} h de repos payé` : '1 fois le taux de base ou repos payé', { brut: e(1) ?? 1, cmp: { g: 'ferie', v: 1, s: 'plus' }, note: 'Repos à prendre dans les 15 jours avant ou après le jour férié travaillé.' }));
+  if (premierMai) l.push(L('code', '1er mai travaillé (loi)', tauxHoraire > 0 ? `${e(1)} € en plus du salaire correspondant au travail accompli` : 'Indemnité égale au salaire du travail accompli', { brut: e(1) ?? 1, note: 'Le 1er mai est férié et chômé ; ceux qui y sont occupés ont droit en plus du salaire à une indemnité égale à ce salaire (L3133-6).' }));
+  return { lignes: l };
+}
+
+export const CALCULS = { travailleurDeNuit, reposNuit, dimanche, ferieTravaille, participationRepartition, heuresSup, annualisation, heuresComplementaires, modulationTempsPartiel, allocationRetraite, periodeEssai, congesAcquis, fractionnement, congeAnciennete, indemniteConges, grossesse, maternite, paternite, congeParentalAnciennete, delaiProtection, capitalDeces, demenagement, enfantMalade, retraiteProgressive, primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };

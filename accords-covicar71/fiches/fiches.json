@@ -1079,7 +1079,11 @@
     "300 km",
     "plus de 300 km",
     "voyager",
-    "déplacement obsèques"
+    "déplacement obsèques",
+    "pris au moment de l'événement",
+    "jours à prendre au moment de l'événement",
+    "justificatif événement familial",
+    "avec justificatif"
    ],
    "etiquettes": [
     "Vérifier le chiffre sur l'image"
@@ -7329,6 +7333,1050 @@
     "Signatures : constat sur l'image de la page 12 de la version signée (la CGT n'a pas signé). L'accord est valable avec les autres signataires.",
     "L'accord mentionne le plan d'épargne d'entreprise du 9 octobre 2025 (le projet laissait cette date en pointillés)."
    ]
+  },
+  {
+   "id": "travailleur-de-nuit",
+   "theme": "Nuit, dimanche, jours fériés, solidarité",
+   "categorie": "temps",
+   "question": "Suis-je considéré comme travailleur de nuit ?",
+   "reponse": "Oui si, selon votre horaire habituel, vous faites au moins 3 heures de travail entre 21 h et 6 h au moins 2 fois par semaine, ou au moins 270 heures (ou 36 nuits) de présence sur la période du 1er juin au 31 mai (accord, art. 5.6). La convention retient aussi 2 fois 3 heures par semaine, ou 300 heures de travail effectif sur 12 mois. Les majorations de nuit s'appliquent à tous, travailleur de nuit ou non.",
+   "synonymes": [
+    "travailleur de nuit",
+    "travail de nuit",
+    "270 heures",
+    "36 nuits",
+    "300 heures",
+    "3 heures de nuit",
+    "2 fois par semaine",
+    "statut de nuit",
+    "suis-je de nuit"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.6, p.55)",
+     "regles": [
+      "Travail de nuit : tout travail effectué entre 21 h et 6 h.",
+      "Travailleur de nuit : au moins 2 fois par semaine, selon l'horaire habituel, au moins 3 heures de travail quotidien de nuit ; ou au minimum 270 heures de présence ou 36 nuits sur la période du 1er juin au 31 mai.",
+      "Les majorations de nuit s'appliquent que le salarié soit travailleur de nuit ou non."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.6",
+       "page": 55,
+       "extrait": "Au moins 2 fois par semaine selon horaire de travail habituel au moins 3 heures de son temps de travail quotidien",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.6",
+       "page": 55,
+       "extrait": "Au minimum 270 heures de présence ou 36 nuits",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Convention collective (art. 5.11.2, p.35 ; version du 28 août 2025)",
+     "regles": [
+      "Travailleur de nuit : au moins 2 fois par semaine 3 heures de son temps de travail quotidien de nuit, ou au minimum 300 heures de travail effectif sur un exercice civil ou 12 mois consécutifs.",
+      "Les dispositions de la convention sur le travail de nuit « sont applicables en l'absence d'accord d'entreprise ou d'établissement » (art. 5.11) : c'est donc l'accord de substitution qui s'applique d'abord."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 5.11.2",
+       "page": 35,
+       "extrait": "au moins 2 fois par semaine, selon son horaire de travail habituel, 3 heures de son temps de travail quotidien"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 5.11.2",
+       "page": 35,
+       "extrait": "au minimum 300 heures de travail effectif au cours d'un exercice civil ou d'une période de 12 mois consécutifs"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 5.11",
+       "page": 35,
+       "extrait": "Les dispositions ci-après sont applicables en l'absence d'accord d'entreprise ou d'établissement."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "Travailleur de nuit : au moins 2 fois par semaine, au moins 3 heures de travail de nuit quotidiennes ; ou un nombre minimal d'heures de nuit sur une période de référence (L3122-5)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3122-5",
+       "page": 53,
+       "extrait": "au moins deux fois par semaine, selon son horaire de travail habituel, au moins trois heures de travail de nuit quotidiennes"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "Le seuil de l'accord (270 heures) est plus bas que celui de la convention (300 heures)."
+   ],
+   "champs": [
+    {
+     "id": "joursParSemaine",
+     "label": "Jours par semaine avec au moins 3 h de travail entre 21 h et 6 h",
+     "type": "number",
+     "min": 0,
+     "step": "1",
+     "defaut": 0,
+     "max": 7
+    },
+    {
+     "id": "heuresNuit",
+     "label": "Heures de travail de nuit du 1er juin au 31 mai",
+     "type": "number",
+     "min": 0,
+     "step": "1",
+     "defaut": 0
+    },
+    {
+     "id": "nuits",
+     "label": "Nuits travaillées du 1er juin au 31 mai",
+     "type": "number",
+     "min": 0,
+     "step": "1",
+     "defaut": 0
+    }
+   ],
+   "calcul": "travailleurDeNuit"
+  },
+  {
+   "id": "nuit-repos-compensateur",
+   "theme": "Nuit, dimanche, jours fériés, solidarité",
+   "categorie": "temps",
+   "question": "Ai-je droit à un repos compensateur pour le travail de nuit ?",
+   "reponse": "Oui, pour un travailleur de nuit, en plus des majorations : l'accord donne 7 heures de repos compensateur payé à 270 heures de nuit, 14 heures à 900 heures et 21 heures à 1 300 heures, sur la période du 1er juin au 31 mai ; le décompte est remis à zéro chaque 1er juin, au prorata si l'embauche est en cours d'année. La convention donne 1 jour ouvré (300 à 900 heures) ou 2 jours ouvrés (900 heures et plus), mais seulement en l'absence d'accord d'entreprise.",
+   "synonymes": [
+    "repos compensateur nuit",
+    "repos compensateur travailleur de nuit",
+    "7 heures",
+    "14 heures",
+    "21 heures",
+    "900 heures",
+    "1300 heures",
+    "compteur de nuit",
+    "remise à zéro 1er juin",
+    "repos compensateur pour le travail de nuit",
+    "droit à un repos compensateur nuit"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.6, p.56-57)",
+     "regles": [
+      "Tout travailleur de nuit a un repos compensateur rémunéré selon les heures de nuit de la période du 1er juin au 31 mai : 270 heures : 7 heures ; 900 heures : 14 heures ; 1 300 heures : 21 heures.",
+      "Repos accordé au fur et à mesure de l'ouverture du droit, en concertation avec la hiérarchie.",
+      "Le décompte des heures de nuit est remis à zéro chaque 1er juin, y compris pour les salariés entrés en cours d'année ; un salarié embauché en cours d'année bénéficie des mêmes dispositions au prorata de sa présence si elle est inférieure à 270 heures."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.6",
+       "page": 56,
+       "extrait": "tout travailleur de nuit bénéficie d'un repos compensateur rémunéré en fonction des heures de nuit travaillées pendant la période de référence",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.6",
+       "page": 57,
+       "extrait": "sera remis à zéro à compter du 1er juin de chaque année",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.6",
+       "page": 57,
+       "extrait": "au prorata de son temps de présence si celui-ci est inférieur à 270 heures",
+       "verifie_image": true
+      }
+     ],
+     "verifie_image": true
+    },
+    {
+     "titre": "Convention collective (art. 5.11.3, p.35-36 ; version du 28 août 2025)",
+     "regles": [
+      "Pour un travailleur de nuit en décompte horaire : 1 jour de repos compensateur par an proratisé si moins de 300 heures ; 1 jour ouvré de 300 à 900 heures ; 2 jours ouvrés à partir de 900 heures (jusqu'à 1 300 heures).",
+      "Les dispositions de la convention sur le travail de nuit « sont applicables en l'absence d'accord d'entreprise ou d'établissement » (art. 5.11) : c'est donc l'accord de substitution qui s'applique d'abord."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 5.11.3",
+       "page": 35,
+       "extrait": "est compris entre 300 heures et 900 heures"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 5.11.3",
+       "page": 36,
+       "extrait": "2 jours ouvrés, si le nombre d'heures de nuit travaillées au cours de la période est au moins de 900 heures"
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.17)",
+     "regles": [
+      "Le livret ne reprend pas le repos compensateur de nuit : écart signalé dans votre tableau."
+     ],
+     "sources": []
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "L'accord (en heures) et la convention (en jours) ne se comparent pas directement : les deux sont affichés sans désigner de gagnant."
+   ],
+   "champs": [
+    {
+     "id": "statut",
+     "label": "Statut",
+     "type": "select",
+     "options": [
+      [
+       "employe",
+       "Employé / agent de maîtrise"
+      ],
+      [
+       "cadre",
+       "Cadre au forfait jours"
+      ]
+     ]
+    },
+    {
+     "id": "heuresNuit",
+     "label": "Heures de travail de nuit du 1er juin au 31 mai (employé, agent de maîtrise)",
+     "type": "number",
+     "min": 0,
+     "step": "1",
+     "defaut": 300
+    },
+    {
+     "id": "nuits",
+     "label": "Nuits travaillées (cadre au forfait jours)",
+     "type": "number",
+     "min": 0,
+     "step": "1",
+     "defaut": 40
+    }
+   ],
+   "calcul": "reposNuit"
+  },
+  {
+   "id": "nuit-forfait-jours",
+   "theme": "Nuit, dimanche, jours fériés, solidarité",
+   "categorie": "temps",
+   "question": "Les cadres au forfait jours ont-ils les majorations de nuit ?",
+   "reponse": "Non : la majoration des heures de nuit (21 h-6 h) ne s'applique pas aux cadres en forfait annuel en jours, car elle est intégrée dans leur rémunération forfaitaire. En revanche, ils ont un repos compensateur payé selon le nombre de nuits travaillées entre le 1er juin et le 31 mai : 1 jour à 36 nuits, 2 jours à 120 nuits, 3 jours à 171 nuits (accord, art. 5.6).",
+   "synonymes": [
+    "cadres forfait jours nuit",
+    "majoration de nuit cadre",
+    "nuits travaillées cadre",
+    "forfait jours majoration de nuit",
+    "36 nuits",
+    "120 nuits",
+    "171 nuits",
+    "repos compensateur cadre nuit"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.6, p.56)",
+     "regles": [
+      "La majoration des heures de nuit ne s'applique pas aux cadres en forfait annuel en jours : elle est intégrée dans la rémunération forfaitaire.",
+      "Repos compensateur payé des cadres selon les nuits travaillées de la période de référence (1er juin au 31 mai) : 36 nuits : 1 jour ; 120 nuits : 2 jours ; 171 nuits : 3 jours."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.6",
+       "page": 56,
+       "extrait": "ne s'applique pas aux cadres soumis à une convention de forfait annuel en jours",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.6",
+       "page": 56,
+       "extrait": "Tout salarié en forfait annuel en jours de travail bénéficie également d'un repos compensateur payé",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [],
+   "champs": [
+    {
+     "id": "statut",
+     "label": "Statut",
+     "type": "select",
+     "options": [
+      [
+       "cadre",
+       "Cadre au forfait jours"
+      ]
+     ]
+    },
+    {
+     "id": "nuits",
+     "label": "Nuits travaillées du 1er juin au 31 mai",
+     "type": "number",
+     "min": 0,
+     "step": "1",
+     "defaut": 40
+    }
+   ],
+   "calcul": "reposNuit"
+  },
+  {
+   "id": "dimanche-habituel",
+   "theme": "Nuit, dimanche, jours fériés, solidarité",
+   "categorie": "temps",
+   "question": "Quelle majoration quand je travaille habituellement le dimanche ?",
+   "reponse": "Pour les employés, les heures travaillées le dimanche dans le cadre des ouvertures habituelles sont majorées de 60 %, en remplacement de la majoration légale des heures supplémentaires (accord, art. 5.7). La convention prévoit au moins 30 % jusqu'à 13 h dans un commerce de plus de 400 m², ou 20 % dans un commerce de 400 m² ou moins sans 1,5 jour de repos consécutif : l'accord est plus élevé.",
+   "synonymes": [
+    "dimanche habituel",
+    "travail du dimanche",
+    "majoration dimanche",
+    "60 %",
+    "dimanche matin",
+    "30 %",
+    "20 %",
+    "400 m²",
+    "ouvertures habituelles",
+    "dimanche employé",
+    "travaille habituellement le dimanche",
+    "habituellement le dimanche",
+    "majoration dimanche habituel"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.7, p.57)",
+     "regles": [
+      "Employé qui travaille habituellement le dimanche : heures du dimanche dans le cadre des ouvertures habituelles majorées de 60 %, en remplacement de la majoration légale pour heures supplémentaires."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.7",
+       "page": 57,
+       "extrait": "La majoration des heures travaillées le dimanche dans le cadre des ouvertures habituelles pour les employés à 60%",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Convention collective (art. 5.13.3, p.38 ; version du 28 août 2025)",
+     "regles": [
+      "Commerce de plus de 400 m² : majoration d'au moins 30 % pour les heures accomplies le dimanche jusqu'à 13 h, sans condition de repos consécutif.",
+      "Commerce de 400 m² ou moins, salarié sans 1 jour et demi de repos consécutifs : majoration de 20 % de chaque heure travaillée ce jour-là."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 5.13.3",
+       "page": 38,
+       "extrait": "les salariés bénéficient d'une majoration d'au moins 30 % pour les heures accomplies le dimanche jusqu'à 13 heures"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 5.13.3",
+       "page": 38,
+       "extrait": "auront droit à une majoration de leur salaire horaire de base de 20 % pour chaque heure de travail effectuée ce jour-là"
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.17)",
+     "regles": [
+      "Reprend les 60 % de l'accord."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Travail du dimanche",
+       "page": 17,
+       "extrait": "Les heures travaillées le dimanche dans le cadre des ouvertures habituelles du dimanche matin sont majorées à 60 %."
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "Dans les commerces de détail alimentaire, le repos hebdomadaire peut être donné le dimanche à partir de 13 h (L3132-13)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3132-13",
+       "page": 54,
+       "extrait": "le repos hebdomadaire peut être donné le dimanche à partir de treize heures"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "Les majorations de l'accord (60 %) et de la convention (30 % ou 20 %) ne se cumulent pas : les deux sont affichées pour comparer.",
+    "Pour l'encadrement : forfait « Travail habituel du dimanche matin » (voir sa fiche)."
+   ],
+   "champs": [
+    {
+     "id": "type",
+     "label": "Type de dimanche",
+     "type": "select",
+     "options": [
+      [
+       "habituel",
+       "Dimanche habituel (ouvertures habituelles)"
+      ]
+     ]
+    },
+    {
+     "id": "heures",
+     "label": "Heures travaillées le dimanche",
+     "type": "number",
+     "min": 0,
+     "step": "0.25",
+     "defaut": 4
+    },
+    {
+     "id": "tauxHoraire",
+     "label": "Taux horaire de base (€), si connu",
+     "type": "number",
+     "min": 0,
+     "step": "0.01",
+     "defaut": 0
+    },
+    {
+     "id": "grandeSurface",
+     "label": "Commerce de plus de 400 m² (pour la convention)",
+     "type": "checkbox",
+     "defaut": true
+    }
+   ],
+   "calcul": "dimanche"
+  },
+  {
+   "id": "dimanche-exceptionnel",
+   "theme": "Nuit, dimanche, jours fériés, solidarité",
+   "categorie": "temps",
+   "question": "Quelle majoration pour un dimanche exceptionnel, et quand récupérer mon repos ?",
+   "reponse": "Quand un salarié travaille exceptionnellement un dimanche, les heures sont majorées de 100 %, quel que soit l'horaire de la semaine civile, en remplacement de la majoration légale pour heures supplémentaires. Le jour de repos hebdomadaire est décalé, pas supprimé : il doit être accordé dans la quinzaine qui suit ou précède le dimanche travaillé (accord, art. 5.7 ; convention, art. 5.13.2). L'encadrement a en compensation un ou deux taux journaliers (deux à partir de 5 heures travaillées).",
+   "synonymes": [
+    "dimanche exceptionnel",
+    "dimanche occasionnel",
+    "100 %",
+    "repos décalé",
+    "quinzaine",
+    "décalage du repos",
+    "récupérer mon repos dimanche",
+    "dimanche travaillé",
+    "taux journalier encadrement",
+    "volontariat dimanche",
+    "travaille exceptionnellement un dimanche",
+    "exceptionnellement un dimanche",
+    "majoration dimanche exceptionnel",
+    "travail exceptionnel du dimanche"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.7, p.57)",
+     "regles": [
+      "Dimanche travaillé exceptionnellement : heures majorées de 100 %, quel que soit l'horaire de la semaine civile, en remplacement de la majoration légale ; les heures s'ajoutent à l'horaire contractuel.",
+      "Encadrement : en compensation, un ou deux taux journaliers ; deux dès 5 heures travaillées dans la journée.",
+      "Le repos hebdomadaire légal (non rémunéré) est décalé et non supprimé : à accorder dans la quinzaine qui suit ou précède le dimanche travaillé.",
+      "L'ouverture des dimanches donne lieu à consultation des représentants du personnel ; les parties privilégient le volontariat."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.7",
+       "page": 57,
+       "extrait": "les heures de travail sont majorées à 100%, quel que soit l'horaire effectué dans la semaine civile",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.7",
+       "page": 57,
+       "extrait": "il y a décalage et non suppression du jour de repos hebdomadaire légal (non rémunéré)",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.7",
+       "page": 57,
+       "extrait": "Le salarié bénéficie de deux taux journaliers dès lors qu'il a travaillé au minimum 5 heures dans la journée",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Convention collective (art. 5.13.2, p.38 ; version du 28 août 2025)",
+     "regles": [
+      "Chaque heure travaillée occasionnellement le dimanche : majoration de 100 % du salaire horaire, en plus de la rémunération mensuelle ; repos décalé dans la quinzaine.",
+      "Dérogations préfectorales et dimanches du maire : volontariat (L3132-25-3 et L3132-25-4)."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 5.13.2",
+       "page": 38,
+       "extrait": "donnera lieu à une majoration égale à 100 % du salaire horaire venant s'ajouter à la rémunération mensuelle"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 5.13.2",
+       "page": 38,
+       "extrait": "repose sur le volontariat, en application des articles L. 3132-25-3 et L. 3132-25-4 du code du travail"
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.17-18)",
+     "regles": [
+      "Reprend ces règles : 100 %, décalage du repos dans la quinzaine."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Travail du dimanche",
+       "page": 18,
+       "extrait": "Il y a décalage et non suppression du jour de repos hebdomadaire légal"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "Le repos hebdomadaire est donné le dimanche (L3132-3)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3132-3",
+       "page": 55,
+       "extrait": "le repos hebdomadaire est donné le dimanche"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "Accord et convention donnent ici la même majoration (100 %) : aucune étoile."
+   ],
+   "champs": [
+    {
+     "id": "type",
+     "label": "Type de dimanche",
+     "type": "select",
+     "options": [
+      [
+       "exceptionnel",
+       "Dimanche exceptionnel"
+      ]
+     ]
+    },
+    {
+     "id": "heures",
+     "label": "Heures travaillées le dimanche",
+     "type": "number",
+     "min": 0,
+     "step": "0.25",
+     "defaut": 6
+    },
+    {
+     "id": "tauxHoraire",
+     "label": "Taux horaire de base (€), si connu",
+     "type": "number",
+     "min": 0,
+     "step": "0.01",
+     "defaut": 0
+    }
+   ],
+   "calcul": "dimanche"
+  },
+  {
+   "id": "dimanche-prime-permanence",
+   "theme": "Nuit, dimanche, jours fériés, solidarité",
+   "categorie": "temps",
+   "question": "Prime de 51 € pour la permanence du dimanche matin ?",
+   "reponse": "Une prime de 51 € bruts est versée aux employés qui, sur la base du volontariat, assurent exceptionnellement la permanence du magasin le dimanche matin en l'absence d'un membre de l'encadrement (accord, art. 5.7).",
+   "synonymes": [
+    "prime 51 €",
+    "prime permanence dimanche",
+    "permanence du magasin",
+    "dimanche matin permanence",
+    "absence d'encadrant",
+    "prime dimanche employé"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.7, p.57)",
+     "regles": [
+      "Prime de 51 € bruts pour les employés qui, sur la base du volontariat, assurent exceptionnellement la permanence du magasin le dimanche matin, en l'absence d'un membre de l'encadrement."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.7",
+       "page": 57,
+       "extrait": "Une prime de 51 € bruts, à destination des employés qui, sur la base du volontariat",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.7",
+       "page": 57,
+       "extrait": "assurent exceptionnellement la permanence du magasin le dimanche matin",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.17)",
+     "regles": [
+      "Reprend la même prime."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Travail du dimanche",
+       "page": 17,
+       "extrait": "Prime de 51€ bruts pour les employés qui, sur la base du volontariat"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "dimanche-forfait-encadrement",
+   "theme": "Nuit, dimanche, jours fériés, solidarité",
+   "categorie": "temps",
+   "question": "Forfait du dimanche matin pour l'encadrement : quel montant ?",
+   "reponse": "L'accord prévoit un forfait « Travail habituel du dimanche matin » de 145 € bruts pour l'encadrement ; la NAO 2026 le revalorise à 155 € bruts pour le travail habituel et régulier du dimanche matin (accord, art. 5.7 ; NAO 2026, partie 1, art. 6).",
+   "synonymes": [
+    "forfait dimanche matin",
+    "forfait encadrement dimanche",
+    "145 €",
+    "155 €",
+    "travail habituel du dimanche matin",
+    "dimanche encadrement",
+    "agent de maîtrise dimanche",
+    "cadre dimanche"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.7, p.57)",
+     "regles": [
+      "Forfait « Travail habituel du dimanche matin » pour l'encadrement : 145 € bruts."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.7",
+       "page": 57,
+       "extrait": "Un forfait \"Travail habituel du dimanche matin\" pour l'encadrement de 145 € brut",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "NAO 2026 (partie 1, art. 6, p.7)",
+     "regles": [
+      "Dans le cadre du travail habituel et régulier du dimanche matin, le forfait est revalorisé à 155 € bruts pour les membres de l'encadrement."
+     ],
+     "sources": [
+      {
+       "doc": "nao",
+       "article": "partie 1 art. 6",
+       "page": 7,
+       "extrait": "pour les membres de l'encadrement à hauteur de 155 € bruts",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT",
+     "regles": [
+      "Le livret ne mentionne pas ce forfait : écart déjà signalé dans votre tableau."
+     ],
+     "sources": []
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "La NAO 2026 (155 €) est plus récente que l'accord (145 €) : les deux sont affichés."
+   ]
+  },
+  {
+   "id": "jours-feries-nombre",
+   "theme": "Nuit, dimanche, jours fériés, solidarité",
+   "categorie": "temps",
+   "question": "Combien de jours fériés chômés par an ?",
+   "reponse": "Chaque salarié a au minimum 6 jours fériés chômés par an, en plus du 1er mai (accord, art. 5.8). Le chômage d'un jour férié ne réduit pas la rémunération mensuelle, à condition d'avoir été présent le jour précédent et le jour suivant, sauf horaire excluant de travailler ces jours-là ou autorisation d'absence préalable (convention, art. 5.14). Les heures perdues ne se récupèrent pas ; en cas d'embauche en cours d'année, le nombre est réduit selon le calendrier.",
+   "synonymes": [
+    "jours fériés chômés",
+    "6 jours fériés",
+    "1er mai",
+    "nombre de jours fériés",
+    "férié chômé",
+    "jour férié payé",
+    "présent la veille et le lendemain",
+    "jours fériés embauche en cours d'année"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.8, p.58)",
+     "regles": [
+      "Chaque salarié bénéficie au minimum et annuellement de 6 jours fériés chômés, en plus du 1er mai, fixés compte tenu de l'activité commerciale de chaque établissement."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.8",
+       "page": 58,
+       "extrait": "Chaque salarié bénéficie au minimum et annuellement de 6 jours fériés chômés, en sus du 1er mai",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Convention collective (art. 5.14, p.38 ; version du 28 août 2025)",
+     "regles": [
+      "Le chômage d'un jour férié n'entraîne aucune réduction de la rémunération mensuelle, sous réserve d'avoir été présent le jour précédent et le jour suivant, sauf horaire excluant de travailler ces jours-là ou autorisation d'absence préalable.",
+      "Les heures perdues ne donnent pas lieu à récupération. 6 jours fériés chômés en plus du 1er mai ; réduit selon le calendrier en cas d'embauche en cours d'année."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 5.14",
+       "page": 38,
+       "extrait": "sous réserve que ceux-ci aient été présents le jour précédant et le jour suivant le jour de fête légale"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 5.14",
+       "page": 38,
+       "extrait": "Les heures de travail perdues par suite du chômage des jours fériés ne peuvent donner lieu à récupération"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 5.14",
+       "page": 38,
+       "extrait": "Chaque salarié bénéficie chaque année du chômage collectif ou individuel de 6 jours fériés en sus du 1er mai"
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.18)",
+     "regles": [
+      "Reprend : 6 jours fériés chômés par an, plus le 1er mai."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Jours fériés",
+       "page": 18,
+       "extrait": "Chaque salarié bénéficie au minimum de 6 jours fériés chômés/an, plus le"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "Le 1er mai est férié et chômé (L3133-4). Les fêtes légales sont au nombre de 11 (L3133-1)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3133-4",
+       "page": 51,
+       "extrait": "Le 1er mai est jour férié et chômé"
+      },
+      {
+       "doc": "ct",
+       "article": "L3133-1",
+       "page": 50,
+       "extrait": "Les fêtes légales ci-après désignées sont des jours fériés"
+      }
+     ]
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "ferie-jour-repos",
+   "theme": "Nuit, dimanche, jours fériés, solidarité",
+   "categorie": "temps",
+   "question": "Jour férié qui tombe un jour de repos : ai-je droit à quelque chose ?",
+   "reponse": "Pour un salarié à jours fixes : si le férié tombe un jour habituellement travaillé, il est payé normalement bien que non travaillé ; s'il tombe un jour de repos, il ne donne droit à aucun repos ni majoration, sauf pour les 3 fériés fixes de la semaine (lundi de Pâques, lundi de Pentecôte, jeudi de l'Ascension), pour lesquels une journée ou demi-journée de repos est décalée. Pour un salarié à jours variables : 5 ou 6 jours travaillés, le férié est payé pour la durée hebdomadaire divisée par le nombre de jours ; 1 à 4 jours, pour 1/5 de la durée hebdomadaire (accord, art. 5.8).",
+   "synonymes": [
+    "jour férié jour de repos",
+    "tant pis tant mieux",
+    "règle de la moyenne",
+    "lundi de Pâques",
+    "lundi de Pentecôte",
+    "jeudi de l'Ascension",
+    "férié sur repos",
+    "jours variables férié",
+    "férié temps partiel"
+   ],
+   "etiquettes": [
+    "Information à compléter"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.8, p.58)",
+     "regles": [
+      "Jours de travail fixes : règle du « tant pis tant mieux » : férié un jour habituellement travaillé = payé normalement bien que non travaillé ; férié un jour de repos hebdomadaire = ni repos compensateur ni majoration, sauf pour les 3 fériés fixes de la semaine (lundi de Pâques, lundi de Pentecôte, jeudi de l'Ascension), avec une journée ou demi-journée de repos décalée en accord avec l'encadrement.",
+      "Jours et repos variables : règle de la moyenne : 5 ou 6 jours travaillés : férié décompté et payé pour la durée hebdomadaire forfaitaire rapportée au nombre de jours ; 1, 2, 3 ou 4 jours variables : 1/5 de la durée hebdomadaire forfaitaire."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.8",
+       "page": 58,
+       "extrait": "Lorsque le jour férié tombe un jour habituellement travaillé, ce jour est payé normalement bien que non travaillé",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.8",
+       "page": 58,
+       "extrait": "il ne donne droit à aucun repos compensateur ni majoration sauf pour les 3 jours fériés fixes dans la semaine",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.8",
+       "page": 58,
+       "extrait": "le jour férié est décompté et payé pour une valeur égale au 1/5ème de la durée hebdomadaire forfaitaire de travail du salarié",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Convention collective (art. 5.14, p.38)",
+     "regles": [
+      "Employés dont le jour ou la demi-journée de repos habituelle coïncide avec un jour férié fixe de la semaine (lundi de Pâques, lundi de Pentecôte, jeudi de l'Ascension) chômé collectivement : une journée ou demi-journée de repos décalée, en accord avec le supérieur."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 5.14",
+       "page": 38,
+       "extrait": "bénéficieront, en compensation de cette coïncidence jour férié fixe/repos habituel"
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.18)",
+     "regles": [
+      "Reprend la règle du « tant pis tant mieux » et la règle de la moyenne."
+     ],
+     "sources": [
+      {
+       "doc": "livret",
+       "article": "Jours fériés",
+       "page": 18,
+       "extrait": "il est fait application de la règle du “tant pis tant mieux” :"
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Pour le décompte des congés avec un jour férié, voir la fiche « décompte des congés »."
+   ]
+  },
+  {
+   "id": "ferie-travaille",
+   "theme": "Nuit, dimanche, jours fériés, solidarité",
+   "categorie": "temps",
+   "question": "Comment est payé un jour férié travaillé ?",
+   "reponse": "Selon l'accord, un jour férié travaillé donne droit, en plus du maintien de la rémunération mensuelle, à une indemnité égale au montant des heures effectuées, avec une majoration de 100 % du taux normal : soit 2 fois le taux de base pour les heures travaillées. La convention laisse le choix au salarié entre un repos payé d'égale durée (à prendre dans les 15 jours avant ou après) et le paiement des heures au taux horaire en plus du salaire mensuel. Le 1er mai travaillé donne droit, selon la loi, à une indemnité égale au salaire.",
+   "synonymes": [
+    "jour férié travaillé",
+    "férié travaillé",
+    "paiement férié",
+    "majoration 100 % férié",
+    "1er mai travaillé",
+    "travailler un jour férié",
+    "heures effectuées jour férié",
+    "repos payé 15 jours"
+   ],
+   "etiquettes": [
+    "Écart à vérifier"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de substitution (art. 5.8, p.58)",
+     "regles": [
+      "Jours fériés travaillés : outre le maintien de la rémunération mensuelle, indemnité égale au montant des heures effectuées réellement, plus une majoration de 100 % du taux normal des heures effectuées.",
+      "Les dépassements horaires de la semaine restent payés avec les majorations d'heures supplémentaires éventuelles."
+     ],
+     "sources": [
+      {
+       "doc": "subst",
+       "article": "art. 5.8",
+       "page": 58,
+       "extrait": "Les jours fériés travaillés donneront droit, outre le maintien de la rémunération mensuelle, à une indemnité égale au montant des heures effectuées réellement",
+       "verifie_image": true
+      },
+      {
+       "doc": "subst",
+       "article": "art. 5.8",
+       "page": 58,
+       "extrait": "ainsi qu'une majoration égale à 100% du taux normal des heures effectuées",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "titre": "Convention collective (art. 5.14, p.38-39 ; version du 28 août 2025)",
+     "regles": [
+      "Au choix du salarié : soit un repos payé d'une durée égale au nombre d'heures travaillées le jour férié, à prendre dans les 15 jours avant ou après ; soit le paiement des heures au taux horaire contractuel en plus de la rémunération mensuelle.",
+      "Ces règles ne s'appliquent pas au jour férié travaillé au titre de la journée de solidarité."
+     ],
+     "sources": [
+      {
+       "doc": "cc",
+       "article": "art. 5.14",
+       "page": 38,
+       "extrait": "soit à un repos payé d'une durée égale au nombre d'heures travaillées le jour férié"
+      },
+      {
+       "doc": "cc",
+       "article": "art. 5.14",
+       "page": 39,
+       "extrait": "soit au paiement au taux horaire contractuel des heures effectuées le jour férié, en sus de la rémunération mensuelle"
+      }
+     ]
+    },
+    {
+     "titre": "Livret CGT (p.18)",
+     "regles": [
+      "Le livret reprend les jours fériés (6 chômés, règles sur repos coïncidant)."
+     ],
+     "sources": []
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail (articles consultés sur code.travail.gouv.fr)",
+     "regles": [
+      "Le 1er mai est férié et chômé (L3133-4) ; les salariés occupés le 1er mai ont droit, en plus du salaire du travail accompli, à une indemnité égale au montant de ce salaire (L3133-6)."
+     ],
+     "sources": [
+      {
+       "doc": "ct",
+       "article": "L3133-6",
+       "page": 52,
+       "extrait": "ont droit, en plus du salaire correspondant au travail accompli, à une indemnité égale au montant de ce salaire"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "Accord (indemnité de 2 fois le taux, en plus du salaire maintenu) et convention (1 fois ou repos payé) : les deux sont affichés ; l'étoile marque le montant le plus élevé."
+   ],
+   "champs": [
+    {
+     "id": "heures",
+     "label": "Heures travaillées le jour férié",
+     "type": "number",
+     "min": 0,
+     "step": "0.25",
+     "defaut": 7
+    },
+    {
+     "id": "tauxHoraire",
+     "label": "Taux horaire de base (€), si connu",
+     "type": "number",
+     "min": 0,
+     "step": "0.01",
+     "defaut": 0
+    },
+    {
+     "id": "premierMai",
+     "label": "Il s'agit du 1er mai",
+     "type": "checkbox",
+     "defaut": false
+    }
+   ],
+   "calcul": "ferieTravaille"
   }
  ],
  "categories": [

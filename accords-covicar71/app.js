@@ -92,7 +92,7 @@ function ouvrirFiche(f) {
   const champsEl = (f.champs || []).map(c => {
     let ctl;
     if (c.type === 'select') { ctl = h('select', { id: 'c_' + c.id }, c.options.map(([v, l]) => h('option', { value: v }, l))); valeurs[c.id] = c.options[0][0]; }
-    else if (c.type === 'checkbox') { ctl = h('input', { id: 'c_' + c.id, type: 'checkbox' }); valeurs[c.id] = false; }
+    else if (c.type === 'checkbox') { ctl = h('input', { id: 'c_' + c.id, type: 'checkbox' }); ctl.checked = !!c.defaut; valeurs[c.id] = !!c.defaut; }
     else if (c.type === 'date') { ctl = h('input', { id: 'c_' + c.id, type: 'date' }); valeurs[c.id] = ''; }
     else { ctl = h('input', { id: 'c_' + c.id, type: 'number', inputmode: 'decimal', step: c.step || '1', min: c.min, max: c.max, value: c.defaut }); valeurs[c.id] = c.defaut ?? 0; }
     ctl.addEventListener('input', () => {
