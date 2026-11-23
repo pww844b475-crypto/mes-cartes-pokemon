@@ -3476,29 +3476,36 @@
     }
    ],
    "notes": [
-    "Exemple : un salarié à 3 jours par semaine qui prend sa semaine entière se voit décompter 6 jours ; si un jour férié chômé tombe dans cette semaine, 5 jours.",
-    "Un jour isolé compte plus d'un jour à temps partiel : 1 jour pris à 3 jours par semaine = 2 jours décomptés.",
-    "Les fériés chômés dans l'entreprise sont les 6 jours fériés chômés par an de l'accord (art. 5.8) et le 1er mai ; les autres fériés ouverts sont décomptés.",
-    "Pour un horaire de 5 ou 6 jours par semaine, c'est la règle « semaine complète = 6 jours » qui s'applique.",
-    "La saisie « jours d'absence » est un nombre de jours normalement travaillés."
+    "Pour une semaine de congés, mettre 1 dans « Semaines entières » (et non 6 jours) : à 3 jours par semaine, une semaine entière est décomptée 6 jours.",
+    "Un jour isolé compte plus d'un jour à temps partiel : à 3 jours par semaine, 1 jour isolé = 2 jours décomptés ; 3 jours isolés = une semaine entière = 6 jours.",
+    "Si un jour férié chômé dans l'entreprise tombe dans la semaine de congés, il n'est pas décompté : 5 jours au lieu de 6. Les fériés chômés sont les 6 jours de l'accord (art. 5.8) et le 1er mai ; un férié habituellement travaillé est décompté.",
+    "Pour un horaire de 5 ou 6 jours par semaine, c'est la règle « semaine complète = 6 jours » qui s'applique."
    ],
    "champs": [
     {
      "id": "joursHebdo",
-     "label": "Jours travaillés par semaine",
+     "label": "Jours travaillés par semaine par le salarié",
      "type": "number",
      "min": 1,
+     "max": 6,
      "step": "1",
-     "defaut": 5,
-     "max": 6
+     "defaut": 3
     },
     {
-     "id": "joursAbsence",
-     "label": "Jours d'absence à décompter",
+     "id": "semaines",
+     "label": "Semaines entières de congés (1 = une semaine complète)",
      "type": "number",
      "min": 0,
      "step": "1",
-     "defaut": 5
+     "defaut": 1
+    },
+    {
+     "id": "joursAbsence",
+     "label": "Jours isolés en plus (jours que le salarié aurait travaillés)",
+     "type": "number",
+     "min": 0,
+     "step": "1",
+     "defaut": 0
     },
     {
      "id": "joursFeriesChomes",

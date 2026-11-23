@@ -81,3 +81,28 @@ h3.section{margin:1.4rem 0 .5rem;font-size:1.05rem}
 .cat-entete h2{margin:0;font-size:1.3rem}.cat-entete p{margin:.1rem 0 0;font-size:.9rem;opacity:.85}
 .cat-icone{font-size:2.4rem}
 .puce-cat{display:inline-flex;align-items:center;margin:8px 0 0 8px;min-height:36px;padding:.2rem .8rem;border-radius:999px;background:var(--carte);color:var(--fg);border:2px solid var(--c);font-size:.85rem;font-weight:700}
+
+/* ---- couleurs par source : vert = accord d'entreprise, orange = convention collective ---- */
+:root{--c-acc:#0a6b2d;--c-acc-bg:#e7f5ec;--c-cc:#b85c00;--c-cc-bg:#fdeedd;--c-code:#2f5f9e;--c-code-bg:#e8eef8;--c-prat:#6b6b6b;--c-prat-bg:#eeeeee}
+@media (prefers-color-scheme:dark){:root{--c-acc:#4fb872;--c-acc-bg:#12301c;--c-cc:#f0a04b;--c-cc-bg:#3a2610;--c-code:#7fb0ee;--c-code-bg:#16263d;--c-prat:#b5b5b5;--c-prat-bg:#2a2a2a}}
+.reponse-finale .rf-ligne{border-left:8px solid var(--c-acc);padding:.55rem .7rem;margin:.5rem 0;border-radius:10px;border-top:0;background:var(--c-acc-bg)}
+.reponse-finale .rf-ligne.n-convention{border-left-color:var(--c-cc);background:var(--c-cc-bg)}
+.reponse-finale .rf-ligne.n-code{border-left-color:var(--c-code);background:var(--c-code-bg)}
+.reponse-finale .rf-ligne.n-pratique{border-left-color:var(--c-prat);background:var(--c-prat-bg)}
+.reponse-finale .rf-ligne.n-nao{border-left-color:var(--c-acc)}
+.rf-ligne.n-convention .rf-valeur{color:var(--c-cc)}
+.rf-ligne.n-accord .rf-valeur,.rf-ligne.n-nao .rf-valeur{color:var(--c-acc)}
+.rf-ligne.n-code .rf-valeur{color:var(--c-code)}
+.reponse-finale .badge.b-accord,.reponse-finale .badge.b-nao{background:var(--c-acc);color:#fff}
+.reponse-finale .badge.b-convention{background:var(--c-cc);color:#fff}
+.reponse-finale .badge.b-code{background:var(--c-code);color:#fff}
+.reponse-finale .badge.b-pratique{background:var(--c-prat);color:#fff}
+.rf-ligne.favorable{box-shadow:0 0 0 3px currentColor}
+.rf-ligne.favorable.n-accord,.rf-ligne.favorable.n-nao{box-shadow:0 0 0 3px var(--c-acc)}
+.rf-ligne.favorable.n-convention{box-shadow:0 0 0 3px var(--c-cc)}
+.etoile{display:inline-block;font-weight:800;font-size:.78rem;margin-right:6px;padding:.05rem .45rem;border-radius:6px;background:#ffd84d;color:#3d2e00}
+.legende{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 .5rem}
+.pastille{font-size:.75rem;font-weight:700;padding:.1rem .55rem;border-radius:999px;color:#fff}
+.p-accord{background:var(--c-acc)}.p-convention{background:var(--c-cc)}.p-etoile{background:#ffd84d;color:#3d2e00}
+.alerte{background:#fff3cd;color:#5c4400;border:2px solid #e0a800;border-radius:10px;padding:.5rem .7rem;font-weight:600;margin:.4rem 0}
+@media (prefers-color-scheme:dark){.alerte{background:#4a3b10;color:#ffe9a8}}

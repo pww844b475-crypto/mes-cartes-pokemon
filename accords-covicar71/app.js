@@ -105,12 +105,22 @@ function ouvrirFiche(f) {
   function calculer() {
     if (!f.calcul) return;
     const r = CALCULS[f.calcul](valeurs);
+    const lignes = r.lignes || [];
+    // comparaison accord / convention : l'étoile marque le résultat le plus favorable quand les deux sont comparables
+    const groupes = {};
+    for (const l of lignes) if (l.cmp) (groupes[l.cmp.g] ||= {})[l.niveau === 'convention' ? 'cc' : 'acc'] = l;
+    for (const g of Object.values(groupes)) if (g.acc && g.cc && g.acc.cmp.v !== g.cc.cmp.v) {
+      const meilleurAccord = g.acc.cmp.s === 'moins' ? g.acc.cmp.v < g.cc.cmp.v : g.acc.cmp.v > g.cc.cmp.v;
+      (meilleurAccord ? g.acc : g.cc).favorable = true;
+    }
+    const legende = lignes.some(l => l.niveau === 'convention') && lignes.some(l => l.niveau !== 'convention');
     remplir(resultat,
       h('div', { class: 'rf-titre' }, 'Réponse pour ce salarié'),
+      legende ? h('div', { class: 'legende' }, h('span', { class: 'pastille p-accord' }, 'Accord d\'entreprise'), h('span', { class: 'pastille p-convention' }, 'Convention collective'), h('span', { class: 'pastille p-etoile' }, '★ plus favorable')) : null,
       r.erreur ? h('p', { class: 'note' }, r.erreur) : null,
-      r.info ? h('p', { class: 'note' }, r.info) : null,
-      ...(r.lignes || []).map(l => h('div', { class: 'rf-ligne' },
-        h('div', { class: 'rf-label' }, h('span', { class: 'badge' }, NIVEAU[l.niveau] || l.niveau), l.label),
+      r.info ? h('p', { class: 'alerte' }, r.info) : null,
+      ...lignes.map(l => h('div', { class: 'rf-ligne n-' + l.niveau + (l.favorable ? ' favorable' : '') },
+        h('div', { class: 'rf-label' }, h('span', { class: 'badge b-' + l.niveau }, NIVEAU[l.niveau] || l.niveau), l.favorable ? h('span', { class: 'etoile' }, '★ Plus favorable') : null, l.label),
         h('div', { class: 'rf-valeur' }, fr(l.valeur)),
         l.note ? h('div', { class: 'note' }, l.note) : null)));
   }

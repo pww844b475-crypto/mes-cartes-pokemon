@@ -4,14 +4,17 @@ export const r2 = x => Math.round((x + Number.EPSILON) * 100) / 100;
 const L = (niveau, label, valeur, extra = {}) => ({ niveau, label, valeur, ...extra });
 
 // ---- 1. Congés payés : décompte des jours à pointer (accord de substitution art. 4.1.2, p.42)
-export function congesPointage({ joursHebdo, joursAbsence, joursFeriesChomes = 0 }) {
-  if (!(joursHebdo >= 1 && joursHebdo <= 6) || !(joursAbsence >= 0)) return { lignes: [], erreur: 'Renseigner les jours de travail par semaine (1 à 6) et les jours d\'absence.' };
-  const aPointer = joursHebdo >= 5 ? (joursAbsence / joursHebdo) * 6 : (6 * joursAbsence) / joursHebdo;
+export function congesPointage({ joursHebdo, joursAbsence = 0, semaines = 0, joursFeriesChomes = 0 }) {
+  if (!(joursHebdo >= 1 && joursHebdo <= 6) || !(joursAbsence >= 0) || !(semaines >= 0)) return { lignes: [], erreur: 'Renseigner les jours de travail par semaine (1 à 6), les semaines entières et les jours isolés.' };
+  const total = joursAbsence + semaines * joursHebdo;   // jours normalement travaillés pendant l'absence
+  const aPointer = joursHebdo >= 5 ? (total / joursHebdo) * 6 : (6 * total) / joursHebdo;
   const base = Math.floor(aPointer + 1e-9);
   const feries = Math.max(0, Math.floor(joursFeriesChomes));
   const v = Math.max(0, base - feries);
   const note = feries > 0 ? `${base} jours moins ${feries} jour(s) férié(s) chômé(s) dans l'entreprise, qui ne sont pas décomptés (fiche officielle du Code du travail numérique). Un férié habituellement travaillé dans l'entreprise reste décompté.` : undefined;
-  return { lignes: [L('accord', 'Jours de congés à pointer', `${v} jour(s)`, { brut: v, note })] };
+  let info;
+  if (joursAbsence >= joursHebdo && joursHebdo < 6) info = `Attention : ${joursAbsence} jours isolés = ${joursAbsence} jours que le salarié aurait travaillés, soit ${r2(joursAbsence / joursHebdo)} semaine(s) de travail. Pour une semaine entière, mettre 1 dans « Semaines entières » et 0 dans « Jours isolés ».`;
+  return { lignes: [L('accord', 'Jours de congés à pointer', `${v} jour(s)`, { brut: v, note })], info };
 }
 
 // ---- 2. Préavis (convention, annexe I art. 5.1 p.114 ; annexe II art. 5.1 p.123 ; annexe III art. 5.1 p.128)
@@ -46,7 +49,7 @@ export function indemniteLicenciement(p) {
   lignes.push(L('accord', 'Salaire de référence mensuel (accord)', `${salRefAccord} €`));
   lignes.push(L('accord', 'Indemnité avant majorations', `${r2(mois)} mois = ${base} €`, { brut: base, mois }));
   lignes.push(L('accord', 'Majorations possibles (45 ans : +20 % ; enfants : +10 % chacun)', `+${majPct} %`, { note: 'Base de la majoration non précisée dans le texte : ici appliquée à l\'indemnité.' }));
-  lignes.push(L('accord', 'Indemnité avec majorations', `${r2(base * (1 + majPct / 100))} €`, { brut: r2(base * (1 + majPct / 100)) }));
+  lignes.push(L('accord', 'Indemnité avec majorations', `${r2(base * (1 + majPct / 100))} €`, { brut: r2(base * (1 + majPct / 100)), cmp: { g: 'indemnite', v: r2(base * (1 + majPct / 100)), s: 'plus' } }));
   // Convention (annexes I et II : employés et maîtrise ; annexe III : cadres)
   let moisCC = 0;
   if (!grave && ancienneteMois >= 8) {
@@ -61,7 +64,7 @@ export function indemniteLicenciement(p) {
   if (salCC > 0) {
     const b = r2(moisCC * salCC);
     lignes.push(L('convention', 'Salaire « plein tarif » (convention, art. 6)', `${r2(salCC)} €`));
-    lignes.push(L('convention', 'Indemnité de licenciement (convention, art. 7.1)', `${r2(moisCC)} mois = ${b} €`, { brut: b, mois: r2(moisCC) }));
+    lignes.push(L('convention', 'Indemnité de licenciement (convention, art. 7.1)', `${r2(moisCC)} mois = ${b} €`, { brut: b, mois: r2(moisCC), cmp: { g: 'indemnite', v: b, s: 'plus' } }));
     if (motif === 'economique' && age > 50) lignes.push(L('convention', 'Majoration de 20 % (art. 7.2) si aucune exclusion ne s\'applique', `${r2(b * 1.2)} €`, { brut: r2(b * 1.2), note: 'Exclusions (reclassement, chômage jusqu\'à la retraite à taux plein, etc.) non vérifiées par le calcul.' }));
   } else lignes.push(L('convention', 'Indemnité (convention, art. 7.1)', `${r2(moisCC)} mois de salaire plein tarif`, { mois: r2(moisCC), note: 'Renseigner les rémunérations des 12 et des 3 derniers mois pour obtenir un montant.' }));
   return { lignes };
@@ -132,8 +135,8 @@ export function majorationNuit({ h2122 = 0, h225 = 0, h56 = 0, tauxHoraire = 0, 
   const acc = r2(tauxHoraire * (0.10 * h2122 + 0.30 * h225 + 0.10 * h56));
   const cc = r2(tauxHoraire * (0.05 * h2122 + 0.20 * h225));
   return { lignes: [
-    L('accord', 'Majoration de nuit (21-22 h : 10 % ; 22-5 h : 30 % ; 5-6 h : 10 %)', `${acc} €`, { brut: acc }),
-    L('convention', 'Majoration de nuit (21-22 h : 5 % ; 22-5 h : 20 %)', `${cc} €`, { brut: cc, note: 'La convention ne mentionne pas de majoration pour 5-6 h dans cet article.' }),
+    L('accord', 'Majoration de nuit (21-22 h : 10 % ; 22-5 h : 30 % ; 5-6 h : 10 %)', `${acc} €`, { brut: acc, cmp: { g: 'nuit', v: acc, s: 'plus' } }),
+    L('convention', 'Majoration de nuit (21-22 h : 5 % ; 22-5 h : 20 %)', `${cc} €`, { brut: cc, cmp: { g: 'nuit', v: cc, s: 'plus' }, note: 'La convention ne mentionne pas de majoration pour 5-6 h dans cet article.' }),
   ] };
 }
 
@@ -141,14 +144,14 @@ export function majorationNuit({ h2122 = 0, h225 = 0, h56 = 0, tauxHoraire = 0, 
 export function arretMaladie({ statut, ancienneteAns = 0, hospitalisation = false, plus23j = false, plus2mois = false, accidentTravail = false }) {
   const lignes = [];
   const carenceAccord = (hospitalisation || accidentTravail || plus23j) ? 0 : 2;
-  lignes.push(L('accord', 'Délai de carence', carenceAccord === 0 ? 'Aucun' : '2 jours', { brut: carenceAccord }));
+  lignes.push(L('accord', 'Délai de carence', carenceAccord === 0 ? 'Aucun' : '2 jours', { brut: carenceAccord, cmp: { g: 'carence', v: carenceAccord, s: 'moins' } }));
   let duree;
   if (statut === 'cadre') duree = ancienneteAns >= 1 ? 540 : null;
   else duree = ancienneteAns < 1 ? null : ancienneteAns < 10 ? 180 : ancienneteAns < 25 ? 360 : 540;
   lignes.push(L('accord', 'Durée du complément de salaire', duree ? `${duree} jours calendaires` : (accidentTravail ? 'Droit sans condition d\'ancienneté pour AT/trajet ; durée sous 1 an : Information à compléter' : 'Pas de complément avant 1 an d\'ancienneté (maladie)'), { brut: duree }));
   if (statut === 'employe') {
     const carenceCC = (hospitalisation || accidentTravail || plus2mois) ? 0 : 7;
-    lignes.push(L('convention', 'Délai de carence (début du complément au 8e jour)', carenceCC === 0 ? 'Aucun' : '7 jours calendaires', { brut: carenceCC }));
+    lignes.push(L('convention', 'Délai de carence (début du complément au 8e jour)', carenceCC === 0 ? 'Aucun' : '7 jours calendaires', { brut: carenceCC, cmp: { g: 'carence', v: carenceCC, s: 'moins' } }));
     let bar;
     const a = ancienneteAns;
     if (a < 1) bar = 'Pas de complément avant 1 an de présence';
@@ -298,7 +301,7 @@ export function fractionnement({ joursHorsPeriode = 0 }) {
 export function congeAnciennete({ ancienneteAns = 0 }) {
   const acc = ancienneteAns >= 40 ? 5 : ancienneteAns >= 30 ? 4 : ancienneteAns >= 20 ? 3 : ancienneteAns >= 15 ? 2 : ancienneteAns >= 10 ? 1 : 0;
   const cc = ancienneteAns >= 20 ? 3 : ancienneteAns >= 15 ? 2 : ancienneteAns >= 10 ? 1 : 0;
-  return { lignes: [L('accord', 'Congé supplémentaire d\'ancienneté (ancienneté acquise au 1er juin)', acc ? `${acc} jour(s)` : 'Aucun', { brut: acc }), L('convention', 'Congé supplémentaire d\'ancienneté', cc ? `${cc} jour(s)` : 'Aucun', { brut: cc, note: 'La convention s\'arrête à 3 jours (20 ans) ; l\'accord va jusqu\'à 5 jours (40 ans).' })] };
+  return { lignes: [L('accord', 'Congé supplémentaire d\'ancienneté (ancienneté acquise au 1er juin)', acc ? `${acc} jour(s)` : 'Aucun', { brut: acc, cmp: { g: 'anc', v: acc, s: 'plus' } }), L('convention', 'Congé supplémentaire d\'ancienneté', cc ? `${cc} jour(s)` : 'Aucun', { brut: cc, cmp: { g: 'anc', v: cc, s: 'plus' }, note: 'La convention s\'arrête à 3 jours (20 ans) ; l\'accord va jusqu\'à 5 jours (40 ans).' })] };
 }
 
 // ---- 21. Indemnité de congés payés (Code du travail L3141-24)
@@ -322,10 +325,10 @@ export function maternite({ rang = 1, multiples = 'non', ancienneteAns = 0 }) {
   if (multiples === 'jumeaux') { avant = 12; apres = 22; } else if (multiples === 'triples') { avant = 24; apres = 22; }
   else if (rang >= 3) { avant = 8; apres = 18; } else { avant = 6; apres = 10; }
   const l = [L('code', 'Congé de maternité légal', `${avant + apres} semaines (${avant} avant et ${apres} après l'accouchement)`, { brut: avant + apres })];
-  if (rang >= 3 && multiples === 'non') l.push(L('accord', 'Maintien du salaire (3e enfant)', 'Pendant la totalité des 26 semaines', { brut: 26 }));
+  if (rang >= 3 && multiples === 'non') l.push(L('accord', 'Maintien du salaire (3e enfant)', 'Pendant la totalité des 26 semaines', { brut: 26, cmp: { g: 'mat', v: 26, s: 'plus' } }));
   let cc = ancienneteAns >= 3 ? 16 : ancienneteAns >= 2 ? 10 : ancienneteAns >= 1 ? 6 : 0;
   if (cc && multiples !== 'non') cc += 2;
-  l.push(L('convention', 'Complément de salaire de l\'employeur (maintien du net)', cc ? `${cc} semaines` : 'Aucun (moins de 1 an de présence à la déclaration de grossesse)', { brut: cc, note: 'Après 1 an : 6 semaines ; 2 ans : 10 semaines ; 3 ans : 16 semaines ; plus 2 semaines en cas de naissances multiples. Ancienneté appréciée à la déclaration de grossesse.' }));
+  l.push(L('convention', 'Complément de salaire de l\'employeur (maintien du net)', cc ? `${cc} semaines` : 'Aucun (moins de 1 an de présence à la déclaration de grossesse)', { brut: cc, cmp: { g: 'mat', v: cc, s: 'plus' }, note: 'Après 1 an : 6 semaines ; 2 ans : 10 semaines ; 3 ans : 16 semaines ; plus 2 semaines en cas de naissances multiples. Ancienneté appréciée à la déclaration de grossesse.' }));
   return { lignes: l };
 }
 
@@ -351,12 +354,12 @@ export function allocationRetraite({ statut = 'employe', ancienneteAns = 0, sala
   if (statut === 'employe') m = a > 20 ? 5 : a > 16 ? 4 : a > 13 ? 3 : a > 10 ? 2.5 : 0;
   else if (a >= 10) m = Math.min(2.5 + 0.2 * Math.floor(a - 10), statut === 'cadre' ? 6 : 5); else m = 0;
   const sr = statut === 'employe' && plafondSecu > 0 ? Math.min(salaireReference, plafondSecu) : salaireReference;
-  l.push(L('accord', 'Allocation de départ à la retraite', m ? `${r2(m)} mois de salaire de référence` : 'Aucune (moins de 10 ans d\'ancienneté ou seuil non atteint)', { brut: r2(m), note: statut === 'employe' ? 'Salaire de référence limité au plafond de la Sécurité sociale.' : 'Au-delà de 64 ans au départ, les années de présence ne font plus augmenter l\'allocation.' }));
+  l.push(L('accord', 'Allocation de départ à la retraite', m ? `${r2(m)} mois de salaire de référence` : 'Aucune (moins de 10 ans d\'ancienneté ou seuil non atteint)', { brut: r2(m), cmp: { g: 'alloc', v: r2(m), s: 'plus' }, note: statut === 'employe' ? 'Salaire de référence limité au plafond de la Sécurité sociale.' : 'Au-delà de 64 ans au départ, les années de présence ne font plus augmenter l\'allocation.' }));
   if (m && sr > 0) l.push(L('accord', 'Montant', `${r2(m * sr)} €`, { brut: r2(m * sr) }));
   let cc = 0;
   if (statut === 'cadre') cc = a >= 5 ? Math.min(6, Math.min(a, 10) * 2 / 20 + Math.max(Math.min(a, 20) - 10, 0) * 3 / 20 + Math.max(a - 20, 0) * 5 / 20) : 0;
   else cc = a >= 10 ? Math.min(4, 10 * 2 / 20 + (a - 10) * 3 / 20) : 0;
-  l.push(L('convention', 'Allocation de départ en retraite (salaire « plein tarif »)', cc ? `${r2(cc)} mois` : 'Aucune (ancienneté minimale non atteinte)', { brut: r2(cc), note: statut === 'cadre' ? 'Cadres : au moins 5 ans de présence, maximum 6 mois.' : 'Employés et maîtrise : au moins 10 ans d\'ancienneté, maximum 4 mois.' }));
+  l.push(L('convention', 'Allocation de départ en retraite (salaire « plein tarif »)', cc ? `${r2(cc)} mois` : 'Aucune (ancienneté minimale non atteinte)', { brut: r2(cc), cmp: { g: 'alloc', v: r2(cc), s: 'plus' }, note: statut === 'cadre' ? 'Cadres : au moins 5 ans de présence, maximum 6 mois.' : 'Employés et maîtrise : au moins 10 ans d\'ancienneté, maximum 4 mois.' }));
   return { lignes: l };
 }
 

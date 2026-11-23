@@ -331,3 +331,23 @@ test('participation — répartition : salaire plafonné à 3 PASS, droits plafo
   assert.deepEqual(p({ salaireAnnuel: 90000, moisPresence: 6 }), [72000, 18000]);    // 3 × 48 000 ÷ 2
   assert.ok(C.participationRepartition({ salaireAnnuel: 1000 }).erreur);             // plafond manquant
 });
+
+test('congés temps partiel — semaines entières et jours isolés (cas signalé : 3 jours par semaine, une semaine = 6 jours)', () => {
+  const p = x => C.congesPointage({ joursHebdo: 3, joursAbsence: 0, semaines: 0, joursFeriesChomes: 0, ...x });
+  assert.equal(p({ semaines: 1 }).lignes[0].brut, 6);                       // une semaine entière : 6 jours (et non 12)
+  assert.equal(p({ semaines: 2 }).lignes[0].brut, 12);
+  assert.equal(p({ semaines: 1, joursFeriesChomes: 1 }).lignes[0].brut, 5); // un férié chômé dans la semaine
+  assert.equal(p({ joursAbsence: 1 }).lignes[0].brut, 2);                   // un jour isolé
+  assert.equal(p({ joursAbsence: 6 }).lignes[0].brut, 12);                  // 6 jours isolés = 2 semaines de travail
+  assert.ok(p({ joursAbsence: 6 }).info.includes('Semaines entières'));     // message d'aide
+  assert.equal(p({ joursAbsence: 1 }).info, undefined);
+  assert.equal(C.congesPointage({ joursHebdo: 5, semaines: 1 }).lignes[0].brut, 6);
+});
+test('comparaison accord / convention : les lignes comparables portent cmp', () => {
+  const l = C.majorationNuit({ tauxHoraire: 10, h225: 8 }).lignes;
+  assert.deepEqual([l[0].cmp.g, l[1].cmp.g, l[0].cmp.v, l[1].cmp.v], ['nuit', 'nuit', 24, 16]);
+  const a = C.allocationRetraite({ statut: 'maitrise', ancienneteAns: 14 }).lignes;
+  assert.ok(a.filter(x => x.cmp).length === 2);
+  const m = C.arretMaladie({ statut: 'employe', ancienneteAns: 3 }).lignes.filter(x => x.cmp);
+  assert.deepEqual(m.map(x => x.cmp.s), ['moins', 'moins']);
+});
