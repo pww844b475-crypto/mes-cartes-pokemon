@@ -416,4 +416,16 @@ export function modulationTempsPartiel({ horaire = 0 }) {
   return { lignes: [L('accord', 'Limite haute de la semaine', `${haut} h`, { brut: haut }), L('accord', 'Limite basse de la semaine', `${bas} h`, { brut: bas, note: tab[horaire] ? undefined : 'Le tableau de l\'accord ne donne que 26 h, 28 h et 30 h ; la règle générale est de plus ou moins 4 h.' })] };
 }
 
-export const CALCULS = { heuresSup, annualisation, heuresComplementaires, modulationTempsPartiel, allocationRetraite, periodeEssai, congesAcquis, fractionnement, congeAnciennete, indemniteConges, grossesse, maternite, paternite, congeParentalAnciennete, delaiProtection, capitalDeces, demenagement, enfantMalade, retraiteProgressive, primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };
+// ---- 32. Participation : base de répartition et plafonds (accord de participation signé, art. 4 p.5)
+export function participationRepartition({ salaireAnnuel = 0, plafondSecu = 0, moisPresence = 12 }) {
+  if (!(plafondSecu > 0)) return { lignes: [], erreur: 'Renseigner le plafond annuel de la Sécurité sociale (48 060 € en 2026, source Urssaf ; vérifier la valeur de l\'année concernée).' };
+  const k = Math.min(Math.max(moisPresence, 0), 12) / 12;
+  const plafondSalaire = r2(3 * plafondSecu * k), plafondDroits = r2(0.75 * plafondSecu * k);
+  const base = r2(Math.min(salaireAnnuel, plafondSalaire));
+  return { lignes: [
+    L('accord', 'Salaire pris en compte pour la répartition', `${base} €`, { brut: base, note: salaireAnnuel > plafondSalaire ? 'Salaire plafonné à 3 fois le plafond annuel de la Sécurité sociale (au prorata de la présence).' : 'Dans la limite de 3 fois le plafond annuel de la Sécurité sociale (au prorata de la présence).' }),
+    L('accord', 'Plafond individuel des droits à participation (75 % du plafond annuel)', `${plafondDroits} €`, { brut: plafondDroits, note: 'Le montant réel dépend de la réserve de participation de l\'entreprise et du total des salaires : il ne peut pas être calculé ici.' }),
+  ] };
+}
+
+export const CALCULS = { participationRepartition, heuresSup, annualisation, heuresComplementaires, modulationTempsPartiel, allocationRetraite, periodeEssai, congesAcquis, fractionnement, congeAnciennete, indemniteConges, grossesse, maternite, paternite, congeParentalAnciennete, delaiProtection, capitalDeces, demenagement, enfantMalade, retraiteProgressive, primeEtArret, journeeSolidarite, congesPointage, preavis, indemniteLicenciement, primeAnnuelle, interessement2026, abondement, majorationNuit, arretMaladie, evenementFamilial, remiseAchats };

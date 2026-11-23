@@ -148,7 +148,7 @@ $('#titre').addEventListener('click', accueil);
     subst: { titre: 'Accord de substitution', scan: true }, nao: { titre: 'NAO 2026', scan: true },
     cc: { titre: 'Convention collective IDCC 2216 (28 août 2025)', scan: false },
     avenant: { titre: 'Avenant intéressement 2026 (non signé)', scan: false }, interess: { titre: 'Accord d\'intéressement 2025', scan: true },
-    pee: { titre: 'Règlement PEE', scan: true }, percol: { titre: 'Règlement PERCOL', scan: true }, livret: { titre: 'Livret CGT', scan: false }, ct: { titre: 'Code du travail (code.travail.gouv.fr, version du 10/08/2016)', scan: false },
+    pee: { titre: 'Règlement PEE', scan: true }, particip: { titre: 'Accord de participation (signé le 24/11/2025)', scan: true }, percol: { titre: 'Règlement PERCOL', scan: true }, livret: { titre: 'Livret CGT', scan: false }, ct: { titre: 'Code du travail (code.travail.gouv.fr, version du 10/08/2016)', scan: false },
   };
   if (EMPREINTE_MDP) $('#porte').hidden = false; else { $('#appli').hidden = false; accueil(); }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});

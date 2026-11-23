@@ -322,3 +322,12 @@ test('modulation du temps partiel — accord art. 5.2 (tableau lu sur l\'image)'
   assert.deepEqual(m(26), [30, 22]); assert.deepEqual(m(28), [32, 24]); assert.deepEqual(m(30), [34, 26]);
   assert.deepEqual(m(32), [36, 28]); assert.deepEqual(m(25), [null]);
 });
+
+test('participation — répartition : salaire plafonné à 3 PASS, droits plafonnés à 75 % du PASS, prorata de présence (accord art. 4)', () => {
+  const p = x => C.participationRepartition({ plafondSecu: 48000, ...x }).lignes.map(l => l.brut);
+  assert.deepEqual(p({ salaireAnnuel: 30000, moisPresence: 12 }), [30000, 36000]);   // 75 % × 48 000
+  assert.deepEqual(p({ salaireAnnuel: 200000, moisPresence: 12 }), [144000, 36000]); // 3 × 48 000
+  assert.deepEqual(p({ salaireAnnuel: 30000, moisPresence: 6 }), [30000, 18000]);    // plafond droits ÷ 2
+  assert.deepEqual(p({ salaireAnnuel: 90000, moisPresence: 6 }), [72000, 18000]);    // 3 × 48 000 ÷ 2
+  assert.ok(C.participationRepartition({ salaireAnnuel: 1000 }).erreur);             // plafond manquant
+});

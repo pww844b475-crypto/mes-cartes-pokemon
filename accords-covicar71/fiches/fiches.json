@@ -5066,7 +5066,7 @@
     }
    ],
    "notes": [
-    "Le plafond mensuel de la Sécurité sociale n'est pas dans les sources : saisir sa valeur pour l'appliquer aux employés.",
+    "Le plafond mensuel de la Sécurité sociale n'est pas dans l'accord : la valeur par défaut (4 005 €) est celle de 2026 selon l'Urssaf ; vérifier la valeur de l'année du départ.",
     "Bornes exactes (13, 16, 20 ans pile) : le texte dit « plus de » et « moins de » : les âges exacts ne sont pas couverts.",
     "L'accord et la convention donnent des résultats différents : les deux sont affichés sans trancher. Vos questions sur l'encadrement : le calcul « encadrement » suit l'accord (2,5 mois + 2/10 de mois par année après 10 ans)."
    ],
@@ -5108,11 +5108,11 @@
     },
     {
      "id": "plafondSecu",
-     "label": "Employé : plafond mensuel de la Sécurité sociale (€), si connu",
+     "label": "Employé : plafond mensuel de la Sécurité sociale (€) — 4 005 € en 2026 (Urssaf)",
      "type": "number",
      "min": 0,
      "step": "0.01",
-     "defaut": 0
+     "defaut": 4005
     }
    ],
    "calcul": "allocationRetraite",
@@ -6527,6 +6527,801 @@
    "notes": [
     "La page 72 de l'accord (10 h, 12 h, 48 h, repos) est lue sur le texte extrait ; la page 71 est vérifiée sur l'image."
    ]
+  },
+  {
+   "id": "participation-beneficiaires",
+   "theme": "Participation (accord signé le 24/11/2025)",
+   "categorie": "epargne",
+   "question": "Qui a droit à la participation ? Quelle ancienneté faut-il ?",
+   "reponse": "Tous les salariés d'au moins trois mois d'ancienneté dans la société bénéficient de la répartition de la réserve de participation. L'ancienneté est la durée totale d'appartenance à la société, continue ou non ; tous les contrats exécutés pendant la période de calcul et les douze mois précédents comptent ; les périodes de suspension du contrat ne sont pas déduites. Elle s'apprécie à la fin de l'exercice ou à la date de départ (accord, art. 2).",
+   "synonymes": [
+    "participation",
+    "qui a droit à la participation",
+    "ancienneté participation",
+    "3 mois d'ancienneté",
+    "bénéficiaires de la participation",
+    "réserve spéciale de participation",
+    "stagiaire embauché participation",
+    "droit à la participation"
+   ],
+   "etiquettes": [
+    "Accord signé le 24/11/2025 (la CGT n'a pas signé)"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de participation (signé le 24 novembre 2025), art. 2, p.3-4",
+     "regles": [
+      "Bénéficiaires : tous les salariés comptant au moins trois mois d'ancienneté.",
+      "Ancienneté = durée totale d'appartenance à la société, continue ou discontinue ; tous les contrats exécutés pendant la période de calcul et les douze mois qui la précèdent sont pris en compte ; les périodes de suspension ne sont pas déduites.",
+      "Ancienneté appréciée à la fin de l'exercice ou à la date du départ durant l'exercice.",
+      "Stagiaires embauchés à l'issue d'un stage de plus de deux mois : la durée du stage compte pour l'ancienneté."
+     ],
+     "sources": [
+      {
+       "doc": "particip",
+       "article": "art. 2",
+       "page": 3,
+       "extrait": "comptant au moins trois mois d'ancienneté bénéficient de la répartition de la réserve spéciale de participation",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 2",
+       "page": 3,
+       "extrait": "Les périodes de suspension du contrat de travail ne sont pas déduites pour le calcul de l'ancienneté",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 2",
+       "page": 3,
+       "extrait": "Cette ancienneté est appréciée à la fin de l'exercice ou à la date du départ du Bénéficiaire durant l'exercice",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "participation-calcul",
+   "theme": "Participation (accord signé le 24/11/2025)",
+   "categorie": "epargne",
+   "question": "Comment est calculée la participation (réserve spéciale) ?",
+   "reponse": "La réserve spéciale de participation suit la formule légale R.S.P. = 1/2 (B − 5/100 C) × S/VA, où B est le bénéfice fiscal, C les capitaux propres, S la masse salariale et VA la valeur ajoutée. Le bénéfice net et les capitaux propres sont attestés par l'inspecteur des impôts ou le contrôleur légal des comptes, et ne peuvent pas être remis en cause (accord, art. 3 et 11).",
+   "synonymes": [
+    "calcul de la participation",
+    "formule de participation",
+    "RSP",
+    "réserve spéciale",
+    "bénéfice net",
+    "capitaux propres",
+    "valeur ajoutée",
+    "comment est calculée la participation",
+    "masse salariale"
+   ],
+   "etiquettes": [
+    "Accord signé le 24/11/2025 (la CGT n'a pas signé)"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de participation (signé le 24 novembre 2025), art. 3, p.4-5",
+     "regles": [
+      "Formule : R.S.P. = 1/2 (B − 5/100 C) × S/VA, conformément aux articles L. 3324-1 et L. 3324-4 du Code du travail.",
+      "B : bénéfice de l'entreprise (France), tel que retenu pour l'impôt, diminué de l'impôt et majoré de certains bénéfices exonérés. C : capitaux propres. S : rémunérations retenues pour les cotisations de Sécurité sociale. VA : valeur ajoutée.",
+      "Bénéfice net et capitaux propres attestés par l'inspecteur des impôts ou le contrôleur légal des comptes."
+     ],
+     "sources": [
+      {
+       "doc": "particip",
+       "article": "art. 3",
+       "page": 4,
+       "extrait": "Le calcul de la réserve spéciale de participation s'effectue conformément aux dispositions des articles L. 3324-1 et L. 3324-4 du code du travail",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 3",
+       "page": 4,
+       "extrait": "Le montant du bénéfice net est attesté par l'inspecteur des impôts ou par le contrôleur légal des comptes",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 11",
+       "page": 11,
+       "extrait": "ne peut être remis en cause",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Le calcul de la réserve dépend des comptes de l'entreprise : il ne peut pas être refait par un salarié."
+   ]
+  },
+  {
+   "id": "participation-repartition",
+   "theme": "Participation (accord signé le 24/11/2025)",
+   "categorie": "epargne",
+   "question": "Comment la participation est-elle répartie ? Quel montant maximum ? Mes absences la réduisent-elles ?",
+   "reponse": "La réserve est répartie proportionnellement aux salaires de l'exercice, pris en compte dans la limite de 3 fois le plafond annuel de la Sécurité sociale. Le montant attribué à un salarié ne peut pas dépasser 75 % du plafond annuel de la Sécurité sociale. Les deux plafonds sont réduits au prorata de la présence en cas d'année incomplète. Pour la maternité, la paternité, l'adoption, le deuil d'un enfant ou d'une personne à charge de moins de 25 ans, l'accident du travail, la maladie professionnelle, la quarantaine et l'activité partielle, le salaire est reconstitué comme si le salarié avait travaillé (accord, art. 4).",
+   "synonymes": [
+    "répartition de la participation",
+    "montant maximum participation",
+    "75 % du plafond",
+    "plafond individuel",
+    "3 fois le plafond",
+    "absences participation",
+    "congé maternité participation",
+    "maladie participation",
+    "activité partielle participation",
+    "salaires reconstitués",
+    "plafond sécurité sociale participation"
+   ],
+   "etiquettes": [
+    "Accord signé le 24/11/2025 (la CGT n'a pas signé)"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de participation (signé le 24 novembre 2025), art. 4, p.5",
+     "regles": [
+      "Répartition proportionnelle aux salaires perçus pendant l'exercice.",
+      "Salaires pris en compte dans la limite de 3 fois le plafond annuel de la Sécurité sociale ; au prorata de la présence si l'année n'est pas entière.",
+      "Droits d'un salarié pour un exercice : au plus 75 % du plafond annuel de la Sécurité sociale (article D. 3324-12), au prorata de la présence ; l'excédent est réparti entre les bénéficiaires dont les droits sont inférieurs au plafond.",
+      "Salaire reconstitué comme si le salarié n'avait pas été absent : congé de maternité, de paternité et d'accueil de l'enfant, d'adoption, deuil d'un enfant ou d'une personne à charge de moins de 25 ans, accident du travail et maladie professionnelle, quarantaine, activité partielle.",
+      "Les autres absences (maladie ordinaire, congés sans solde…) ne sont pas citées : Information à compléter."
+     ],
+     "sources": [
+      {
+       "doc": "particip",
+       "article": "art. 4",
+       "page": 5,
+       "extrait": "La réserve spéciale de participation est répartie entre les Bénéficiaires proportionnellement aux salaires perçus au cours de l'exercice considéré",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 4",
+       "page": 5,
+       "extrait": "dans la limite d'une somme égale à trois fois le plafond annuel de la Sécurité sociale",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 4",
+       "page": 5,
+       "extrait": "75% du plafond annuel de la sécurité sociale",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 4",
+       "page": 5,
+       "extrait": "les salaires à prendre en compte sont ceux qu'aurait perçu le Bénéficiaire s'il n'avait pas été absent",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 4",
+       "page": 5,
+       "extrait": "Les sommes qui n'auraient pu être mises en distribution en raison du plafond réglementaire individuel",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Le plafond annuel de la Sécurité sociale n'est pas dans l'accord : 48 060 € en 2026 (Urssaf). Pour l'exercice concerné, vérifier la valeur de l'année.",
+    "La maladie ordinaire n'est pas dans la liste des absences reconstituées : le texte ne dit pas comment elle est traitée (Information à compléter)."
+   ],
+   "champs": [
+    {
+     "id": "salaireAnnuel",
+     "label": "Salaire brut de l'exercice (€)",
+     "type": "number",
+     "min": 0,
+     "step": "0.01",
+     "defaut": 30000
+    },
+    {
+     "id": "plafondSecu",
+     "label": "Plafond annuel de la Sécurité sociale (€)",
+     "type": "number",
+     "min": 0,
+     "step": "1",
+     "defaut": 48060
+    },
+    {
+     "id": "moisPresence",
+     "label": "Mois de présence dans l'exercice (0 à 12)",
+     "type": "number",
+     "min": 0,
+     "step": "0.5",
+     "defaut": 12,
+     "max": 12
+    }
+   ],
+   "calcul": "participationRepartition"
+  },
+  {
+   "id": "participation-choix-versement",
+   "theme": "Participation (accord signé le 24/11/2025)",
+   "categorie": "epargne",
+   "question": "Je peux choisir entre être payé tout de suite ou placer ma participation ? Quand est-elle versée ?",
+   "reponse": "À chaque répartition, le salarié choisit de percevoir tout ou partie des sommes tout de suite, ou de les placer dans les fonds du plan d'épargne d'entreprise. Il est présumé informé 4 jours calendaires après la notification ; sans choix dans les 15 jours qui suivent, la somme est placée dans le plan d'épargne (fonds prévu par le règlement, sinon le plus sécuritaire). L'entreprise verse ou place les sommes avant le premier jour du sixième mois suivant la clôture de l'exercice ; au-delà, elle ajoute un intérêt de retard (accord, art. 5).",
+   "synonymes": [
+    "choix participation",
+    "verser ou placer la participation",
+    "versement immédiat",
+    "placer sur le PEE",
+    "15 jours pour choisir",
+    "4 jours",
+    "quand la participation est versée",
+    "sixième mois",
+    "intérêt de retard",
+    "placement par défaut",
+    "FCPE"
+   ],
+   "etiquettes": [
+    "Accord signé le 24/11/2025 (la CGT n'a pas signé)"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de participation (signé le 24 novembre 2025), art. 5, p.5-6",
+     "regles": [
+      "Au choix du bénéficiaire à chaque répartition : percevoir immédiatement tout ou partie des sommes, ou les investir dans les FCPE du plan d'épargne d'entreprise.",
+      "Le bénéficiaire est présumé informé 4 jours calendaires après la notification ; sans choix dans les 15 jours, la quote-part est investie dans le plan d'épargne d'entreprise (FCPE prévu par le règlement, ou à défaut le plus sécuritaire).",
+      "Versement ou affectation au plan avant le premier jour du sixième mois suivant la clôture de l'exercice ; passé ce délai, intérêt de retard au taux prévu par les articles D. 3324-21-2 et D. 3324-25 du Code du travail (1,33 fois le taux moyen de rendement des obligations des sociétés privées)."
+     ],
+     "sources": [
+      {
+       "doc": "particip",
+       "article": "art. 5",
+       "page": 5,
+       "extrait": "de percevoir immédiatement tout ou partie des sommes lui revenant",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 5",
+       "page": 6,
+       "extrait": "Il est présumé être informé à l'issue d'un délai de 4 jours calendaires suivant la date de la notification",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 5",
+       "page": 6,
+       "extrait": "A défaut de choix exprimé par le Bénéficiaire dans un délai de 15 jours",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 5",
+       "page": 6,
+       "extrait": "avant le premier jour du sixième mois suivant la clôture de l'exercice",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 5",
+       "page": 6,
+       "extrait": "l'Entreprise complète les versements par un intérêt de retard",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "participation-blocage",
+   "theme": "Participation (accord signé le 24/11/2025)",
+   "categorie": "epargne",
+   "question": "Pendant combien de temps ma participation placée est-elle bloquée ?",
+   "reponse": "Si le salarié ne demande pas le versement immédiat, ses droits ne sont négociables ou exigibles qu'au bout de cinq ans, à compter du premier jour du 6e mois suivant la clôture de l'exercice au titre duquel ils sont nés (accord, art. 6.1). Des déblocages anticipés sont possibles dans certains cas : voir la fiche suivante.",
+   "synonymes": [
+    "blocage de la participation",
+    "indisponibilité",
+    "5 ans",
+    "cinq ans",
+    "disponibilité de la participation",
+    "durée de blocage",
+    "participation bloquée",
+    "droits négociables"
+   ],
+   "etiquettes": [
+    "Accord signé le 24/11/2025 (la CGT n'a pas signé)"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de participation (signé le 24 novembre 2025), art. 6.1, p.6",
+     "regles": [
+      "Droits non négociables ni exigibles avant un délai de cinq ans à compter du premier jour du 6e mois suivant la clôture de l'exercice au titre duquel ils sont nés, sauf demande de versement immédiat dans le délai de l'article 5."
+     ],
+     "sources": [
+      {
+       "doc": "particip",
+       "article": "art. 6.1",
+       "page": 6,
+       "extrait": "à l'expiration d'un délai de cinq ans à compter du premier jour du 6ème mois suivant la clôture de l'exercice",
+       "ocr_corrige": true,
+       "note_ocr": "Cette ligne est coupée sur le scan de la page 6 : texte lu en entier sur le projet de l'accord, dont le contenu est par ailleurs identique à la version signée.",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "participation-deblocage",
+   "theme": "Participation (accord signé le 24/11/2025)",
+   "categorie": "epargne",
+   "question": "Dans quels cas débloquer ma participation avant 5 ans ?",
+   "reponse": "Déblocage anticipé possible notamment pour : mariage ou PACS ; naissance ou adoption d'un 3e enfant ou plus ; divorce, séparation ou dissolution de PACS avec enfant à domicile ; violences conjugales ; invalidité (au moins 80 %) ; décès du salarié, du conjoint ou du partenaire ; rupture du contrat de travail ; création ou reprise d'entreprise ; achat ou agrandissement de la résidence principale ; travaux de rénovation énergétique ; surendettement ; proche aidant ; achat d'un véhicule électrique ou d'un vélo à assistance électrique. Demande dans les 6 mois suivant l'événement, sauf rupture du contrat, décès du conjoint ou du partenaire, invalidité, violences conjugales, surendettement et proche aidant, où elle peut avoir lieu à tout moment (accord, art. 6.2).",
+   "synonymes": [
+    "déblocage anticipé",
+    "débloquer ma participation",
+    "débloquer avant 5 ans",
+    "cas de déblocage",
+    "mariage pacs déblocage",
+    "naissance troisième enfant",
+    "achat résidence principale",
+    "rupture du contrat déblocage",
+    "véhicule électrique",
+    "surendettement",
+    "proche aidant",
+    "invalidité 80 %"
+   ],
+   "etiquettes": [
+    "Accord signé le 24/11/2025 (la CGT n'a pas signé)"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de participation (signé le 24 novembre 2025), art. 6.2, p.6-8",
+     "regles": [
+      "Cas : mariage ou PACS ; naissance ou adoption quand le foyer compte déjà au moins deux enfants à charge ; divorce, séparation ou dissolution de PACS avec résidence d'au moins un enfant au domicile ; violences conjugales ; invalidité d'au moins 80 % du salarié, d'un enfant, du conjoint ou du partenaire ; décès du salarié, du conjoint ou du partenaire ; rupture du contrat de travail ; création ou reprise d'une entreprise ; acquisition ou agrandissement de la résidence principale, ou remise en état après catastrophe naturelle ; travaux de rénovation énergétique ; surendettement ; activité de proche aidant ; achat d'un véhicule électrique ou à hydrogène, ou d'un vélo à assistance électrique neuf.",
+      "Demande dans un délai de six mois après l'événement ; à tout moment en cas de rupture du contrat de travail, décès du conjoint ou du partenaire, invalidité, violences conjugales, surendettement et proche aidant.",
+      "Levée de l'indisponibilité en un versement unique, sur tout ou partie des droits."
+     ],
+     "sources": [
+      {
+       "doc": "particip",
+       "article": "art. 6.2",
+       "page": 6,
+       "extrait": "Mariage du Bénéficiaire ou conclusion d'un pacte civil de solidarité par le Bénéficiaire",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 6.2",
+       "page": 8,
+       "extrait": "La demande doit être présentée par le Bénéficiaire dans un délai de six mois à compter de la survenance du fait générateur",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 6.2",
+       "page": 8,
+       "extrait": "intervient sous forme d'un versement unique",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "La liste complète est dans l'accord (art. 6.2) ; la fiche en donne les principaux cas. Les mêmes cas figurent dans le règlement du PEE."
+   ]
+  },
+  {
+   "id": "participation-impot",
+   "theme": "Participation (accord signé le 24/11/2025)",
+   "categorie": "epargne",
+   "question": "La participation est-elle imposée ?",
+   "reponse": "Quand le salarié demande la délivrance de ses avoirs, la plus-value (différence entre le montant du rachat et les sommes initialement versées) est soumise aux contributions et prélèvements sociaux en vigueur. En cas de décès, les ayants droit doivent demander la liquidation avant le septième mois suivant le décès, sinon l'exonération fiscale des plus-values cesse de s'appliquer (accord, art. 6.3).",
+   "synonymes": [
+    "impôt participation",
+    "fiscalité participation",
+    "prélèvements sociaux",
+    "plus-value participation",
+    "décès participation",
+    "ayants droit",
+    "exonération participation",
+    "CSG CRDS participation"
+   ],
+   "etiquettes": [
+    "Accord signé le 24/11/2025 (la CGT n'a pas signé)"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de participation (signé le 24 novembre 2025), art. 6.3, p.8",
+     "regles": [
+      "La plus-value constituée par la différence entre le montant du rachat et les sommes initialement versées est soumise aux contributions et prélèvements sociaux en vigueur à la date de délivrance.",
+      "Décès du bénéficiaire : les ayants droit demandent la liquidation avant le septième mois suivant le décès ; passé ce délai, l'exonération de taxation des plus-values (article 150-0 A du Code général des impôts) cesse de s'appliquer."
+     ],
+     "sources": [
+      {
+       "doc": "particip",
+       "article": "art. 6.3",
+       "page": 8,
+       "extrait": "la plus-value constituée par la différence entre le montant de ce rachat et le montant des sommes correspondantes initialement versées",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 6.3",
+       "page": 8,
+       "extrait": "ses ayants droit doivent demander la liquidation de ses avoirs avant le septième mois suivant le décès",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : taux des prélèvements sociaux et régime fiscal détaillé non fournis dans les sources."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "L'accord ne donne pas les taux : voir le régime fiscal en vigueur."
+   ]
+  },
+  {
+   "id": "participation-depart",
+   "theme": "Participation (accord signé le 24/11/2025)",
+   "categorie": "epargne",
+   "question": "Participation : quels sont mes droits si je quitte l'entreprise avant le versement ?",
+   "reponse": "L'employeur doit remettre un état récapitulatif de toutes les sommes et valeurs détenues et une attestation indiquant la nature et le montant des droits et leurs dates de disponibilité, demander l'adresse d'envoi, et informer le salarié qu'il doit prévenir l'organisme gestionnaire de ses changements d'adresse. Si le salarié est introuvable, les sommes sont tenues à sa disposition un an après la fin du délai d'indisponibilité, puis remises à la Caisse des Dépôts et Consignations (accord, art. 7.3).",
+   "synonymes": [
+    "départ de l'entreprise participation",
+    "quitter l'entreprise participation",
+    "état récapitulatif",
+    "attestation participation",
+    "changement d'adresse",
+    "Caisse des dépôts",
+    "sommes non réclamées",
+    "ancien salarié participation"
+   ],
+   "etiquettes": [
+    "Accord signé le 24/11/2025 (la CGT n'a pas signé)"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de participation (signé le 24 novembre 2025), art. 7.3, p.9",
+     "regles": [
+      "À son départ, le bénéficiaire titulaire de droits reçoit un état récapitulatif des sommes et valeurs détenues et une attestation (nature, montant, dates de disponibilité) ; l'employeur lui demande son adresse et l'informe qu'il doit signaler ses changements d'adresse à l'organisme gestionnaire.",
+      "S'il est introuvable, les sommes sont tenues à sa disposition pendant un an à compter de l'expiration du délai d'indisponibilité, puis remises à la Caisse des Dépôts et Consignations."
+     ],
+     "sources": [
+      {
+       "doc": "particip",
+       "article": "art. 7.3",
+       "page": 9,
+       "extrait": "de lui remettre l'état récapitulatif de l'ensemble des sommes et valeurs détenues",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 7.3",
+       "page": 9,
+       "extrait": "tenus à sa disposition par l'Entreprise pendant une durée d'un an à compter de la date d'expiration du délai d'indisponibilité",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 7.3",
+       "page": 9,
+       "extrait": "les sommes sont remises à la Caisse des Dépôts et Consignations",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "participation-information",
+   "theme": "Participation (accord signé le 24/11/2025)",
+   "categorie": "epargne",
+   "question": "Quelle information dois-je recevoir sur ma participation ?",
+   "reponse": "À l'embauche, le salarié reçoit un livret d'épargne salariale. À chaque répartition, une fiche distincte du bulletin de salaire lui est remise, avec une note rappelant les règles de calcul et de répartition, éventuellement par voie électronique sauf opposition. Chaque année, dans les six mois suivant la clôture de l'exercice, l'employeur présente au CSE un rapport sur les éléments de calcul de la réserve et sur l'utilisation des sommes (accord, art. 7.1 et 7.2).",
+   "synonymes": [
+    "information participation",
+    "fiche de participation",
+    "livret d'épargne salariale",
+    "rapport au CSE",
+    "bulletin de salaire participation",
+    "information collective",
+    "information individuelle"
+   ],
+   "etiquettes": [
+    "Accord signé le 24/11/2025 (la CGT n'a pas signé)"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de participation (signé le 24 novembre 2025), art. 7, p.8-9",
+     "regles": [
+      "Information collective : le personnel est informé de l'accord ; chaque année, dans les six mois suivant la clôture de l'exercice, rapport au CSE (éléments de calcul de la réserve, gestion et utilisation des sommes).",
+      "Information individuelle : livret d'épargne salariale à la conclusion du contrat de travail ; à chaque répartition, fiche distincte du bulletin de salaire, avec en annexe une note sur les règles de calcul et de répartition ; remise possible par voie électronique, sauf opposition."
+     ],
+     "sources": [
+      {
+       "doc": "particip",
+       "article": "art. 7.1",
+       "page": 8,
+       "extrait": "Chaque année, dans les six mois suivant la clôture de l'exercice, l'employeur présente au Comité Social et Economique",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 7.2",
+       "page": 8,
+       "extrait": "le salarié reçoit un livret d'épargne salariale",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 7.2",
+       "page": 9,
+       "extrait": "la participation fait l'objet d'une fiche distincte du bulletin de salaire",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "participation-exceptionnel",
+   "theme": "Participation (accord signé le 24/11/2025)",
+   "categorie": "epargne",
+   "question": "Y a-t-il une prime exceptionnelle si le résultat de l'entreprise s'améliore beaucoup ?",
+   "reponse": "Pas de montant automatique : si le résultat opérationnel courant (ROC) est positif et s'améliore de plus de 10 millions d'euros par rapport à l'exercice précédent, une négociation s'ouvre pour mettre en place un dispositif de partage de la valeur au bénéfice des salariés de la société. La négociation légale sur la définition d'une augmentation exceptionnelle du bénéfice net fiscal n'a pas abouti (accord, art. 8).",
+   "synonymes": [
+    "prime exceptionnelle",
+    "bénéfices exceptionnels",
+    "ROC",
+    "résultat opérationnel courant",
+    "10 millions",
+    "partage de la valeur",
+    "augmentation exceptionnelle",
+    "négociation participation"
+   ],
+   "etiquettes": [
+    "Accord signé le 24/11/2025 (la CGT n'a pas signé)"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de participation (signé le 24 novembre 2025), art. 8, p.9-10",
+     "regles": [
+      "Les parties ont constaté que la négociation sur la définition d'une augmentation exceptionnelle du bénéfice net fiscal n'a pas pu aboutir.",
+      "Clause spécifique : si le ROC de l'exercice N est positif et en amélioration de plus de 10 millions d'euros par rapport à l'exercice N-1, une négociation s'ouvre pour mettre en place un dispositif de partage de la valeur au bénéfice des salariés de la société.",
+      "Le ROC pris en compte est celui de Covicar 71, à périmètre d'activité comparable."
+     ],
+     "sources": [
+      {
+       "doc": "particip",
+       "article": "art. 8.2",
+       "page": 10,
+       "extrait": "le ROC serait positif et ayant une amélioration de plus de 10 millions d'euros par rapport l'exercice précédent",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 8.2",
+       "page": 10,
+       "extrait": "une négociation sera ouverte ayant pour objet la mise en place d'un dispositif de partage de la valeur",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "participation-litige",
+   "theme": "Participation (accord signé le 24/11/2025)",
+   "categorie": "epargne",
+   "question": "Que se passe-t-il en cas de litige sur la participation ?",
+   "reponse": "Les différends individuels ou collectifs sur l'interprétation ou l'application de l'accord sont d'abord soumis au CSE. En cas d'échec, ils vont devant le tribunal administratif pour les litiges sur le montant des salaires ou le calcul de la valeur ajoutée, et devant les tribunaux judiciaires pour les autres. Le montant du bénéfice net et des capitaux propres attesté par l'inspecteur des impôts ou le commissaire aux comptes ne peut pas être remis en cause (accord, art. 11).",
+   "synonymes": [
+    "litige participation",
+    "contestation participation",
+    "désaccord participation",
+    "tribunal administratif",
+    "tribunal judiciaire",
+    "recours participation",
+    "différend participation"
+   ],
+   "etiquettes": [
+    "Accord signé le 24/11/2025 (la CGT n'a pas signé)"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de participation (signé le 24 novembre 2025), art. 11, p.11",
+     "regles": [
+      "Différends soumis d'abord au CSE de l'entreprise.",
+      "En cas d'échec : tribunal administratif (montant des salaires, calcul de la valeur ajoutée) ou tribunaux judiciaires (autres litiges), au siège social."
+     ],
+     "sources": [
+      {
+       "doc": "particip",
+       "article": "art. 11",
+       "page": 11,
+       "extrait": "seront soumis au Comité Social et Économique de l'Entreprise",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 11",
+       "page": 11,
+       "extrait": "le Tribunal Administratif pour les litiges portant sur le montant des salaires ou le calcul de la valeur ajoutée",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": []
+  },
+  {
+   "id": "participation-duree",
+   "theme": "Participation (accord signé le 24/11/2025)",
+   "categorie": "epargne",
+   "question": "Combien de temps l'accord de participation dure-t-il ? Qui l'a signé ?",
+   "reponse": "Conclu pour 3 ans, il s'applique aux résultats des exercices ouverts le 1er janvier 2025, 2026 et 2027, puis se renouvelle par tacite reconduction pour une durée indéterminée, sauf dénonciation par la direction trois mois avant l'échéance. Il est suspendu de plein droit si l'effectif habituel devient inférieur à 50 salariés. Il est daté du 24 novembre 2025 et signé par la Direction, FO, la CFDT, la CFE-CGC et l'UNSA ; la CGT ne l'a pas signé (accord, art. 9, 10, 12).",
+   "synonymes": [
+    "durée de l'accord de participation",
+    "accord de participation signé",
+    "qui a signé",
+    "CGT signé",
+    "dénonciation",
+    "tacite reconduction",
+    "effectif inférieur à 50",
+    "24 novembre 2025",
+    "3 ans",
+    "signataires"
+   ],
+   "etiquettes": [
+    "Accord signé le 24/11/2025 (la CGT n'a pas signé)"
+   ],
+   "niveaux": [
+    {
+     "titre": "Accord de participation (signé le 24 novembre 2025), art. 9 à 12, p.10-12",
+     "regles": [
+      "Durée de trois ans ; il s'applique aux résultats des exercices ouverts le 1er janvier 2025, le 1er janvier 2026 et le 1er janvier 2027.",
+      "Sauf dénonciation par la direction au moins trois mois avant l'échéance, renouvellement par tacite reconduction pour une durée indéterminée ; dénonciable alors à tout moment avec un préavis de trois mois.",
+      "Si l'effectif habituel devient inférieur à 50 salariés, l'accord est suspendu de plein droit jusqu'à ce que la condition d'effectif soit de nouveau remplie.",
+      "Fait à Massy, le 24 novembre 2025. Signatures sur la page 12 : Direction (Mme Mastouri), FO, CFDT, CFE-CGC, UNSA ; le bloc de la CGT est vide."
+     ],
+     "sources": [
+      {
+       "doc": "particip",
+       "article": "art. 9",
+       "page": 10,
+       "extrait": "conclu pour une durée de trois ans",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 9",
+       "page": 10,
+       "extrait": "l'Accord se renouvellera par tacite reconduction, pour une durée indéterminée",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 10",
+       "page": 11,
+       "extrait": "l'effectif habituel de l'Entreprise devient inférieur à 50 salariés, le présent accord est alors suspendu de plein droit",
+       "verifie_image": true
+      },
+      {
+       "doc": "particip",
+       "article": "art. 12",
+       "page": 11,
+       "extrait": "Fait à Massy, le 24 novembre 2025.",
+       "verifie_image": true
+      }
+     ]
+    },
+    {
+     "niveau": "code",
+     "titre": "Code du travail",
+     "regles": [
+      "Information à compléter : Code du travail non consulté sur ce point."
+     ],
+     "sources": []
+    }
+   ],
+   "notes": [
+    "Signatures : constat sur l'image de la page 12 de la version signée (la CGT n'a pas signé). L'accord est valable avec les autres signataires.",
+    "L'accord mentionne le plan d'épargne d'entreprise du 9 octobre 2025 (le projet laissait cette date en pointillés)."
+   ]
   }
  ],
  "categories": [
@@ -6581,10 +7376,10 @@
   },
   {
    "id": "epargne",
-   "nom": "Intéressement et épargne",
+   "nom": "Intéressement, participation, épargne",
    "icone": "📈",
    "couleur": "#1b7f9e",
-   "description": "Intéressement, PEE, PERCOL"
+   "description": "Intéressement, participation, PEE, PERCOL"
   }
  ],
  "frequentes": [

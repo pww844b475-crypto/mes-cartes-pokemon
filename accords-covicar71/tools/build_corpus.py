@@ -11,7 +11,7 @@ DOCS = {
  "pee": ("Règlement du PEE du 9 octobre 2025", "09_Reglement_PEE_2025-10-09", 0, True),
  "percol": ("Règlement du PERCOL du 9 octobre 2025", "10_Reglement_PERCOL_2025-10-09", 0, True),
  "ct": ("Code du travail (articles L3133-7, L3133-8, L3133-10, L3133-11 glossaire jour ouvrable / jour ouvré, articles L3141-x et L1225-x ; page = ordre des textes)", "CT_Code_du_travail_extraits", 0, False),
- "particip": ("Projet d'accord de participation (non signé)", "11_Projet_accord_participation_NON_SIGNE", 0, False),
+ "particip": ("Accord de participation de la Société Covicar 71 (signé le 24 novembre 2025)", "13_Accord_participation_SIGNE", 0, True),
 }
 out = {}
 for k, (titre, d, off, scan) in DOCS.items():
@@ -24,7 +24,7 @@ for k, (titre, d, off, scan) in DOCS.items():
     out[k] = {"titre": titre, "offset": off, "scan": scan, "pages": pages}
 # Corpus complet : usage local (tests de citations), jamais publié.
 json.dump(out, open("data/corpus-complet.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
-# Corpus public : sans le projet de participation non signé, la copie non signée de l'avenant, le livret CGT et la brochure de la convention collective.
-EXCLUS_PUBLIC = {"particip", "avenant", "livret", "cc"}
+# Corpus public : sans la copie non signée de l'avenant, le livret CGT et la brochure de la convention collective.
+EXCLUS_PUBLIC = {"avenant", "livret", "cc"}
 json.dump({k: v for k, v in out.items() if k not in EXCLUS_PUBLIC}, open("data/corpus.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
 print({k: len(v["pages"]) for k, v in out.items()})

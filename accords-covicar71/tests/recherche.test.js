@@ -61,3 +61,9 @@ test('lot 4 (heures supplémentaires, annualisation, temps partiel) : chacune de
   const rates = lot4.filter(q => { const r = chercherFiches(q.question, fiches, syn); return !(r.mode === 'direct' && r.fiches[0].id === q.fiche); });
   assert.deepEqual(rates.map(q => `Q${q.n}`), []);
 });
+
+const lot5 = JSON.parse(lire(new URL('./questions-lot5.json', import.meta.url)));
+test('lot 5 (participation) : chacune des 15 questions du tableau ouvre directement la bonne fiche', () => {
+  const rates = lot5.filter(q => { const r = chercherFiches(q.question, fiches, syn); return !(r.mode === 'direct' && r.fiches[0].id === q.fiche); });
+  assert.deepEqual(rates.map(q => `Q${q.n}`), []);
+});

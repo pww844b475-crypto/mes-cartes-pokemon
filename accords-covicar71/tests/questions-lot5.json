@@ -1,0 +1,77 @@
+[
+ {
+  "n": 244,
+  "question": "Qui a droit à la participation ? Quelle ancienneté ?",
+  "fiche": "participation-beneficiaires"
+ },
+ {
+  "n": 245,
+  "question": "Comment est calculée la participation (réserve spéciale) ?",
+  "fiche": "participation-calcul"
+ },
+ {
+  "n": 246,
+  "question": "Comment la participation est-elle répartie entre les salariés ?",
+  "fiche": "participation-repartition"
+ },
+ {
+  "n": 247,
+  "question": "Quel est le montant maximum de participation par salarié ?",
+  "fiche": "participation-repartition"
+ },
+ {
+  "n": 248,
+  "question": "Mes absences réduisent-elles ma participation ?",
+  "fiche": "participation-repartition"
+ },
+ {
+  "n": 249,
+  "question": "Je peux choisir entre être payé tout de suite ou placer ma participation ?",
+  "fiche": "participation-choix-versement"
+ },
+ {
+  "n": 250,
+  "question": "Quand la participation est-elle versée ?",
+  "fiche": "participation-choix-versement"
+ },
+ {
+  "n": 251,
+  "question": "Pendant combien de temps ma participation placée est-elle bloquée ?",
+  "fiche": "participation-blocage"
+ },
+ {
+  "n": 252,
+  "question": "Dans quels cas débloquer ma participation avant 5 ans ?",
+  "fiche": "participation-deblocage"
+ },
+ {
+  "n": 253,
+  "question": "La participation est-elle imposée ?",
+  "fiche": "participation-impot"
+ },
+ {
+  "n": 254,
+  "question": "Je quitte l'entreprise avant le versement de ma participation : que se passe-t-il ?",
+  "fiche": "participation-depart"
+ },
+ {
+  "n": 255,
+  "question": "Quelle information dois-je recevoir sur ma participation ?",
+  "fiche": "participation-information"
+ },
+ {
+  "n": 256,
+  "question": "Y a-t-il une prime exceptionnelle si le résultat de l'entreprise s'améliore beaucoup ?",
+  "fiche": "participation-exceptionnel"
+ },
+ {
+  "n": 257,
+  "question": "Que se passe-t-il en cas de litige sur la participation ?",
+  "fiche": "participation-litige"
+ },
+ {
+  "n": 258,
+  "question": "Combien de temps l'accord de participation dure-t-il ?",
+  "fiche": "participation-duree"
+ }
+]
