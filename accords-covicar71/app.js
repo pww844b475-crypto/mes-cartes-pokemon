@@ -4,7 +4,9 @@ import { chercherFiches, chercherTexte } from './moteur/recherche.js';
 
 const $ = s => document.querySelector(s);
 const vue = $('#vue');
-let FICHES = [], SYN = {}, CORPUS = null, DOCS_TITRES = {};
+let FICHES = [], SYN = {}, CORPUS = null, DOCS_TITRES = {}, CATS = [], FREQ = [];
+let precedent = () => accueil(); // page à laquelle « Retour » ramène
+const catDe = f => CATS.find(c => c.id === f.categorie) || { nom: '', icone: '📄', couleur: '#777' };
 const NIVEAU = { accord: 'Accord', convention: 'Convention', nao: 'NAO 2026', code: 'Code du travail', pratique: 'Pratique RH' };
 
 function h(tag, attrs = {}, ...enfants) {
@@ -34,20 +36,44 @@ $('#formPorte').addEventListener('submit', async e => {
 });
 
 // ---- Écrans ----
-function accueil() {
-  $('#q').value = '';
-  const parTheme = new Map();
-  for (const f of FICHES) { if (!parTheme.has(f.theme)) parTheme.set(f.theme, []); parTheme.get(f.theme).push(f); }
-  remplir(vue, ...[...parTheme].flatMap(([theme, fs]) => [h('div', { class: 'theme' }, theme), h('div', { class: 'liste' }, fs.map(boutonFiche))]));
+function onglets(actif) {
+  const nav = $('#onglets');
+  nav.replaceChildren(...[{ id: 'accueil', nom: 'Accueil', icone: '🏠' }, ...CATS].map(c => h('button', {
+    type: 'button', class: 'onglet' + (c.id === actif ? ' actif' : ''), style: c.couleur ? `--c:${c.couleur}` : '',
+    onclick: () => { $('#q').value = ''; c.id === 'accueil' ? accueil() : vueCategorie(c.id); window.scrollTo(0, 0); }
+  }, `${c.icone} ${c.nom}`)));
+  const el = nav.querySelector('.actif'); if (el) el.scrollIntoView({ inline: 'center', block: 'nearest' });
 }
-const boutonFiche = f => h('button', { class: 'sec', type: 'button', onclick: () => ouvrirFiche(f) }, f.question);
+const carteFiche = f => { const c = catDe(f); return h('button', { class: 'fiche-btn', type: 'button', style: `--c:${c.couleur}`, onclick: () => ouvrirFiche(f) },
+  h('span', { class: 'fb-icone' }, c.icone), h('span', { class: 'fb-texte' }, f.question), h('span', { class: 'fb-fleche' }, '›')); };
+
+function accueil() {
+  $('#q').value = ''; precedent = accueil; onglets('accueil');
+  const freq = FREQ.map(id => FICHES.find(f => f.id === id)).filter(Boolean);
+  remplir(vue,
+    h('h2', { class: 'accueil-titre' }, 'Que voulez-vous savoir ?'),
+    h('p', { class: 'accueil-sous' }, 'Tapez votre question en haut, ou choisissez un sujet.'),
+    h('div', { class: 'tuiles' }, CATS.map(c => h('button', { class: 'tuile', type: 'button', style: `--c:${c.couleur}`, onclick: () => { vueCategorie(c.id); window.scrollTo(0, 0); } },
+      h('span', { class: 'tuile-icone' }, c.icone), h('span', { class: 'tuile-nom' }, c.nom), h('span', { class: 'tuile-desc' }, c.description),
+      h('span', { class: 'tuile-nb' }, `${FICHES.filter(f => f.categorie === c.id).length} réponses`)))),
+    h('h3', { class: 'section' }, '⭐ Questions fréquentes'),
+    h('div', { class: 'liste' }, freq.map(carteFiche)));
+}
+
+function vueCategorie(id) {
+  const c = CATS.find(x => x.id === id); precedent = () => vueCategorie(id); onglets(id);
+  remplir(vue,
+    h('div', { class: 'cat-entete', style: `--c:${c.couleur}` }, h('span', { class: 'cat-icone' }, c.icone), h('div', {}, h('h2', {}, c.nom), h('p', {}, c.description))),
+    h('div', { class: 'liste' }, FICHES.filter(f => f.categorie === id).map(carteFiche)));
+}
 
 function recherche(q) {
   const r = chercherFiches(q, FICHES, SYN);
-  if (r.mode === 'direct') ouvrirFiche(r.fiches[0]);
-  else if (r.mode === 'theme') remplir(vue, h('h2', {}, 'Qu\'est-ce que vous cherchez ?'), h('div', { class: 'liste' }, r.fiches.map(boutonFiche)));
-  else if (r.mode === 'fiches') remplir(vue, h('div', { class: 'liste' }, r.fiches.map(boutonFiche)));
-  else rechercheTexte(q);
+  const liste = fs => { precedent = () => { $('#q').value = q; recherche(q); }; onglets(null); return h('div', { class: 'liste' }, fs.map(carteFiche)); };
+  if (r.mode === 'direct') { precedent = accueil; ouvrirFiche(r.fiches[0]); }
+  else if (r.mode === 'theme') remplir(vue, h('h2', {}, 'Qu\'est-ce que vous cherchez ?'), liste(r.fiches));
+  else if (r.mode === 'fiches') remplir(vue, h('h2', {}, 'Réponses possibles'), liste(r.fiches));
+  else { precedent = accueil; rechercheTexte(q); }
 }
 
 async function rechercheTexte(q) {
@@ -99,24 +125,25 @@ function ouvrirFiche(f) {
   const notes = f.notes?.length ? h('div', { class: 'carte' }, h('h3', {}, 'À savoir'), h('ul', {}, f.notes.map(n => h('li', {}, n)))) : null;
   const textes = h('details', { class: 'textes' }, h('summary', {}, 'Voir les textes, les sources et les détails'), niveaux, notes);
   remplir(vue,
-    h('button', { class: 'sec', type: 'button', onclick: () => { accueil(); window.scrollTo(0, 0); } }, '← Retour'),
-    h('h2', { style: 'margin-top:12px' }, f.question),
+    h('button', { class: 'sec', type: 'button', onclick: () => { precedent(); window.scrollTo(0, 0); } }, '← Retour'),
+    h('button', { class: 'puce-cat', type: 'button', style: `--c:${catDe(f).couleur}`, onclick: () => { vueCategorie(f.categorie); window.scrollTo(0, 0); } }, `${catDe(f).icone} ${catDe(f).nom}`),
+    h('h2', { style: 'margin-top:8px' }, f.question),
     tags(f.etiquettes),
     h('div', { class: 'carte ' + (f.calcul ? 'enbref' : 'reponse-finale') },
       h('div', { class: f.calcul ? 'eb-titre' : 'rf-titre' }, f.calcul ? 'En bref' : 'La réponse'), h('p', { class: f.calcul ? '' : 'rf-texte' }, f.reponse)),
     f.calcul ? h('div', { class: 'carte' }, h('h3', {}, 'Cas du salarié : renseignez les champs'), h('div', { class: 'champs' }, champsEl)) : null,
     f.calcul ? resultat : null,
     textes);
-  calculer(); window.scrollTo(0, 0);
+  onglets(f.categorie); calculer(); window.scrollTo(0, 0);
 }
 
-$('#formRecherche').addEventListener('submit', e => { e.preventDefault(); const q = $('#q').value.trim(); q ? recherche(q) : accueil(); });
+$('#formRecherche').addEventListener('submit', e => { e.preventDefault(); const q = $('#q').value.trim(); q ? recherche(q) : accueil(); window.scrollTo(0, 0); });
 $('#titre').addEventListener('click', accueil);
 
 // ---- Démarrage ----
 (async () => {
   const [f, s] = await Promise.all([fetch('fiches/fiches.json').then(r => r.json()), fetch('fiches/synonymes.json').then(r => r.json())]);
-  FICHES = f.fiches; SYN = s;
+  FICHES = f.fiches; SYN = s; CATS = f.categories || []; FREQ = f.frequentes || [];
   DOCS_TITRES = {
     subst: { titre: 'Accord de substitution', scan: true }, nao: { titre: 'NAO 2026', scan: true },
     cc: { titre: 'Convention collective IDCC 2216 (28 août 2025)', scan: false },

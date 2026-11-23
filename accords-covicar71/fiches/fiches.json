@@ -136,7 +136,8 @@
    "notes": [
     "Le préavis du salarié démissionnaire employé n'a pas de condition d'ancienneté dans le texte lu."
    ],
-   "reponse": "Employé ou ouvrier : 1 mois, et 2 mois en cas de licenciement avec au moins 2 ans d'ancienneté. Agent de maîtrise : au moins 2 mois. Cadre : 3 mois. Sauf faute grave ou lourde (convention, annexes I à III, art. 5.1)."
+   "reponse": "Employé ou ouvrier : 1 mois, et 2 mois en cas de licenciement avec au moins 2 ans d'ancienneté. Agent de maîtrise : au moins 2 mois. Cadre : 3 mois. Sauf faute grave ou lourde (convention, annexes I à III, art. 5.1).",
+   "categorie": "contrat"
   },
   {
    "id": "indemnite-licenciement",
@@ -438,7 +439,8 @@
     "La convention dit que si l'indemnité légale est moins favorable, elle est remplacée par l'indemnité conventionnelle (art. 3.10). L'indemnité légale minimale est celle de R1234-2 (identique au barème employés de la convention).",
     "La faute grave ou lourde exclut l'indemnité dans l'accord comme dans la convention."
    ],
-   "reponse": "Il faut au moins 2 ans de présence (accord) et le licenciement ne doit pas être pour faute grave ou lourde. Employé : 50 % d'un mois de salaire de référence dès 2 ans, puis 75 % plus 25 % par année supplémentaire dès 3 ans, plafonné à 6 mois (accord, art. 3.4). Majorations : +20 % à 45 ans, +10 % par enfant à charge. Salaire de référence : rémunération mensuelle + 1/12 de la prime annuelle + indemnités de fonction. La convention a un autre barème (dès 8 mois d'ancienneté) : les deux sont affichés. Maîtrise et cadres : barèmes propres, calculés ci-dessous."
+   "reponse": "Il faut au moins 2 ans de présence (accord) et le licenciement ne doit pas être pour faute grave ou lourde. Employé : 50 % d'un mois de salaire de référence dès 2 ans, puis 75 % plus 25 % par année supplémentaire dès 3 ans, plafonné à 6 mois (accord, art. 3.4). Majorations : +20 % à 45 ans, +10 % par enfant à charge. Salaire de référence : rémunération mensuelle + 1/12 de la prime annuelle + indemnités de fonction. La convention a un autre barème (dès 8 mois d'ancienneté) : les deux sont affichés. Maîtrise et cadres : barèmes propres, calculés ci-dessous.",
+   "categorie": "contrat"
   },
   {
    "id": "prime-annuelle",
@@ -549,7 +551,8 @@
    "notes": [
     "La prime de vacances (NAO 2026) fait l'objet d'une fiche distincte à venir."
    ],
-   "reponse": "Oui si le salarié a au moins 6 mois d'ancienneté à fin novembre. Montant : 1/12 de la rémunération brute de l'année ; 75 % en acompte début décembre, le solde avec la paie de décembre (accord, art. 3.2)."
+   "reponse": "Oui si le salarié a au moins 6 mois d'ancienneté à fin novembre. Montant : 1/12 de la rémunération brute de l'année ; 75 % en acompte début décembre, le solde avec la paie de décembre (accord, art. 3.2).",
+   "categorie": "remuneration"
   },
   {
    "id": "interessement-2026",
@@ -682,7 +685,8 @@
     "Sans avenant signé, ce sont les grilles de repli de l'accord qui s'appliquent (onglet « Écarts à vérifier »). La copie de l'avenant reçue n'est pas signée.",
     "Le montant affiché est un total de grilles : le seuil déclencheur, le plafond individuel et la formule de répartition ne sont pas calculés."
    ],
-   "reponse": "Les grilles 2026 donnent jusqu'à 100 € (critère 1), 150 € (démarque) et 150 € (NPS), au prorata de la présence, si le seuil de déclenchement est atteint. L'avenant reçu n'est pas signé."
+   "reponse": "Les grilles 2026 donnent jusqu'à 100 € (critère 1), 150 € (démarque) et 150 € (NPS), au prorata de la présence, si le seuil de déclenchement est atteint. L'avenant reçu n'est pas signé.",
+   "categorie": "epargne"
   },
   {
    "id": "abondement-pee",
@@ -771,7 +775,8 @@
    "notes": [
     "La note * du règlement renvoie au plafond de la sécurité sociale en vigueur : valeur à compléter."
    ],
-   "reponse": "L'entreprise abonde à 220 % sur les 50 premiers euros, puis 180 %, 150 %, 125 %, 100 %, puis 16,8 % jusqu'à 1 150 € de versements. Plafond d'abondement : 580,30 € (règlement du PEE, art. 5)."
+   "reponse": "L'entreprise abonde à 220 % sur les 50 premiers euros, puis 180 %, 150 %, 125 %, 100 %, puis 16,8 % jusqu'à 1 150 € de versements. Plafond d'abondement : 580,30 € (règlement du PEE, art. 5).",
+   "categorie": "epargne"
   },
   {
    "id": "majoration-nuit",
@@ -887,7 +892,8 @@
    "notes": [
     "Les taux de l'accord et de la convention diffèrent : les deux sont affichés avec leur source."
    ],
-   "reponse": "Accord : +30 % de 22 h à 5 h, +10 % de 21 h à 22 h et de 5 h à 6 h. Convention : +20 % de 22 h à 5 h, +5 % de 21 h à 22 h. Les deux textes diffèrent : ils sont affichés côte à côte."
+   "reponse": "Accord : +30 % de 22 h à 5 h, +10 % de 21 h à 22 h et de 5 h à 6 h. Convention : +20 % de 22 h à 5 h, +5 % de 21 h à 22 h. Les deux textes diffèrent : ils sont affichés côte à côte.",
+   "categorie": "temps"
   },
   {
    "id": "arret-maladie",
@@ -1044,7 +1050,8 @@
    "notes": [
     "Le niveau de prise en charge par la prévoyance (APGIS) n'est pas dans les sources : Information à compléter."
    ],
-   "reponse": "Après 1 an d'ancienneté (sans condition pour un accident du travail), l'entreprise complète les indemnités de la Sécurité sociale. Carence : 2 jours (accord) ou 7 jours (convention). Durée (employés, accord) : 180 jours de 1 à 10 ans, 360 jours de 10 à 25 ans, 540 jours au-delà."
+   "reponse": "Après 1 an d'ancienneté (sans condition pour un accident du travail), l'entreprise complète les indemnités de la Sécurité sociale. Carence : 2 jours (accord) ou 7 jours (convention). Durée (employés, accord) : 180 jours de 1 à 10 ans, 360 jours de 10 à 25 ans, 540 jours au-delà.",
+   "categorie": "sante"
   },
   {
    "id": "evenements-familiaux",
@@ -1210,7 +1217,8 @@
     "Jour ouvré = jour normalement travaillé par le salarié (convention, art. 7.5.4 ; glossaire du Code du travail : jour effectivement travaillé dans l'entreprise). Jour ouvrable = tous les jours de la semaine sauf le repos hebdomadaire et les jours fériés habituellement non travaillés (glossaire du Code du travail). Les définitions du glossaire sont une aide officielle, pas un article de loi.",
     "Dans l'accord (art. 4.1) et la convention (art. 7.5.1), les jours d'événements familiaux sont en jours ouvrés, sauf « 1 semaine » pour le mariage ou le PACS du salarié."
    ],
-   "reponse": "Naissance ou adoption : 3 jours ouvrés. Décès du conjoint, du partenaire de PACS ou d'un enfant : 5 jours ouvrés. Choisir l'événement plus bas pour voir l'accord et la convention."
+   "reponse": "Naissance ou adoption : 3 jours ouvrés. Décès du conjoint, du partenaire de PACS ou d'un enfant : 5 jours ouvrés. Choisir l'événement plus bas pour voir l'accord et la convention.",
+   "categorie": "conges"
   },
   {
    "id": "remise-achats",
@@ -1304,7 +1312,8 @@
    "notes": [
     "Écart avec le livret CGT (onglet « Écarts à vérifier ») : le livret indique 11 000 € et 12 % temporaire ; les textes signés indiquent 13 000 € en 2026."
    ],
-   "reponse": "10 % sur les achats, dans la limite de 11 000 € par an, après 3 mois d'ancienneté (accord, art. 3.2). NAO 2026 : 12 % du 1er avril 2026 au 31 mars 2027, plafond de 13 000 € pour 2026."
+   "reponse": "10 % sur les achats, dans la limite de 11 000 € par an, après 3 mois d'ancienneté (accord, art. 3.2). NAO 2026 : 12 % du 1er avril 2026 au 31 mars 2027, plafond de 13 000 € pour 2026.",
+   "categorie": "remuneration"
   },
   {
    "id": "journee-solidarite",
@@ -1477,7 +1486,8 @@
    "notes": [
     "Le texte ne définit pas « horaire hebdomadaire conventionnel » : la pratique de paie (7 h 12 pour 36 h ; 4 h 48 pour 24 h) correspond à une référence de 35 h. Avec 36 h de référence, 24 h donnerait 4 h 40.",
     "L'accord dit aussi « 7 heures » pour le temps complet."
-   ]
+   ],
+   "categorie": "temps"
   },
   {
    "id": "prime-annuelle-arret",
@@ -1619,7 +1629,8 @@
    "notes": [
     "Le calcul des dates est approximatif (jours calendaires, carence de 2 jours non déduite) : vérifier avec les états de paie.",
     "Si l'ancienneté dépasse 10 ans, le complément peut courir en 2026 : une partie de la prime 2026 reste alors due selon l'accord."
-   ]
+   ],
+   "categorie": "remuneration"
   },
   {
    "id": "retraite-progressive",
@@ -1758,7 +1769,8 @@
    ],
    "notes": [
     "Seul le nombre de trimestres validés compte, pas l'ancienneté : demander un relevé de carrière à la caisse."
-   ]
+   ],
+   "categorie": "retraite"
   },
   {
    "id": "enfant-malade",
@@ -1930,7 +1942,8 @@
     "Jour ouvré = jour normalement travaillé par le salarié (convention, art. 7.5.4 ; glossaire du Code du travail : jour effectivement travaillé dans l'entreprise). Jour ouvrable = tous les jours de la semaine sauf le repos hebdomadaire et les jours fériés habituellement non travaillés (glossaire du Code du travail). Les définitions du glossaire sont une aide officielle, pas un article de loi.",
     "Unités : l'accord compte les 6 jours de l'enfant hospitalisé en jours ouvrables ; la convention compte ses 5 jours en jours ouvrés. La limite de « 3 jours consécutifs » de l'enfant malade n'est pas précisée (ouvrés ou ouvrables).",
     "Modulation : l'accord (art. 5.1.11, p.70) dit que les absences ne donnant pas lieu à maintien de la rémunération n'impactent pas le compteur annuel, et que les absences rémunérées sont décomptées sur l'horaire réel planifié. Le texte ne dit pas expressément comment l'absence « enfant malade » récupérée est traitée dans la modulation : à confirmer."
-   ]
+   ],
+   "categorie": "conges"
   },
   {
    "id": "absence-ald",
@@ -1980,7 +1993,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "conges"
   },
   {
    "id": "demenagement",
@@ -2078,7 +2092,8 @@
      "defaut": 3
     }
    ],
-   "calcul": "demenagement"
+   "calcul": "demenagement",
+   "categorie": "conges"
   },
   {
    "id": "pompier-volontaire",
@@ -2126,7 +2141,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "conges"
   },
   {
    "id": "reserviste",
@@ -2190,7 +2206,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "conges"
   },
   {
    "id": "mecenat-competences",
@@ -2241,7 +2258,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "conges"
   },
   {
    "id": "permis-de-conduire",
@@ -2300,7 +2318,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "conges"
   },
   {
    "id": "handicap-demi-journees",
@@ -2371,7 +2390,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "conges"
   },
   {
    "id": "cet-aidant",
@@ -2427,7 +2447,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "conges"
   },
   {
    "id": "arret-formalites",
@@ -2494,7 +2515,8 @@
    ],
    "notes": [
     "Les délais de l'accord (48 h, 4 jours) et de la convention (aussitôt que possible, 3 jours calendaires) diffèrent : les deux sont affichés. Ces formalités ne sont pas dans le livret CGT (onglet « Écarts à vérifier »)."
-   ]
+   ],
+   "categorie": "sante"
   },
   {
    "id": "complement-calcul",
@@ -2569,7 +2591,8 @@
    ],
    "notes": [
     "Le plafond de la Sécurité sociale n'est pas dans les sources : valeur à compléter."
-   ]
+   ],
+   "categorie": "sante"
   },
   {
    "id": "complement-reouverture",
@@ -2629,7 +2652,8 @@
    ],
    "notes": [
     "L'accord (6 mois après la reprise) et la convention (12 mois glissants) ne fonctionnent pas de la même façon : les deux sont affichés sans trancher."
-   ]
+   ],
+   "categorie": "sante"
   },
   {
    "id": "complement-cdd",
@@ -2671,7 +2695,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "sante"
   },
   {
    "id": "complement-tiers",
@@ -2729,7 +2754,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "sante"
   },
   {
    "id": "accident-travail-anciennete",
@@ -2796,7 +2822,8 @@
    ],
    "notes": [
     "L'accord ne mentionne pas de minimum d'ancienneté pour les AT/trajet ; la convention ramène la condition à 1 mois pour les AT/MP. Les deux textes sont affichés sans trancher."
-   ]
+   ],
+   "categorie": "sante"
   },
   {
    "id": "delai-protection",
@@ -2911,7 +2938,8 @@
      "defaut": false
     }
    ],
-   "calcul": "delaiProtection"
+   "calcul": "delaiProtection",
+   "categorie": "sante"
   },
   {
    "id": "prevoyance-fin-complement",
@@ -2982,7 +3010,8 @@
    "notes": [
     "Les chiffres de la prévoyance viennent du livret CGT (page image, lue à l'œil), pas du contrat APGIS signé : à vérifier avec la brochure.",
     "Le « salaire de référence (tranches 1 et 2) » n'est pas défini dans les sources."
-   ]
+   ],
+   "categorie": "sante"
   },
   {
    "id": "capital-deces-obseques",
@@ -3096,7 +3125,8 @@
      "defaut": 0
     }
    ],
-   "calcul": "capitalDeces"
+   "calcul": "capitalDeces",
+   "categorie": "sante"
   },
   {
    "id": "rentes-survivant-education",
@@ -3153,7 +3183,8 @@
    ],
    "notes": [
     "Chiffres du livret CGT, pas du contrat APGIS : à vérifier avec la brochure. La durée de la rente de conjoint survivant n'est pas indiquée dans le tableau lu."
-   ]
+   ],
+   "categorie": "sante"
   },
   {
    "id": "invalidite-incapacite",
@@ -3209,7 +3240,8 @@
    ],
    "notes": [
     "Chiffres du livret CGT, pas du contrat APGIS : à vérifier avec la brochure."
-   ]
+   ],
+   "categorie": "sante"
   },
   {
    "id": "mutuelle",
@@ -3254,7 +3286,8 @@
    ],
    "notes": [
     "À ajouter plus tard : la brochure APGIS (mutuelle et prévoyance)."
-   ]
+   ],
+   "categorie": "sante"
   },
   {
    "id": "apgis-commission",
@@ -3303,7 +3336,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "sante"
   },
   {
    "id": "cure-thermale",
@@ -3352,7 +3386,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "sante"
   },
   {
    "id": "conges-pointage",
@@ -3438,7 +3473,8 @@
      "defaut": 5
     }
    ],
-   "calcul": "congesPointage"
+   "calcul": "congesPointage",
+   "categorie": "conges"
   },
   {
    "id": "conges-acquis",
@@ -3558,7 +3594,8 @@
      "max": 12
     }
    ],
-   "calcul": "congesAcquis"
+   "calcul": "congesAcquis",
+   "categorie": "conges"
   },
   {
    "id": "conges-periode-report",
@@ -3635,7 +3672,8 @@
    ],
    "notes": [
     "Le CET (compte épargne-temps) permet d'épargner des jours : voir ses règles dans l'accord (art. 5.4)."
-   ]
+   ],
+   "categorie": "conges"
   },
   {
    "id": "conges-ordre-depart",
@@ -3721,7 +3759,8 @@
      ]
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "conges"
   },
   {
    "id": "conges-fractionnement",
@@ -3794,7 +3833,8 @@
      "defaut": 6
     }
    ],
-   "calcul": "fractionnement"
+   "calcul": "fractionnement",
+   "categorie": "conges"
   },
   {
    "id": "conges-anciennete",
@@ -3901,7 +3941,8 @@
      "defaut": 12
     }
    ],
-   "calcul": "congeAnciennete"
+   "calcul": "congeAnciennete",
+   "categorie": "conges"
   },
   {
    "id": "conges-rappel",
@@ -3951,7 +3992,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "conges"
   },
   {
    "id": "conges-maladie",
@@ -3997,7 +4039,8 @@
    ],
    "notes": [
     "Pour les délais de prévenance et de justificatif de l'arrêt : voir la fiche sur les formalités de l'arrêt maladie."
-   ]
+   ],
+   "categorie": "conges"
   },
   {
    "id": "conges-evenement",
@@ -4041,7 +4084,8 @@
    ],
    "notes": [
     "Pour le nombre de jours de chaque événement : voir la fiche « événements familiaux »."
-   ]
+   ],
+   "categorie": "conges"
   },
   {
    "id": "conges-indemnite",
@@ -4127,7 +4171,8 @@
      "defaut": 0
     }
    ],
-   "calcul": "indemniteConges"
+   "calcul": "indemniteConges",
+   "categorie": "conges"
   },
   {
    "id": "grossesse-horaire",
@@ -4251,7 +4296,8 @@
      ]
     }
    ],
-   "calcul": "grossesse"
+   "calcul": "grossesse",
+   "categorie": "famille"
   },
   {
    "id": "grossesse-poste",
@@ -4324,7 +4370,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "famille"
   },
   {
    "id": "maternite-duree",
@@ -4475,7 +4522,8 @@
      "defaut": 3
     }
    ],
-   "calcul": "maternite"
+   "calcul": "maternite",
+   "categorie": "famille"
   },
   {
    "id": "paternite",
@@ -4575,7 +4623,8 @@
      ]
     }
    ],
-   "calcul": "paternite"
+   "calcul": "paternite",
+   "categorie": "famille"
   },
   {
    "id": "conge-parental-anciennete",
@@ -4664,7 +4713,8 @@
      "defaut": 18
     }
    ],
-   "calcul": "congeParentalAnciennete"
+   "calcul": "congeParentalAnciennete",
+   "categorie": "famille"
   },
   {
    "id": "grossesse-facilites",
@@ -4737,7 +4787,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "famille"
   },
   {
    "id": "parents-rentree",
@@ -4788,7 +4839,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "famille"
   },
   {
    "id": "adoption-absences",
@@ -4851,7 +4903,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "famille"
   },
   {
    "id": "allocation-retraite",
@@ -5026,7 +5079,8 @@
      "defaut": 0
     }
    ],
-   "calcul": "allocationRetraite"
+   "calcul": "allocationRetraite",
+   "categorie": "retraite"
   },
   {
    "id": "retraite-anticipee",
@@ -5114,7 +5168,8 @@
      "sources": []
     }
    ],
-   "notes": []
+   "notes": [],
+   "categorie": "retraite"
   },
   {
    "id": "periode-essai",
@@ -5253,7 +5308,78 @@
      "defaut": 20
     }
    ],
-   "calcul": "periodeEssai"
+   "calcul": "periodeEssai",
+   "categorie": "contrat"
   }
+ ],
+ "categories": [
+  {
+   "id": "contrat",
+   "nom": "Contrat de travail",
+   "icone": "📄",
+   "couleur": "#2f6fdb",
+   "description": "Période d'essai, préavis, licenciement"
+  },
+  {
+   "id": "remuneration",
+   "nom": "Rémunération et primes",
+   "icone": "💶",
+   "couleur": "#0f8b6b",
+   "description": "Prime annuelle, remises, avantages"
+  },
+  {
+   "id": "temps",
+   "nom": "Temps de travail",
+   "icone": "⏱️",
+   "couleur": "#c0561b",
+   "description": "Nuit, dimanche, journée de solidarité"
+  },
+  {
+   "id": "conges",
+   "nom": "Congés et absences",
+   "icone": "🏖️",
+   "couleur": "#b8860b",
+   "description": "Congés payés, absences autorisées, événements familiaux"
+  },
+  {
+   "id": "sante",
+   "nom": "Maladie et prévoyance",
+   "icone": "🩺",
+   "couleur": "#c0392b",
+   "description": "Arrêt maladie, complément, prévoyance, mutuelle"
+  },
+  {
+   "id": "famille",
+   "nom": "Famille et parentalité",
+   "icone": "👶",
+   "couleur": "#8e44ad",
+   "description": "Grossesse, maternité, paternité, parental"
+  },
+  {
+   "id": "retraite",
+   "nom": "Retraite",
+   "icone": "🌅",
+   "couleur": "#5d6d7e",
+   "description": "Départ, allocation, retraite progressive"
+  },
+  {
+   "id": "epargne",
+   "nom": "Intéressement et épargne",
+   "icone": "📈",
+   "couleur": "#1b7f9e",
+   "description": "Intéressement, PEE, PERCOL"
+  }
+ ],
+ "frequentes": [
+  "journee-solidarite",
+  "conges-acquis",
+  "conges-pointage",
+  "preavis",
+  "indemnite-licenciement",
+  "arret-maladie",
+  "prime-annuelle",
+  "majoration-nuit",
+  "enfant-malade",
+  "maternite-duree"
  ]
 }
