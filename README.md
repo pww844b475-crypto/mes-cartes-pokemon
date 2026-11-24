@@ -276,3 +276,4 @@ La page « Cartes » (icône du dock) s'ouvre sur trois tuiles : cartes posséd�
 
 **v106** : sur « Mes cartes » on peut cocher plusieurs raretés à la fois (un toucher ajoute ou retire ; « Toutes » efface) ; chaque rareté choisie est aussi une puce retirable.
 **v107** : les 30 cartes de la Collection Classique 30ᵉ Anniversaire (`30th-c`, rareté « Sans Rareté » chez TCGdex) sont rangées sous la rareté « Collection Classique », comme celles de `cel25cc`.
+**v108** : les ouvertures de boosters déjà enregistrées pour le 30ᵉ Anniversaire (`cartes.boosters`, extension `30th`) qui comptaient « Sans Rareté » sont converties en « Collection Classique » (additionnées à celles déjà notées sous ce nom), automatiquement à la première lecture.
