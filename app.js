@@ -2601,7 +2601,14 @@ function closeSheet() { document.querySelector('.overlay')?.remove(); }
 /* ---------- Ouverture de booster : taux d'obtention (« pull rate ») par extension, uniquement depuis Statistiques ---------- */
 // cartes.boosters : [{ id, set, name, n (boosters ouverts), hits:{rareté:nombre}, t }]
 function loadBoosters() {
-  try { const a = JSON.parse(store.get(K.boosters) || '[]'); return Array.isArray(a) ? a.filter((x) => x && typeof x.set === 'string' && x.n > 0 && x.hits && typeof x.hits === 'object') : []; } catch { return []; }
+  try {
+    const a = JSON.parse(store.get(K.boosters) || '[]'); if (!Array.isArray(a)) return [];
+    const out = a.filter((x) => x && typeof x.set === 'string' && x.n > 0 && x.hits && typeof x.hits === 'object');
+    let ch = false;      // anciennes ouvertures du 30ᵉ Anniversaire : « Sans Rareté » est devenue « Collection Classique » (les deux s'additionnent)
+    for (const x of out) if (x.set === '30th' && x.hits['Sans Rareté'] != null) { x.hits['Collection Classique'] = (Number(x.hits['Collection Classique']) || 0) + (Number(x.hits['Sans Rareté']) || 0); delete x.hits['Sans Rareté']; ch = true; }
+    if (ch) saveBoosters(out);
+    return out;
+  } catch { return []; }
 }
 const saveBoosters = (a) => store.set(K.boosters, JSON.stringify(a));
 const pullPct = (hits, n) => (n > 0 ? Math.round((hits / n) * 1000) / 10 : 0);
@@ -3173,7 +3180,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v107';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v108';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 // Test d'affichage : un cadre coloré collé aux bords de la zone que l'appli reçoit du système, et les mesures. Une capture d'écran montre où s'arrête vraiment la fenêtre.
 function showFrameTest() {
   closeSheet();
