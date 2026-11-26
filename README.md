@@ -299,3 +299,9 @@ Dock → **Amis & Jeu** → **Jeu** (`#jeu`, code dans `game.js`, chargé avant 
 - Les cartes sortent en pile, retournées, puis se révèlent une par une ; après le dernier : « Voir les cartes en carrousel » (éventail des cartes du booster), retour aux boosters, résumé.
 - **Scintillements** : petites étoiles sur les cartes reverse (plus nombreuses, avec un reflet qui balaie la carte) et sur les simples Rare.
 - **Résumé : uniquement les hits** : 30ᵉ = Pikachu Rare, Illustration rare, Illustration spéciale rare, RGB, Futuristic, Collection Classique, EX ; Règne Delta = Double rare, Ultra Rare, Illustration rare, Illustration spéciale rare, Méga Hyper Rare.
+
+## Jeu v117
+- **30ᵉ Anniversaire** : un hit en 3ᵉ position (Illustration rare ou Collection Classique) exclut tout hit en 4ᵉ (alors une Rare) ; le Pikachu Rare reste toujours en 5ᵉ. Sans hit en 3ᵉ, les chances du 4ᵉ sont divisées par 0,7 pour garder les mêmes taux globaux (mesuré sur 40 000 boosters : hit en 3ᵉ 30 %, Illustration spéciale ≈ 1/21).
+- **Booster figé** : on touche un booster du carrousel, il se fige au centre, les autres s'effacent, le trait brillant apparaît ; « Choisir un autre booster » le relâche.
+- **Pile de cartes** à l'épaisseur du nombre de cartes restantes. **Ouvrir tous les boosters d'un coup**. **Animation plein écran** (rayons, éclair, carte qui tourne, étincelles) pour Illustration spéciale rare, Méga Hyper Rare, Futuristic et RGB : automatique à la révélation, ou l'une après l'autre en ouverture groupée.
+- **Résumé** : les hits en vrai carrousel (éventail).
