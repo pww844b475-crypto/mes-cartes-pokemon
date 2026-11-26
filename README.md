@@ -314,3 +314,8 @@ Dock → **Amis & Jeu** → **Jeu** (`#jeu`, code dans `game.js`, chargé avant 
 
 **v119** : Jeu : boutons « ↩ Choix des boosters » et « 📖 Mon classeur » sur tous les écrans (carrousel, révélation, résumé). +1 booster par carte française ajoutée à la vraie collection, une seule fois par carte (liste `rewarded` dans `cartes.game`) : retirer puis remettre une carte ne rapporte rien ; les cartes déjà possédées au premier passage comptent toutes.
 **v120** : classeur virtuel : plus de « null » sous une carte sans rareté connue (le nom seul s'affiche) ; la phrase sur les reverse est retirée.
+**v121** : Jeu → « 🧪 Réinitialiser (mode test) » : remet à zéro les boosters et les récompenses déjà versées (connexion du jour, cartes ajoutées, scans), recrédite aussitôt la connexion du jour et toute la collection, au choix en gardant ou en vidant le classeur virtuel. La vraie collection n'est jamais touchée.
+
+## Jeu v122 : mode test illimité, plafond, statistiques de remplissage
+- **Plafond** du solde de boosters à ouvrir : 50 (`CAP_STOCK` dans `game.js`). Connexion du jour, scans et cartes ajoutées ne le dépassent pas ; les cartes de la collection qui n'ont pas encore reçu leur booster attendent et sont créditées au fur et à mesure (« N cartes attendent leur booster »).
+- **Mode test** (Jeu → « 🧪 Mode test et remise à zéro ») : ouvertures **illimitées**, aucun booster à gagner, tout va dans le classeur. Statistiques par série : boosters ouverts, temps de jeu (pauses de plus de 5 min ignorées), et « 🏆 complet en N boosters, X h Y min » quand toutes les cartes (et les reverse qui existent) sont dans le classeur ; visibles dans la feuille du mode test et en haut du classeur. La remise à zéro vide aussi les statistiques si on choisit « tout réinitialiser ».
