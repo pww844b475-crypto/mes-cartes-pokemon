@@ -46,6 +46,7 @@
   // Garde-fou : si l'application n'a pas démarré au bout de 8 s, l'écran d'ouverture ne doit jamais bloquer l'accès.
   setTimeout(function () { if (!window.__appReady) { var s = document.getElementById('splash'); if (s) s.style.display = 'none'; } }, 8000);
 </script>
+<script src="game.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

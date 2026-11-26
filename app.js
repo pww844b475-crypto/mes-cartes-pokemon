@@ -373,6 +373,7 @@ function parseHash() {
   let parts;
   try { parts = decodeURIComponent(location.hash.slice(1)).split('/'); } catch { parts = []; }
   if (parts[0] === 'amis') return { view: 'friends' };
+  if (parts[0] === 'jeu') return { view: 'game' };
   if (parts[0] === 'chercher') return { view: 'search', own: parts[1] === 'own' || parts[1] === 'top', sort: parts[1] === 'top' ? 'price' : '', rar: parts[1] === 'own' ? parts[2] || '' : '', q: parts[1] === 'q' ? parts.slice(2).join('/') : '' };
   if (parts[0] === 'comparer') return { view: 'compare', fid: parts[1] || '', lang: LANG_IDS.includes(parts[2]) ? parts[2] : lang };
   if (!LANG_IDS.includes(parts[0])) return { view: 'sets', lang: null, set: null }; // ancien lien (#ja, #zh-cn…) → liste française
@@ -385,6 +386,7 @@ function route() {
   tok++;
   if (io) io.disconnect();
   if (r.view === 'friends') return showFriends(tok);
+  if (r.view === 'game') return showGame(tok);
   if (r.view === 'search') return showSearch(lang, tok, r);
   if (r.view === 'compare') return showCompare(r.fid, r.lang, tok);
   if (r.lang) { lang = r.lang; store.set(K.lang, lang); }
@@ -1109,6 +1111,10 @@ async function showListInner(my) {
       h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
   }
   const goto = (hash) => () => { listScroll = scrollY; location.hash = hash; };
+  const openAmisJeu = () => openSheet(h('h2', {}, 'Amis & Jeu'),
+    h('button', { class: 'btn', type: 'button', onclick: () => { closeSheet(); goto('#amis')(); } }, '👥 Amis · partager et comparer'),
+    h('button', { class: 'btn', type: 'button', onclick: () => { closeSheet(); goto('#jeu')(); } }, '🎮 Jeu · ouverture virtuelle de boosters'),
+    h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
   const mtile = (icon, label, aria, onclick) => h('button', { type: 'button', class: 'mtile', 'aria-label': aria, onclick }, h('span', { class: 'mi' }, menuIcon(icon)), h('span', { class: 'ml' }, label));
   const homeScanIn = h('input', { type: 'file', accept: 'image/*', capture: 'environment', hidden: true, 'aria-label': 'Photo de la carte à scanner' });
   homeScanIn.addEventListener('change', () => { const file = homeScanIn.files[0]; homeScanIn.value = ''; if (!file) return; pendingScan = file; listScroll = scrollY; location.hash = '#chercher/scan'; });
@@ -1117,7 +1123,7 @@ async function showListInner(my) {
     mtile('scanner', 'Scanner', 'Scanner une carte avec l’appareil photo', () => { pendingScan = 'live'; listScroll = scrollY; location.hash = '#chercher/scan'; }),
     homeScanIn,
     mtile('stats', 'Statistiques', 'Statistiques de la collection', openStats),
-    mtile('amis', 'Amis', 'Amis : partager et comparer', goto('#amis')),
+    mtile('amis', 'Amis & Jeu', 'Amis et jeu', () => openAmisJeu()),
     mtile('sauvegarde', 'Sauvegarde', 'Sauvegarde et restauration', () => openBackup()),
     mtile('reglages', 'Réglages', 'Réglages', () => openSettings()));
   let setView = store.get(K.setview) === 'grille' ? 'grille' : 'liste';
@@ -3192,7 +3198,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v110';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v111';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 // Test d'affichage : un cadre coloré collé aux bords de la zone que l'appli reçoit du système, et les mesures. Une capture d'écran montre où s'arrête vraiment la fenêtre.
 function showFrameTest() {
   closeSheet();
