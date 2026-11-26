@@ -313,3 +313,4 @@ Dock → **Amis & Jeu** → **Jeu** (`#jeu`, code dans `game.js`, chargé avant 
 - Limites : récompenses stockées sur l'appareil (changer la date du téléphone permet de tricher) ; boosters et classeur ne sont pas dans la sauvegarde.
 
 **v119** : Jeu : boutons « ↩ Choix des boosters » et « 📖 Mon classeur » sur tous les écrans (carrousel, révélation, résumé). +1 booster par carte française ajoutée à la vraie collection, une seule fois par carte (liste `rewarded` dans `cartes.game`) : retirer puis remettre une carte ne rapporte rien ; les cartes déjà possédées au premier passage comptent toutes.
+**v120** : classeur virtuel : plus de « null » sous une carte sans rareté connue (le nom seul s'affiche) ; la phrase sur les reverse est retirée.

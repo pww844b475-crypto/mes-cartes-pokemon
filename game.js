@@ -115,6 +115,7 @@ function showGame(my) {
   const home = h('button', { class: 'iconbtn', type: 'button', onclick: () => go(lang), 'aria-label': 'Retour à l’accueil' }, '🏠 Accueil');
   const top = h('header', { class: 'top' }, h('div', { class: 'row' }, home, h('h1', {}, '🎮 Jeu · Boosters')));
   const main = h('main', { class: 'game' });
+  const put = (...a) => main.replaceChildren(...a.flat().filter((x) => x != null && x !== false));      // replaceChildren(null) écrirait le mot « null » à l'écran
   $app.replaceChildren(top, main);
   scrollTo(0, 0);
   const alive = () => my === tok;
@@ -145,7 +146,7 @@ function showGame(my) {
           ...arts.map((a, i) => h('button', { type: 'button', class: 'gart-b' + (cur === i ? ' on' : ''), 'aria-pressed': String(cur === i), 'aria-label': 'Visuel ' + (i + 1), onclick: () => pick(i) }, h('img', { src: a.u, alt: '' })))));
       artRow.hidden = false;
     });
-    main.replaceChildren(
+    put(
       bank,
       h('p', { class: 'lb-help' }, 'Les boosters comptés remplissent ton classeur virtuel (séparé de ta vraie collection) ; au-delà, tu peux en ouvrir « pour le plaisir », sans les garder. Juste pour le plaisir : rien n’est ajouté à ta collection. Choisis une série et le nombre de boosters : tu les feras défiler, puis tu déchireras celui de ton choix en traçant un trait sur le haut.'),
       h('div', { class: 'gsets' }, cardsEl),
@@ -173,8 +174,8 @@ function showGame(my) {
     return artCache[d.id];
   };
   async function start() {
-    main.replaceChildren(spinner());
-    let pool, arts; try { pool = await gamePool(defSel); arts = await artFor(defSel); } catch (e) { if (alive()) { main.replaceChildren(h('div', { class: 'note bad' }, 'Impossible de charger les cartes : vérifiez votre connexion.'), h('button', { class: 'btn', type: 'button', onclick: setup }, 'Retour')); } return; }
+    put(spinner());
+    let pool, arts; try { pool = await gamePool(defSel); arts = await artFor(defSel); } catch (e) { if (alive()) { put(h('div', { class: 'note bad' }, 'Impossible de charger les cartes : vérifiez votre connexion.'), h('button', { class: 'btn', type: 'button', onclick: setup }, 'Retour')); } return; }
     if (!alive()) return;
     const ch = artSel[defSel.id];
     const credits = gameState().credits;
@@ -256,7 +257,7 @@ function showGame(my) {
     const openBtn2 = h('button', { class: 'btn sec', type: 'button', hidden: true, onclick: () => { if (held !== null && !packs[held].opened) rip(held); } }, 'Ouvrir sans glisser');
     const allBtn = h('button', { class: 'btn', type: 'button', onclick: openAll }, '');
     const sumBtn = h('button', { class: 'btn', type: 'button', hidden: true, onclick: summary }, '📊 Voir le résumé');
-    main.replaceChildren(nav(), info, track, tip, h('div', { class: 'gacts' }, allBtn, sumBtn, openBtn2, releaseBtn, h('button', { class: 'btn sec', type: 'button', onclick: setup }, 'Changer de série')));
+    put(nav(), info, track, tip, h('div', { class: 'gacts' }, allBtn, sumBtn, openBtn2, releaseBtn, h('button', { class: 'btn sec', type: 'button', onclick: setup }, 'Changer de série')));
     track.addEventListener('scroll', () => requestAnimationFrame(paint), { passive: true });
     requestAnimationFrame(() => { goTo(cur, false); paint(); });
   }
@@ -315,13 +316,13 @@ function showGame(my) {
       nextBtn.onclick = () => { if (left) packsScreen(packs.findIndex((p) => !p.opened)); else summary(); };
       nextBtn.hidden = false; carBtn.hidden = false;
     }
-    main.replaceChildren(nav(), counter, stage, tip, strip, h('div', { class: 'gacts' }, nextBtn, carBtn, skipBtn));
+    put(nav(), counter, stage, tip, strip, h('div', { class: 'gacts' }, nextBtn, carBtn, skipBtn));
     showCard();
   }
 
   // classeur virtuel : toutes les cartes de la série, normales puis reverse, avec le nombre d'exemplaires
   async function binder() {
-    main.replaceChildren(spinner());
+    put(spinner());
     let tab = 'n', def = defSel;
     const draw = async () => {
       const pool = await gamePool(def); if (!alive()) return;
@@ -331,12 +332,11 @@ function showGame(my) {
       const setBtns = GAME_SETS.map((d) => h('button', { type: 'button', class: 'gset small' + (d === def ? ' on' : ''), 'aria-pressed': String(d === def), onclick: () => { def = d; draw(); } }, h('img', { src: d.logo, alt: d.name, class: 'gset-logo' })));
       const tabs = [['n', 'Normales'], ['r', 'Reverse']].filter(([t]) => t === 'n' || def.reverse).map(([t, l]) => h('button', { type: 'button', 'aria-pressed': String(tab === t), onclick: () => { tab = t; draw(); } }, l));
       if (tab === 'r' && !def.reverse) tab = 'n';
-      main.replaceChildren(
+      put(
         h('h2', { class: 'gh' }, '📖 Mon classeur virtuel'),
         h('div', { class: 'gsets small' }, setBtns),
         h('div', { class: 'gtabs', role: 'group' }, tabs),
         h('div', { class: 'gprog' }, h('b', {}, `${have} / ${list.length}`), h('span', {}, ` ${tab === 'r' ? 'reverse' : 'cartes'} · ${pct} % · ${plural(copies, 'exemplaire', 'exemplaires')}`), h('div', { class: 'bar', 'aria-hidden': 'true' }, h('i', { style: `width:${pct}%` }))),
-        tab === 'r' ? h('p', { class: 'lb-help' }, 'Les Communes, Peu Communes et Rares existent en reverse, sauf les moitiés de Stade.') : null,
         h('div', { class: 'gbinder' }, list.map((c) => { const n = (b[c.id] || [0, 0])[k] || 0;
           return h('button', { type: 'button', class: 'gbc' + (n ? '' : ' none') + (tab === 'r' ? ' rv' : ''), title: `${c.name} · #${lidShow(c.localId)}${n ? ' · ×' + n : ' · manquante'}`, onclick: () => zoomCard({ c, rar: c.rar }) },
             h('img', { src: imgLow(c), alt: c.name, loading: 'lazy', decoding: 'async' }), n > 1 ? h('b', { class: 'gx' }, '×' + n) : null, n ? null : h('span', { class: 'gq' }, '?')); })),
@@ -346,7 +346,7 @@ function showGame(my) {
   }
 
   function zoomCard(e) {
-    const ov = h('div', { class: 'overlay gzoom', role: 'dialog', 'aria-modal': 'true', onclick: () => ov.remove() }, h('div', { class: 'gz-in' }, h('img', { src: imgHigh(e.c), alt: e.c.name }), h('p', {}, `${e.c.name} · ${gameLabel(defSel, e.rar)}`)));
+    const ov = h('div', { class: 'overlay gzoom', role: 'dialog', 'aria-modal': 'true', onclick: () => ov.remove() }, h('div', { class: 'gz-in' }, h('img', { src: imgHigh(e.c), alt: e.c.name }), h('p', {}, [e.c.name, e.rar ? gameLabel(defSel, e.rar) : null].filter(Boolean).join(' · '))));
     document.body.append(ov);
   }
 
@@ -368,7 +368,7 @@ function showGame(my) {
     const sortKey = (r) => rarityRank(r === 'EX' ? 'Double rare' : r);
     const rows = Object.entries(cnt).sort((a, b) => sortKey(b[0]) - sortKey(a[0]));
     const sorted = hits.slice().sort((a, b) => rarityRank(b.rar) - rarityRank(a.rar));
-    main.replaceChildren(
+    put(
       nav(),
       h('h2', { class: 'gh' }, `${plural(packs.length, 'booster ouvert', 'boosters ouverts')} · ${defSel.name}`),
       best ? h('div', { class: 'gbest' }, h('p', { class: 'lb-help' }, 'Meilleur hit'), h('button', { type: 'button', class: 'gthumb big t-' + rarityTier(best.rar), onclick: () => zoomCard(best) }, h('img', { src: imgHigh(best.c), alt: best.c.name })),
