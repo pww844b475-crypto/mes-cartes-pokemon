@@ -868,3 +868,11 @@ main.game { padding-top: 12px; text-align: center; }
 .gz-in { text-align: center; color: #fff; padding: 12px; } .gz-in img { max-width: min(90vw, 420px); max-height: 74vh; border-radius: 14px; box-shadow: 0 14px 40px rgba(0, 0, 0, .6); }
 @media (min-width: 700px) { .gset-logo { height: 70px; } .gthumb { width: 84px; } }
 @media (prefers-reduced-motion: reduce) { .gpack, .gpack.tear, .gp-shine { animation: none; } .gflip { transition: none; } }
+
+/* booster avec la vraie image (images/boosters) : le haut se déchire */
+.gpack.gpi { aspect-ratio: var(--ar, 3 / 5.2); width: min(62vw, 250px); }
+.gpi-body, .gpi-top { position: absolute; inset: 0; background: var(--img) center / 100% 100% no-repeat; }
+.gpi-body { clip-path: polygon(0 11%, 6% 12.5%, 12% 10.8%, 18% 12.4%, 25% 10.9%, 31% 12.5%, 38% 11%, 44% 12.4%, 50% 10.8%, 56% 12.5%, 63% 11%, 69% 12.4%, 75% 10.9%, 81% 12.5%, 88% 11%, 94% 12.4%, 100% 11%, 100% 100%, 0 100%); }
+.gpi-top { clip-path: polygon(0 0, 100% 0, 100% 11%, 94% 12.4%, 88% 11%, 81% 12.5%, 75% 10.9%, 69% 12.4%, 63% 11%, 56% 12.5%, 50% 10.8%, 44% 12.4%, 38% 11%, 31% 12.5%, 25% 10.9%, 18% 12.4%, 12% 10.8%, 6% 12.5%, 0 11%); transform-origin: left bottom; }
+.gpack.gpi.tear .gpi-top { animation: gp-rip .8s ease-in .25s forwards; }
+.gpack.gpi.tear .gpi-body { animation: gp-fade .5s ease-in .55s forwards; }
