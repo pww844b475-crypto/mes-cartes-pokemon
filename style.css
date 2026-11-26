@@ -876,3 +876,9 @@ main.game { padding-top: 12px; text-align: center; }
 .gpi-top { clip-path: polygon(0 0, 100% 0, 100% 11%, 94% 12.4%, 88% 11%, 81% 12.5%, 75% 10.9%, 69% 12.4%, 63% 11%, 56% 12.5%, 50% 10.8%, 44% 12.4%, 38% 11%, 31% 12.5%, 25% 10.9%, 18% 12.4%, 12% 10.8%, 6% 12.5%, 0 11%); transform-origin: left bottom; }
 .gpack.gpi.tear .gpi-top { animation: gp-rip .8s ease-in .25s forwards; }
 .gpack.gpi.tear .gpi-body { animation: gp-fade .5s ease-in .55s forwards; }
+
+.gart { margin: 4px 0 12px; }
+.gart-list { display: flex; gap: 10px; overflow-x: auto; justify-content: center; padding: 4px 2px 8px; scrollbar-width: none; }
+.gart-b { flex: none; width: 74px; min-height: 104px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); padding: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 26px; color: var(--text); }
+.gart-b img { width: 100%; height: 100%; object-fit: contain; display: block; } .gart-b small { font-size: 11px; }
+.gart-b.on { border-color: #ffcf3a; box-shadow: 0 0 0 3px rgba(255, 207, 58, .35); }
