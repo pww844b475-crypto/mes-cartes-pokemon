@@ -3199,7 +3199,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v120';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v121';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 // Test d'affichage : un cadre coloré collé aux bords de la zone que l'appli reçoit du système, et les mesures. Une capture d'écran montre où s'arrête vraiment la fenêtre.
 function showFrameTest() {
   closeSheet();

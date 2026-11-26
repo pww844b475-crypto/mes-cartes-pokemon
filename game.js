@@ -155,7 +155,24 @@ function showGame(my) {
         h('div', { class: 'bo-step' }, h('button', { type: 'button', class: 'qb', 'aria-label': 'Un de moins', onclick: () => setN(count - 1) }, '−'), inp, h('button', { type: 'button', class: 'qb', 'aria-label': 'Un de plus', onclick: () => setN(count + 1) }, '+'))),
       openBtn,
       h('button', { class: 'btn sec', type: 'button', onclick: binder }, '📖 Mon classeur virtuel'),
-      h('button', { class: 'btn sec', type: 'button', onclick: showRates }, 'ℹ️ Taux de tirage utilisés'));
+      h('button', { class: 'btn sec', type: 'button', onclick: showRates }, 'ℹ️ Taux de tirage utilisés'),
+      h('button', { class: 'btn sec gtest', type: 'button', onclick: resetSheet }, '🧪 Réinitialiser (mode test)'));
+  }
+
+  // remise à zéro pour les essais : boosters, récompenses déjà versées (donc connexion du jour et cartes ajoutées sont recomptées), et au choix le classeur
+  function resetSheet() {
+    const doReset = (withBinder) => {
+      store.set(GAME_KEY, JSON.stringify({ credits: 0, daily: '', scans: {}, rewarded: [] }));
+      if (withBinder) store.set(BINDER_KEY, '{}');
+      closeSheet(); const gain = dailyLogin() + syncCardRewards();
+      toast(`🧪 Réinitialisé : ${gain} boosters recrédités` + (withBinder ? ', classeur vidé' : ''));
+      setup();
+    };
+    openSheet(h('h2', {}, '🧪 Réinitialiser le jeu'),
+      h('p', {}, 'Remet à zéro les boosters à ouvrir et les récompenses déjà versées, puis recrédite la connexion du jour et toutes les cartes de ta collection, comme au tout premier lancement. Ta vraie collection n’est jamais touchée.'),
+      h('button', { class: 'btn', type: 'button', onclick: () => doReset(false) }, 'Réinitialiser les boosters (garder le classeur)'),
+      h('button', { class: 'btn danger', type: 'button', onclick: () => doReset(true) }, 'Tout réinitialiser, classeur compris'),
+      h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Annuler'));
   }
 
   function showRates() {
