@@ -27,7 +27,7 @@ const REWARD_DAILY = 10, REWARD_SCAN = 3;
 function gameState() {
   let s = null; try { s = JSON.parse(store.get(GAME_KEY) || 'null'); } catch { s = null; }
   if (!s || typeof s !== 'object') s = {};
-  return { credits: Math.max(0, Math.floor(Number(s.credits) || 0)), daily: typeof s.daily === 'string' ? s.daily : '', scans: s.scans && typeof s.scans === 'object' ? s.scans : {} };
+  return { credits: Math.max(0, Math.floor(Number(s.credits) || 0)), daily: typeof s.daily === 'string' ? s.daily : '', scans: s.scans && typeof s.scans === 'object' ? s.scans : {}, rewarded: Array.isArray(s.rewarded) ? s.rewarded : [] };
 }
 const gameSave = (s) => store.set(GAME_KEY, JSON.stringify(s));
 function dailyLogin() {      // une fois par jour, à l'ouverture de l'application : +10 boosters
@@ -38,6 +38,18 @@ function dailyLogin() {      // une fois par jour, à l'ouverture de l'applicati
 function gameScanReward(cardId) {      // scan réussi (carte reconnue directement) : +3 boosters, une seule fois par carte et par jour
   if (!cardId) return 0; const s = gameState(), today = dayKey(); if (s.scans[cardId] === today) return 0;
   s.scans[cardId] = today; s.credits += REWARD_SCAN; gameSave(s); return REWARD_SCAN;
+}
+// +1 booster par carte ajoutée à la vraie collection (française), une seule fois par carte : l'enlever puis la remettre ne rapporte rien de plus
+function syncCardRewards() {
+  try {
+    const s = gameState(), seen = new Set(s.rewarded); let gain = 0;
+    for (const [sid, m] of Object.entries((owned && owned.fr) || {})) {
+      if (isDigital('fr', sid) || DIGITAL_FALLBACK_FR.includes(sid)) continue;      // extensions du jeu en ligne exclues
+      for (const [id, v] of Object.entries(m || {})) if (qtyTotal(v) > 0 && !seen.has(id)) { seen.add(id); s.rewarded.push(id); gain++; }
+    }
+    if (gain) { s.credits += gain; gameSave(s); }
+    return gain;
+  } catch { return 0; }
 }
 function binderLoad() { try { const o = JSON.parse(store.get(BINDER_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch { return {}; } }
 const binderSave = (o) => store.set(BINDER_KEY, JSON.stringify(o));
@@ -112,9 +124,10 @@ function showGame(my) {
     const cardsEl = GAME_SETS.map((d) => h('button', { type: 'button', class: 'gset' + (d === defSel ? ' on' : ''), 'aria-pressed': String(d === defSel), onclick: () => { defSel = d; setup(); } },
       h('img', { src: d.logo, alt: '', class: 'gset-logo', width: 200, height: 80 }), h('b', {}, d.name), h('span', {}, d.desc)));
     const inp = h('input', { class: 'qin bo-in', type: 'number', inputmode: 'numeric', min: '1', max: '36', value: String(count), 'aria-label': 'Nombre de boosters à ouvrir' });
+    syncCardRewards();
     const credits = gameState().credits;
     const bank = h('div', { class: 'gbank' }, h('b', {}, `🎟 ${credits}`), h('span', {}, credits === 1 ? 'booster à ouvrir' : 'boosters à ouvrir'),
-      h('small', {}, `Gagne-en : +${REWARD_DAILY} chaque jour à l’ouverture de l’appli, +${REWARD_SCAN} par carte reconnue directement au scanner (une fois par carte et par jour).`));
+      h('small', {}, `Gagne-en : +${REWARD_DAILY} chaque jour à l’ouverture de l’appli, +${REWARD_SCAN} par carte reconnue directement au scanner (une fois par carte et par jour), +1 pour chaque carte ajoutée à ta collection (une seule fois par carte : l’enlever puis la remettre ne rapporte rien).`));
     const openBtn = h('button', { class: 'btn', type: 'button', onclick: start });
     const label = () => {
       const kept = Math.min(count, credits), free = count - kept;
@@ -152,6 +165,7 @@ function showGame(my) {
       h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
   }
 
+  const nav = () => h('div', { class: 'gnav' }, h('button', { type: 'button', class: 'tbtn', onclick: setup }, '↩ Choix des boosters'), h('button', { type: 'button', class: 'tbtn', onclick: binder }, '📖 Mon classeur'));
   let packs = [];      // [{ cards: [...], art, opened }]
   const artCache = {};
   const artFor = async (d) => {      // visuels de boosters présents dans images/boosters (ceux qui n'existent pas sont ignorés)
@@ -242,7 +256,7 @@ function showGame(my) {
     const openBtn2 = h('button', { class: 'btn sec', type: 'button', hidden: true, onclick: () => { if (held !== null && !packs[held].opened) rip(held); } }, 'Ouvrir sans glisser');
     const allBtn = h('button', { class: 'btn', type: 'button', onclick: openAll }, '');
     const sumBtn = h('button', { class: 'btn', type: 'button', hidden: true, onclick: summary }, '📊 Voir le résumé');
-    main.replaceChildren(info, track, tip, h('div', { class: 'gacts' }, allBtn, sumBtn, openBtn2, releaseBtn, h('button', { class: 'btn sec', type: 'button', onclick: setup }, 'Changer de série')));
+    main.replaceChildren(nav(), info, track, tip, h('div', { class: 'gacts' }, allBtn, sumBtn, openBtn2, releaseBtn, h('button', { class: 'btn sec', type: 'button', onclick: setup }, 'Changer de série')));
     track.addEventListener('scroll', () => requestAnimationFrame(paint), { passive: true });
     requestAnimationFrame(() => { goTo(cur, false); paint(); });
   }
@@ -301,7 +315,7 @@ function showGame(my) {
       nextBtn.onclick = () => { if (left) packsScreen(packs.findIndex((p) => !p.opened)); else summary(); };
       nextBtn.hidden = false; carBtn.hidden = false;
     }
-    main.replaceChildren(counter, stage, tip, strip, h('div', { class: 'gacts' }, nextBtn, carBtn, skipBtn));
+    main.replaceChildren(nav(), counter, stage, tip, strip, h('div', { class: 'gacts' }, nextBtn, carBtn, skipBtn));
     showCard();
   }
 
@@ -355,12 +369,13 @@ function showGame(my) {
     const rows = Object.entries(cnt).sort((a, b) => sortKey(b[0]) - sortKey(a[0]));
     const sorted = hits.slice().sort((a, b) => rarityRank(b.rar) - rarityRank(a.rar));
     main.replaceChildren(
+      nav(),
       h('h2', { class: 'gh' }, `${plural(packs.length, 'booster ouvert', 'boosters ouverts')} · ${defSel.name}`),
       best ? h('div', { class: 'gbest' }, h('p', { class: 'lb-help' }, 'Meilleur hit'), h('button', { type: 'button', class: 'gthumb big t-' + rarityTier(best.rar), onclick: () => zoomCard(best) }, h('img', { src: imgHigh(best.c), alt: best.c.name })),
         h('b', {}, best.c.name), h('span', {}, gameLabel(defSel, best.rar))) : h('p', { class: 'lb-help' }, 'Aucun hit cette fois…'),
       rows.length ? h('div', { class: 'orows' }, rows.map(([r, c]) => h('div', { class: 'orow' }, h('div', { class: 'orow-l' }, h('span', { class: 'rbi' }, rarityIcon(r === 'EX' ? 'Double rare' : r, 20)), h('span', { class: 'rn' }, r), h('span', { class: 'rc' }, h('b', {}, String(c))))))) : null,
       hits.length ? buildCoverflow(`${plural(hits.length, 'hit', 'hits')} à parcourir`, sorted.map((e) => ({ card: e.c, name: e.c.name, sub: gameLabel(defSel, e.rar) + (e.reverse ? ' · reverse' : ''), price: null })), (i) => zoomCard(sorted[i])) : null,
-      h('div', { class: 'gacts' }, h('button', { class: 'btn', type: 'button', onclick: start }, '🔁 Rouvrir les mêmes'), h('button', { class: 'btn sec', type: 'button', onclick: () => packsScreen(0) }, 'Revoir les boosters'), h('button', { class: 'btn sec', type: 'button', onclick: setup }, 'Changer de série')));
+      h('div', { class: 'gacts' }, h('button', { class: 'btn', type: 'button', onclick: start }, '🔁 Rouvrir les mêmes'), h('button', { class: 'btn sec', type: 'button', onclick: () => packsScreen(0) }, 'Revoir les boosters'), h('button', { class: 'btn sec', type: 'button', onclick: binder }, '📖 Mon classeur virtuel'), h('button', { class: 'btn sec', type: 'button', onclick: setup }, '↩ Choisir d’autres boosters')));
   }
 
   setup();

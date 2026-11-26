@@ -3199,7 +3199,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v118';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v119';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 // Test d'affichage : un cadre coloré collé aux bords de la zone que l'appli reçoit du système, et les mesures. Une capture d'écran montre où s'arrête vraiment la fenêtre.
 function showFrameTest() {
   closeSheet();
@@ -3279,6 +3279,6 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
 if (!location.hash) history.replaceState(null, '', '#' + lang);
 splashSetup();
 route();
-try { const gain = dailyLogin(); if (gain) setTimeout(() => toast(`🎟 Connexion du jour : +${gain} boosters à ouvrir dans le Jeu`), 1500); } catch { /* ignoré */ }
+try { const gain = dailyLogin() + syncCardRewards(); if (gain) setTimeout(() => toast(`🎟 +${gain} boosters à ouvrir dans le Jeu (connexion du jour et cartes ajoutées)`), 1500); } catch { /* ignoré */ }
 window.__appReady = true;
 setTimeout(() => { try { loader.preload(); } catch { /* ignoré */ } }, 2500);      // la vidéo de chargement se télécharge en arrière-plan
