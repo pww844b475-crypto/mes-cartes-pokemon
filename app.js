@@ -2123,7 +2123,7 @@ async function showSearchInner(L, my, preset = {}) {
   const scanBtn = h('button', { type: 'button', class: 'tbtn', 'aria-label': 'Scanner une carte avec l’appareil photo', title: 'Scanner une carte', onclick: () => openLiveScan() }, '📷 Scanner');
   // affiche le résultat d'une lecture : la meilleure carte s'ouvre tout de suite avec son prix, les autres candidats se parcourent avec ‹ ›
   const readNote = h('p', { class: 'lb-help', hidden: true });
-  async function finishScan(ids, readScore, full, cropped) {
+  async function finishScan(ids, readScore, full, cropped, direct) {
     if (ids.length > 1 && !ids.vs) { const hits = ids.hits; ids = await rerankVisual(idx, ids, hits, full, cropped); if (my !== tok) return; }
     // lecture pas sûre (ou rien de lu) : on cherche aussi parmi toutes les cartes celles dont l'illustration ressemble à la photo ; si l'une ressemble nettement
     // plus que les candidats du texte, elle passe devant
@@ -2137,6 +2137,7 @@ async function showSearchInner(L, my, preset = {}) {
     }
     if (!ids.length) { f.ids = f.rank = null; run(); toast('Carte non reconnue. Photo de face, bien éclairée, nom et numéro lisibles ; ou tapez son nom.'); return; }
     q.value = ''; f.ids = new Set(ids); f.rank = new Map(ids.map((id, i) => [id, i])); run();
+    if (direct) { const gain = gameScanReward(ids[0]); if (gain) toast(`🎟 Scan réussi : +${gain} boosters à ouvrir dans le Jeu`); }
     // les prix des 3 premières sont demandés en parallèle
     if (L === 'fr') await Promise.race([Promise.all(ids.slice(0, 3).filter((id) => !priceCache[id]).map((id) => fetchPrice(L, id).catch(() => {}))).then(() => savePrices()), new Promise((r) => setTimeout(r, 1500))]);
     if (my !== tok) return;
@@ -2148,7 +2149,7 @@ async function showSearchInner(L, my, preset = {}) {
     try {
       const { text, full, cropped, score: readScore, preIds } = await ocrPhoto(file, (t) => { const r = matchScan(idx, parseCardText(t)); return r.score; }, (m) => { summary.textContent = 'Analyse de la photo · ' + m; },
         async (photo) => { const j = judgeVisual(await visualSearch(idx, photo, true, 8), 0.5); return j && j.family.length === 1 ? j.ids : null; }); if (my !== tok) return;
-      if (preIds) { readNote.textContent = 'Reconnue par l’illustration.'; readNote.hidden = false; await finishScan(preIds, 3, full, cropped); return; }
+      if (preIds) { readNote.textContent = 'Reconnue par l’illustration.'; readNote.hidden = false; await finishScan(preIds, 3, full, cropped, true); return; }
       { const pr = parseCardText(text); readNote.textContent = 'Lecture : ' + (pr.n != null && pr.total != null ? `n° ${pr.n}/${pr.total} · ` : 'numéro non lu · ') + (text.replace(/[^A-Za-zÀ-ÿ0-9\/ ]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90) || 'rien'); readNote.hidden = false; }      // pour comprendre un échec
       await finishScan(matchScan(idx, parseCardText(text)), readScore, full, cropped);
     } catch (e) { run(); toast('Scan impossible : ' + (e && e.message ? e.message : 'erreur')); } finally { scanBtn.disabled = false; ldScan.done(); }
@@ -2190,7 +2191,7 @@ async function showSearchInner(L, my, preset = {}) {
       const x0 = (r.left - r.width * pad + ox) / k, y0 = (r.top - r.height * pad + oy) / k, ww = r.width * (1 + 2 * pad) / k, hh = r.height * (1 + 2 * pad) / k, kk = Math.min(1, maxH / hh);
       const c = document.createElement('canvas'); c.width = Math.round(ww * kk); c.height = Math.round(hh * kk); c.getContext('2d').drawImage(video, x0, y0, ww, hh, 0, 0, c.width, c.height); return c;
     };
-    const finish = async (ids, sc, c) => { shut(); await finishScan(ids, sc, c, true); };
+    const finish = async (ids, sc, c, direct) => { shut(); await finishScan(ids, sc, c, true, direct); };
     while (!stopped && my === tok) {
       await sleep(330);                                   // ~3 images par seconde : assez réactif, sans chauffer
       if (Date.now() - t0 > 30000 + restarts * 15000) { shut(); toast('Pas trouvé en 30 s : rapprochez la carte du cadre, évitez les reflets, ou utilisez « 📁 Photo ».'); return; }
@@ -2212,7 +2213,7 @@ async function showSearchInner(L, my, preset = {}) {
       streak = j.ids[0] === lastTop ? streak + 1 : 1; lastTop = j.ids[0];
       msg.textContent = 'Carte repérée…';
       if (streak < 3) { c.width = c.height = 0; continue; }
-      if (j.family.length === 1) { await finish(j.ids, 3, c); return; }
+      if (j.family.length === 1) { await finish(j.ids, 3, c, true); return; }
       // plusieurs éditions pour la même illustration : on lit le numéro pour choisir (jusqu'à 3 lectures, sur une image plus grande)
       msg.textContent = 'Plusieurs éditions : lecture du numéro…';
       const big = grabFrame(1000), bx = { x: big.width * m, y: big.height * m, w: big.width * (1 - 2 * m), h: big.height * (1 - 2 * m) };
@@ -3198,7 +3199,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v116';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v118';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 // Test d'affichage : un cadre coloré collé aux bords de la zone que l'appli reçoit du système, et les mesures. Une capture d'écran montre où s'arrête vraiment la fenêtre.
 function showFrameTest() {
   closeSheet();
@@ -3278,5 +3279,6 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
 if (!location.hash) history.replaceState(null, '', '#' + lang);
 splashSetup();
 route();
+try { const gain = dailyLogin(); if (gain) setTimeout(() => toast(`🎟 Connexion du jour : +${gain} boosters à ouvrir dans le Jeu`), 1500); } catch { /* ignoré */ }
 window.__appReady = true;
 setTimeout(() => { try { loader.preload(); } catch { /* ignoré */ } }, 2500);      // la vidéo de chargement se télécharge en arrière-plan
