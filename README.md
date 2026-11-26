@@ -290,3 +290,5 @@ Dock → **Amis & Jeu** → **Jeu** (`#jeu`, code dans `game.js`, chargé avant 
 **v113** : Règne Delta : les 3 « Stades » en deux moitiés (Pyroconduit, Sommet, Fosse Légendaire, cartes 094 à 099) viennent toujours par paire, côte à côte, dans les 3 peu communes. Le visuel du booster se choisit (ou « Au hasard ») quand plusieurs images existent dans `images/boosters`.
 
 **v114** : les 4 vrais visuels de booster de Règne Delta (fournis par l'utilisateur) sont dans `images/boosters/me06-1.webp` à `-4.webp` : fond retiré, rognés, 1 000 px de haut ; la déchirure se fait au-dessus du logo. Visuels du 30ᵉ Anniversaire : à fournir (`30th-1.webp`…).
+
+**v115** : Jeu, 30ᵉ Anniversaire : ordre réel d'un booster (« 5 cartes supplémentaires » + énergie = 6) : 2 communes, 3ᵉ carte (Illustration rare / Collection Classique, sinon commune), 4ᵉ carte (EX / Illustration spéciale rare / RGB / Futuristic, sinon Rare), 5ᵉ Pikachu Rare garanti, 6ᵉ énergie. Visuel du booster fourni : `images/boosters/30th-1.webp`.

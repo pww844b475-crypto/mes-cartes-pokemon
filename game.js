@@ -7,9 +7,9 @@
 // extensions « Méga-Évolution » pour Règne Delta (Double rare ≈ 1 sur 5, Illustration rare ≈ 1 sur 9, Ultra rare ≈ 1 sur 12, Illustration spéciale ≈ 1 sur 82,
 // Méga Hyper Rare ≈ 1 sur 1 100). Ce sont des ordres de grandeur, pas des chiffres officiels.
 const GAME_SETS = [
-  { id: '30th', name: '30ᵉ Anniversaire', members: ['30th', '30th-c'], logo: 'images/set-logos/30th.webp', cards: 6, tint: ['#ffcf3a', '#e8731f'], packs: [1, 2, 3, 4].map((i) => `images/boosters/30th-${i}.webp`),
-    desc: '6 cartes : 2 communes, 1 énergie, 1 carte « Illustration rare / Collection Classique » possible, 1 Pikachu Rare garanti, 1 carte rare ou mieux.',
-    rates: [['Illustration rare (3ᵉ carte)', '1 sur 5'], ['Collection Classique (3ᵉ carte)', '1 sur 10'], ['EX (dernière carte)', '1 sur 4'], ['Illustration spéciale rare', '1 sur 21'], ['Futuristic Rare', '1 sur 120'], ['RGB Rare (Mew R / G / B)', '1 sur 660']] },
+  { id: '30th', name: '30ᵉ Anniversaire', members: ['30th', '30th-c'], logo: 'images/set-logos/30th.webp', cards: 5, extra: ' + énergie', tint: ['#ffcf3a', '#e8731f'], packs: [1, 2, 3, 4].map((i) => `images/boosters/30th-${i}.webp`),
+    desc: '6 cartes, dans cet ordre : 2 communes ; 3ᵉ carte : commune, Illustration rare ou reprint Collection Classique ; 4ᵉ carte : Rare, EX, Illustration spéciale rare, RGB ou Futuristic ; 5ᵉ : Pikachu Rare garanti ; 6ᵉ : énergie.',
+    rates: [['Illustration rare (3ᵉ carte)', '1 sur 5'], ['Collection Classique (3ᵉ carte)', '1 sur 10'], ['EX (4ᵉ carte)', '1 sur 4'], ['Illustration spéciale rare (4ᵉ carte)', '1 sur 21'], ['Futuristic Rare (4ᵉ carte)', '1 sur 120'], ['RGB Rare, Mew R / G / B (4ᵉ carte)', '1 sur 660']] },
   { id: 'me06', name: 'Règne Delta', members: ['me06'], logo: 'images/set-logos/me06.webp', cards: 10, extra: ' + énergie', tint: ['#3fd0ff', '#2a56d6'], pairs: [['me06-094', 'me06-095'], ['me06-096', 'me06-097'], ['me06-098', 'me06-099']],      // « Stades » imprimés en deux moitiés : l'une ne vient jamais sans l'autre
     packs: [1, 2, 3, 4].map((i) => `images/boosters/me06-${i}.webp`),
     desc: '10 cartes + 1 énergie, dans cet ordre : 4 communes, 3 peu communes, 1 reverse, puis une 2ᵉ reverse qui peut être remplacée par une Illustration rare ou une Illustration spéciale rare, puis une carte rare (Rare, Double rare ou Ultra Rare), puis l’énergie.',
@@ -43,11 +43,13 @@ function drawPack(def, pool) {
   const take = (rar, extra) => { const base = by[rar] || [], c = pickOne(extra && extra.reverse ? base.filter((x) => !halfIds.has(x.id)) : base, used); if (!c) return null; used.add(c); out.push({ c, rar, ...extra }); return c; };
   const energy = () => out.push({ c: null, rar: 'Énergie', energy: true });
   if (def.id === '30th') {
-    take('Commune'); take('Commune'); energy();
+    // ordre réel : 2 communes, 3ᵉ carte (Illustration rare ou reprint « Collection Classique », sinon commune), 4ᵉ carte (EX, Illustration spéciale rare, RGB, Futuristic, sinon Rare), 5ᵉ Pikachu Rare garanti, 6ᵉ énergie
+    take('Commune'); take('Commune');
     const x = r(); if (x < 0.10 && by['Collection Classique']) take('Collection Classique'); else if (x < 0.30) take('Illustration rare'); else take('Commune');
-    take('Pikachu Rare');
     const y = r();
     if (y < 1 / 21) take('Illustration spéciale rare'); else if (y < 1 / 21 + 1 / 120) take('Futuristic Rare'); else if (y < 1 / 21 + 1 / 120 + 1 / 660) take('RGB Rare'); else if (y < 0.28) take('Double rare'); else take('Rare');
+    take('Pikachu Rare');
+    energy();
   } else {
     // ordre réel d'un booster d'extension classique : 4 communes, 3 peu communes, 1re reverse, 2ᵉ reverse (ou Illustration rare / Illustration spéciale rare), carte rare, énergie
     const rev = () => { const z = r(); take(z < 0.5 ? 'Commune' : z < 0.85 ? 'Peu Commune' : 'Rare', { reverse: true }); };
