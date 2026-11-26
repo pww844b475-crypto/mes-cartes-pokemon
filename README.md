@@ -288,3 +288,5 @@ Dock → **Amis & Jeu** → **Jeu** (`#jeu`, code dans `game.js`, chargé avant 
 
 **v112** : Jeu, Règne Delta et séries classiques : 10 cartes + énergie dans l'ordre réel (4 communes, 3 peu communes, 1re reverse, 2ᵉ reverse ou Illustration rare / Illustration spéciale rare, carte rare / Double rare / Ultra Rare, énergie). Booster avec la vraie image si `images/boosters/<série>-<n>.webp` existe (jusqu'à 4 par série, tirée au hasard ; le haut se déchire), sinon booster dessiné.
 **v113** : Règne Delta : les 3 « Stades » en deux moitiés (Pyroconduit, Sommet, Fosse Légendaire, cartes 094 à 099) viennent toujours par paire, côte à côte, dans les 3 peu communes. Le visuel du booster se choisit (ou « Au hasard ») quand plusieurs images existent dans `images/boosters`.
+
+**v114** : les 4 vrais visuels de booster de Règne Delta (fournis par l'utilisateur) sont dans `images/boosters/me06-1.webp` à `-4.webp` : fond retiré, rognés, 1 000 px de haut ; la déchirure se fait au-dessus du logo. Visuels du 30ᵉ Anniversaire : à fournir (`30th-1.webp`…).

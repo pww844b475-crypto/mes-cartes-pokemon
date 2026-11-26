@@ -872,8 +872,8 @@ main.game { padding-top: 12px; text-align: center; }
 /* booster avec la vraie image (images/boosters) : le haut se déchire */
 .gpack.gpi { aspect-ratio: var(--ar, 3 / 5.2); width: min(62vw, 250px); }
 .gpi-body, .gpi-top { position: absolute; inset: 0; background: var(--img) center / 100% 100% no-repeat; }
-.gpi-body { clip-path: polygon(0 11%, 6% 12.5%, 12% 10.8%, 18% 12.4%, 25% 10.9%, 31% 12.5%, 38% 11%, 44% 12.4%, 50% 10.8%, 56% 12.5%, 63% 11%, 69% 12.4%, 75% 10.9%, 81% 12.5%, 88% 11%, 94% 12.4%, 100% 11%, 100% 100%, 0 100%); }
-.gpi-top { clip-path: polygon(0 0, 100% 0, 100% 11%, 94% 12.4%, 88% 11%, 81% 12.5%, 75% 10.9%, 69% 12.4%, 63% 11%, 56% 12.5%, 50% 10.8%, 44% 12.4%, 38% 11%, 31% 12.5%, 25% 10.9%, 18% 12.4%, 12% 10.8%, 6% 12.5%, 0 11%); transform-origin: left bottom; }
+.gpi-body { clip-path: polygon(0% 5.0%, 6% 6.4%, 12% 5.0%, 18% 6.4%, 25% 5.0%, 31% 6.4%, 38% 5.0%, 44% 6.4%, 50% 5.0%, 56% 6.4%, 63% 5.0%, 69% 6.4%, 75% 5.0%, 81% 6.4%, 88% 5.0%, 94% 6.4%, 100% 5.0%, 100% 100%, 0 100%); }
+.gpi-top { clip-path: polygon(0 0, 100% 0, 100% 5.0%, 94% 6.4%, 88% 5.0%, 81% 6.4%, 75% 5.0%, 69% 6.4%, 63% 5.0%, 56% 6.4%, 50% 5.0%, 44% 6.4%, 38% 5.0%, 31% 6.4%, 25% 5.0%, 18% 6.4%, 12% 5.0%, 6% 6.4%, 0% 5.0%); transform-origin: left bottom; }
 .gpack.gpi.tear .gpi-top { animation: gp-rip .8s ease-in .25s forwards; }
 .gpack.gpi.tear .gpi-body { animation: gp-fade .5s ease-in .55s forwards; }
 
