@@ -305,3 +305,9 @@ Dock → **Amis & Jeu** → **Jeu** (`#jeu`, code dans `game.js`, chargé avant 
 - **Booster figé** : on touche un booster du carrousel, il se fige au centre, les autres s'effacent, le trait brillant apparaît ; « Choisir un autre booster » le relâche.
 - **Pile de cartes** à l'épaisseur du nombre de cartes restantes. **Ouvrir tous les boosters d'un coup**. **Animation plein écran** (rayons, éclair, carte qui tourne, étincelles) pour Illustration spéciale rare, Méga Hyper Rare, Futuristic et RGB : automatique à la révélation, ou l'une après l'autre en ouverture groupée.
 - **Résumé** : les hits en vrai carrousel (éventail).
+
+## Jeu v118 : boosters gagnés et classeur virtuel
+- **Boosters à ouvrir** (`cartes.game`) : +10 par jour à l'ouverture de l'appli (une fois par jour), +3 par carte **reconnue directement** par le scanner (visuel, une seule fois par carte et par jour). Valables pour n'importe quelle série du jeu. Un booster est débité à son ouverture ; au-delà du solde, on peut ouvrir « pour le plaisir » (non gardés, marqués sur le booster).
+- **Classeur virtuel** (`cartes.vbinder`, séparé de la vraie collection, non inclus dans la sauvegarde) : chaque carte d'un booster ouvert « compté » y est ajoutée, normales et reverse comptées à part (×n). Onglets Normales / Reverse. Règle des reverse : Communes, Peu Communes et Rares d'une extension classique, sauf les 6 moitiés de Stade de Règne Delta (87 reverse sur 141 cartes) ; aucune au 30ᵉ. La révélation indique « ✨ nouvelle ! ».
+- Le booster choisi dans le carrousel s'affiche plus gros et ne bouge plus ; petit « pouf » à la déchirure.
+- Limites : récompenses stockées sur l'appareil (changer la date du téléphone permet de tricher) ; boosters et classeur ne sont pas dans la sauvegarde.
