@@ -24,6 +24,9 @@ const pickOne = (a, not) => { const b = not && not.size ? a.filter((x) => !not.h
 // ---------- boosters à ouvrir (gagnés), récompenses et classeur virtuel (séparé de la vraie collection) ----------
 const GAME_KEY = 'cartes.game', BINDER_KEY = 'cartes.vbinder';
 const REWARD_DAILY = 10, REWARD_SCAN = 3;
+const CAP_STOCK = 50;      // plafond du solde de boosters à ouvrir (vraies parties) ; le mode test n'a pas de limite
+const TEST_KEY = 'cartes.gametest', STATS_KEY = 'cartes.gamestats';
+const testMode = () => store.get(TEST_KEY) === '1';
 function gameState() {
   let s = null; try { s = JSON.parse(store.get(GAME_KEY) || 'null'); } catch { s = null; }
   if (!s || typeof s !== 'object') s = {};
@@ -32,12 +35,12 @@ function gameState() {
 const gameSave = (s) => store.set(GAME_KEY, JSON.stringify(s));
 function dailyLogin() {      // une fois par jour, à l'ouverture de l'application : +10 boosters
   const s = gameState(), today = dayKey(); if (s.daily === today) return 0;
-  s.daily = today; s.credits += REWARD_DAILY; s.scans = Object.fromEntries(Object.entries(s.scans).filter(([, d]) => d === today)); gameSave(s);
-  return REWARD_DAILY;
+  const before = s.credits; s.daily = today; s.credits = Math.max(s.credits, Math.min(CAP_STOCK, s.credits + REWARD_DAILY)); s.scans = Object.fromEntries(Object.entries(s.scans).filter(([, d]) => d === today)); gameSave(s);
+  return s.credits - before;
 }
 function gameScanReward(cardId) {      // scan réussi (carte reconnue directement) : +3 boosters, une seule fois par carte et par jour
   if (!cardId) return 0; const s = gameState(), today = dayKey(); if (s.scans[cardId] === today) return 0;
-  s.scans[cardId] = today; s.credits += REWARD_SCAN; gameSave(s); return REWARD_SCAN;
+  const before = s.credits; s.scans[cardId] = today; s.credits = Math.max(s.credits, Math.min(CAP_STOCK, s.credits + REWARD_SCAN)); gameSave(s); return s.credits - before;
 }
 // +1 booster par carte ajoutée à la vraie collection (française), une seule fois par carte : l'enlever puis la remettre ne rapporte rien de plus
 function syncCardRewards() {
@@ -45,11 +48,24 @@ function syncCardRewards() {
     const s = gameState(), seen = new Set(s.rewarded); let gain = 0;
     for (const [sid, m] of Object.entries((owned && owned.fr) || {})) {
       if (isDigital('fr', sid) || DIGITAL_FALLBACK_FR.includes(sid)) continue;      // extensions du jeu en ligne exclues
-      for (const [id, v] of Object.entries(m || {})) if (qtyTotal(v) > 0 && !seen.has(id)) { seen.add(id); s.rewarded.push(id); gain++; }
+      for (const [id, v] of Object.entries(m || {})) {
+        if (s.credits + gain >= CAP_STOCK) break;      // plafond atteint : les autres cartes attendent, un booster leur sera versé quand il y aura de la place
+        if (qtyTotal(v) > 0 && !seen.has(id)) { seen.add(id); s.rewarded.push(id); gain++; }
+      }
     }
     if (gain) { s.credits += gain; gameSave(s); }
     return gain;
   } catch { return 0; }
+}
+function pendingCardRewards() {      // cartes de la collection qui attendent encore leur booster (plafond atteint)
+  try { const seen = new Set(gameState().rewarded); let n = 0; for (const [sid, m] of Object.entries((owned && owned.fr) || {})) { if (isDigital('fr', sid) || DIGITAL_FALLBACK_FR.includes(sid)) continue; for (const [id, v] of Object.entries(m || {})) if (qtyTotal(v) > 0 && !seen.has(id)) n++; } return n; } catch { return 0; }
+}
+// statistiques par série : boosters comptés, temps de jeu (pauses de plus de 5 min ignorées), et le jour où le classeur est complet
+function statsLoad() { try { const o = JSON.parse(store.get(STATS_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch { return {}; } }
+const statsSave = (o) => store.set(STATS_KEY, JSON.stringify(o));
+const fmtDur = (ms) => { const m = Math.round(ms / 60000), hh = Math.floor(m / 60); return hh ? `${hh} h ${String(m % 60).padStart(2, '0')} min` : `${m} min`; };
+function binderComplete(def, pool, b) {
+  return pool.cards.length > 0 && pool.cards.every((c) => { const en = b[c.id] || [0, 0]; return en[0] > 0 && (!hasReverse(def, c) || en[1] > 0); });
 }
 function binderLoad() { try { const o = JSON.parse(store.get(BINDER_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch { return {}; } }
 const binderSave = (o) => store.set(BINDER_KEY, JSON.stringify(o));
@@ -127,11 +143,12 @@ function showGame(my) {
     const inp = h('input', { class: 'qin bo-in', type: 'number', inputmode: 'numeric', min: '1', max: '36', value: String(count), 'aria-label': 'Nombre de boosters à ouvrir' });
     syncCardRewards();
     const credits = gameState().credits;
-    const bank = h('div', { class: 'gbank' }, h('b', {}, `🎟 ${credits}`), h('span', {}, credits === 1 ? 'booster à ouvrir' : 'boosters à ouvrir'),
-      h('small', {}, `Gagne-en : +${REWARD_DAILY} chaque jour à l’ouverture de l’appli, +${REWARD_SCAN} par carte reconnue directement au scanner (une fois par carte et par jour), +1 pour chaque carte ajoutée à ta collection (une seule fois par carte : l’enlever puis la remettre ne rapporte rien).`));
+    const tm = testMode(), pend = pendingCardRewards();
+    const bank = h('div', { class: 'gbank' }, h('b', {}, tm ? '🎟 ∞' : `🎟 ${credits}`), h('span', {}, tm ? 'ouvertures illimitées (mode test)' : (credits === 1 ? 'booster à ouvrir' : 'boosters à ouvrir')),
+      h('small', {}, `Gagne-en : +${REWARD_DAILY} chaque jour à l’ouverture de l’appli, +${REWARD_SCAN} par carte reconnue directement au scanner (une fois par carte et par jour), +1 pour chaque carte ajoutée à ta collection (une seule fois par carte : l’enlever puis la remettre ne rapporte rien). Le solde est plafonné à ${CAP_STOCK}.` + (pend ? ` ${pend} cartes de ta collection attendent leur booster : ils arrivent au fur et à mesure que tu en ouvres.` : '')));
     const openBtn = h('button', { class: 'btn', type: 'button', onclick: start });
     const label = () => {
-      const kept = Math.min(count, credits), free = count - kept;
+      const kept = testMode() ? count : Math.min(count, credits), free = count - kept;
       openBtn.textContent = `🎁 Ouvrir ${count > 1 ? `les ${count} boosters` : 'le booster'}` + (free ? ` (${free} pour le plaisir)` : '');
     };
     const setN = (v) => { count = Math.max(1, Math.min(36, Number.isFinite(v) ? v : 1)); inp.value = String(count); label(); };
@@ -156,23 +173,32 @@ function showGame(my) {
       openBtn,
       h('button', { class: 'btn sec', type: 'button', onclick: binder }, '📖 Mon classeur virtuel'),
       h('button', { class: 'btn sec', type: 'button', onclick: showRates }, 'ℹ️ Taux de tirage utilisés'),
-      h('button', { class: 'btn sec gtest', type: 'button', onclick: resetSheet }, '🧪 Réinitialiser (mode test)'));
+      h('button', { class: 'btn sec gtest', type: 'button', onclick: resetSheet }, testMode() ? '🧪 Mode test activé · réglages' : '🧪 Mode test et remise à zéro'));
   }
 
-  // remise à zéro pour les essais : boosters, récompenses déjà versées (donc connexion du jour et cartes ajoutées sont recomptées), et au choix le classeur
+  // mode test : ouvertures illimitées (pour mesurer le temps de remplissage des classeurs) et remise à zéro
   function resetSheet() {
     const doReset = (withBinder) => {
       store.set(GAME_KEY, JSON.stringify({ credits: 0, daily: '', scans: {}, rewarded: [] }));
-      if (withBinder) store.set(BINDER_KEY, '{}');
+      if (withBinder) { store.set(BINDER_KEY, '{}'); store.set(STATS_KEY, '{}'); }
       closeSheet(); const gain = dailyLogin() + syncCardRewards();
-      toast(`🧪 Réinitialisé : ${gain} boosters recrédités` + (withBinder ? ', classeur vidé' : ''));
+      toast(`🧪 Réinitialisé : ${gain} boosters recrédités (plafond ${CAP_STOCK})` + (withBinder ? ', classeur et statistiques vidés' : ''));
       setup();
     };
-    openSheet(h('h2', {}, '🧪 Réinitialiser le jeu'),
-      h('p', {}, 'Remet à zéro les boosters à ouvrir et les récompenses déjà versées, puis recrédite la connexion du jour et toutes les cartes de ta collection, comme au tout premier lancement. Ta vraie collection n’est jamais touchée.'),
-      h('button', { class: 'btn', type: 'button', onclick: () => doReset(false) }, 'Réinitialiser les boosters (garder le classeur)'),
-      h('button', { class: 'btn danger', type: 'button', onclick: () => doReset(true) }, 'Tout réinitialiser, classeur compris'),
-      h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Annuler'));
+    const on = testMode(), st = statsLoad();
+    const rows = GAME_SETS.map((d) => { const r = st[d.id];
+      return h('div', { class: 'orow' }, h('div', { class: 'orow-l' }, h('span', { class: 'rn' }, d.name), h('span', { class: 'rc' }, r ? `${r.n} boosters · ${fmtDur(r.active)}` + (r.done ? ` · 🏆 complet en ${r.done.n} boosters, ${fmtDur(r.done.active)}` : '') : 'pas encore ouvert'))); });
+    const sw = h('input', { type: 'checkbox', role: 'switch', 'aria-label': 'Mode test : ouvertures illimitées' }); sw.checked = on;
+    sw.addEventListener('change', () => { store.set(TEST_KEY, sw.checked ? '1' : '0'); closeSheet(); toast(sw.checked ? '🧪 Mode test : ouvertures illimitées' : 'Mode test désactivé : les boosters gagnés comptent à nouveau'); setup(); });
+    openSheet(h('h2', {}, '🧪 Mode test'),
+      h('label', { class: 'orow-l' }, sw, h('span', { class: 'rn' }, 'Ouvertures illimitées : aucun booster à gagner, tout est gardé dans le classeur')),
+      h('p', { class: 'lb-help' }, 'Pour voir combien de boosters et de temps il faut pour remplir tous les classeurs virtuels. Le temps compte seulement les périodes de jeu (une pause de plus de 5 minutes n’est pas comptée).'),
+      h('h3', {}, 'Statistiques par série'), h('div', { class: 'orows' }, rows),
+      h('h3', {}, 'Remise à zéro'),
+      h('p', { class: 'lb-help' }, `Remet à zéro les boosters et les récompenses déjà versées, puis recrédite la connexion du jour et les cartes de ta collection (dans la limite de ${CAP_STOCK}). Ta vraie collection n’est jamais touchée.`),
+      h('button', { class: 'btn', type: 'button', onclick: () => doReset(false) }, 'Réinitialiser les boosters (garder classeur et statistiques)'),
+      h('button', { class: 'btn danger', type: 'button', onclick: () => doReset(true) }, 'Tout réinitialiser, classeur et statistiques compris'),
+      h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
   }
 
   function showRates() {
@@ -196,7 +222,7 @@ function showGame(my) {
     if (!alive()) return;
     const ch = artSel[defSel.id];
     const credits = gameState().credits;
-    packs = Array.from({ length: count }, (_, i) => ({ keep: i < credits, committed: false, cards: drawPack(defSel, pool), art: arts.length ? (ch !== undefined && arts[ch] ? arts[ch] : arts[Math.floor(Math.random() * arts.length)]) : null, opened: false }));
+    packs = Array.from({ length: count }, (_, i) => ({ keep: testMode() || i < credits, committed: false, cards: drawPack(defSel, pool), art: arts.length ? (ch !== undefined && arts[ch] ? arts[ch] : arts[Math.floor(Math.random() * arts.length)]) : null, opened: false }));
     for (const p of packs) for (const e of p.cards) { const im = new Image(); im.src = imgHigh(e.c); }      // images préchargées pendant l'animation
     packsScreen();
   }
@@ -205,11 +231,15 @@ function showGame(my) {
   function commitPack(p) {
     if (p.committed) return; p.committed = true;
     if (!p.keep) return;
-    const s = gameState(); if (s.credits < 1) { p.keep = false; return; }
-    s.credits--; gameSave(s);
+    if (!testMode()) { const s = gameState(); if (s.credits < 1) { p.keep = false; return; } s.credits--; gameSave(s); }
     const b = binderLoad();
     for (const e of p.cards) { const en = b[e.c.id] || [0, 0], k = e.reverse ? 1 : 0; e.isNew = en[k] === 0; en[k]++; b[e.c.id] = en; }
     binderSave(b);
+    const st = statsLoad(), now = Date.now(), r = st[defSel.id] || (st[defSel.id] = { n: 0, t0: now, last: now, active: 0, done: null });
+    r.active += Math.min(now - r.last, 300000); r.last = now; r.n++;
+    const pool = gamePools[defSel.id];
+    if (!r.done && pool && binderComplete(defSel, pool, b)) { r.done = { n: r.n, active: r.active, at: now }; p.completed = true; }
+    statsSave(st);
   }
 
   // carrousel de boosters : on fait défiler, on touche celui qu'on veut (il se fige), puis on trace un trait brillant sur la ligne du haut pour le déchirer
@@ -332,12 +362,15 @@ function showGame(my) {
       nextBtn.textContent = left ? `📦 Retour aux boosters (${left} à ouvrir)` : '📊 Voir le résumé';
       nextBtn.onclick = () => { if (left) packsScreen(packs.findIndex((p) => !p.opened)); else summary(); };
       nextBtn.hidden = false; carBtn.hidden = false;
+      if (pk.completed) { tip.textContent = `🏆 Classeur ${defSel.name} complet : ${statsLoad()[defSel.id].done.n} boosters, ${fmtDur(statsLoad()[defSel.id].done.active)} de jeu !`; }
     }
     put(nav(), counter, stage, tip, strip, h('div', { class: 'gacts' }, nextBtn, carBtn, skipBtn));
     showCard();
   }
 
   // classeur virtuel : toutes les cartes de la série, normales puis reverse, avec le nombre d'exemplaires
+  const statsBox = (d) => { const r = statsLoad()[d.id]; if (!r) return null;
+    return h('p', { class: 'lb-help gstat' }, `${plural(r.n, 'booster ouvert', 'boosters ouverts')} · ${fmtDur(r.active)} de jeu` + (r.done ? ` · 🏆 classeur complet en ${r.done.n} boosters (${fmtDur(r.done.active)})` : '')); };
   async function binder() {
     put(spinner());
     let tab = 'n', def = defSel;
@@ -353,6 +386,7 @@ function showGame(my) {
         h('h2', { class: 'gh' }, '📖 Mon classeur virtuel'),
         h('div', { class: 'gsets small' }, setBtns),
         h('div', { class: 'gtabs', role: 'group' }, tabs),
+        statsBox(def),
         h('div', { class: 'gprog' }, h('b', {}, `${have} / ${list.length}`), h('span', {}, ` ${tab === 'r' ? 'reverse' : 'cartes'} · ${pct} % · ${plural(copies, 'exemplaire', 'exemplaires')}`), h('div', { class: 'bar', 'aria-hidden': 'true' }, h('i', { style: `width:${pct}%` }))),
         h('div', { class: 'gbinder' }, list.map((c) => { const n = (b[c.id] || [0, 0])[k] || 0;
           return h('button', { type: 'button', class: 'gbc' + (n ? '' : ' none') + (tab === 'r' ? ' rv' : ''), title: `${c.name} · #${lidShow(c.localId)}${n ? ' · ×' + n : ' · manquante'}`, onclick: () => zoomCard({ c, rar: c.rar }) },
