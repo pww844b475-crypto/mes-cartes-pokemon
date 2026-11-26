@@ -1,6 +1,6 @@
 'use strict';
 // Service worker : l'application s'ouvre hors ligne ; les données TCGdex déjà consultées aussi.
-const SHELL = 'shell-v109';
+const SHELL = 'shell-v110';
 const API = 'api-v1';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'coverage.json', 'data/sets-meta.json', 'data/scans.json', 'data/scans-remote.json', 'data/scans-embedded.json', 'data/order.json', 'data/cm-links.json', 'data/price-fix.json', 'data/names.json', 'manifest.webmanifest',
   'icons/logo-transparent.png', 'icons/logo-banner.webp', 'images/loading-poster.webp', 'images/set-logos/me06.webp', 'images/icons-menu/cartes.webp', 'images/icons-menu/scanner.webp', 'images/icons-menu/stats.webp', 'images/icons-menu/amis.webp', 'images/icons-menu/sauvegarde.webp', 'images/icons-menu/reglages.webp', 'images/set-logos/swsh3.webp', 'images/set-logos/me05.webp', 'images/rarity/amazing.webp', 'images/set-logos/base1.webp', 'images/set-logos/sve.webp', 'images/set-logos/mee.webp', 'images/set-logos/mep.webp', 'images/set-logos/30th.webp', 'images/set-logos/svp.webp', 'icons/icon-192.png', 'icons/icon-512.png',

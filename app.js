@@ -2629,13 +2629,13 @@ function openBoosters(blocks, L) {
     return { el, inp, get: () => Math.max(0, parseInt(inp.value, 10) || 0), reset: (v) => { inp.value = String(v); } };
   };
   // les communes et peu communes ne comptent pas comme « hits »
-  // 30ᵉ Anniversaire : « Cartes ex » remplace « Double rare » ; « Rare » et « Pikachu Rare » ne sont plus suivies. Les ouvertures déjà enregistrées sont conservées telles quelles et lues avec ces règles.
-  const asRar = (r) => (r === 'Cartes ex' ? 'Double rare' : r);
+  // 30ᵉ Anniversaire : « EX » remplace « Double rare » ; « Rare » et « Pikachu Rare » ne sont plus suivies. Les ouvertures déjà enregistrées sont conservées telles quelles et lues avec ces règles.
+  const asRar = (r) => (r === 'EX' || r === 'Cartes ex' ? 'Double rare' : r);
   const HIDE30 = new Set(['Rare', 'Pikachu Rare']);
   const mapHits = (set, hits) => {
     const out = {};
     for (const [r, c] of Object.entries(hits || {})) {
-      let k = r; if (set === '30th') { if (HIDE30.has(r)) continue; if (r === 'Double rare') k = 'Cartes ex'; }
+      let k = r; if (set === '30th') { if (HIDE30.has(r)) continue; if (r === 'Double rare' || r === 'Cartes ex') k = 'EX'; }
       out[k] = (out[k] || 0) + (Number(c) || 0);
     }
     return out;
@@ -2675,7 +2675,7 @@ function openBoosters(blocks, L) {
     const x = groups.find((y) => y.g.id === cur);
     const maps = await Promise.all(x.g.members.map((m) => loadCardInfo(L, m.id)));
     if (sel.value !== cur) return;
-    const rars = [...new Set(maps.flatMap((m) => [...m.values()].map((i) => i.rar).filter(Boolean)).filter((r) => !(cur === '30th' && HIDE30.has(r))).map((r) => (cur === '30th' && r === 'Double rare' ? 'Cartes ex' : r)))]
+    const rars = [...new Set(maps.flatMap((m) => [...m.values()].map((i) => i.rar).filter(Boolean)).filter((r) => !(cur === '30th' && HIDE30.has(r))).map((r) => (cur === '30th' && r === 'Double rare' ? 'EX' : r)))]
       .filter(isHit).sort((a, b) => rarityRank(asRar(a)) - rarityRank(asRar(b)) || a.localeCompare(b, 'fr'));
     const nStep = stepper('Nombre de boosters ouverts', 1, null, { min: 1 });
     const hitSteps = new Map(rars.map((r) => [r, stepper(`Hits : ${r}`, 0)]));
@@ -3192,7 +3192,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v109';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v110';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 // Test d'affichage : un cadre coloré collé aux bords de la zone que l'appli reçoit du système, et les mesures. Une capture d'écran montre où s'arrête vraiment la fenêtre.
 function showFrameTest() {
   closeSheet();
