@@ -2629,13 +2629,24 @@ function openBoosters(blocks, L) {
     return { el, inp, get: () => Math.max(0, parseInt(inp.value, 10) || 0), reset: (v) => { inp.value = String(v); } };
   };
   // les communes et peu communes ne comptent pas comme « hits »
-  const isHit = (r) => !['commune', 'peu'].includes(rarityTier(r));
+  // 30ᵉ Anniversaire : « EX » remplace « Double rare » ; « Rare » et « Pikachu Rare » ne sont plus suivies. Les ouvertures déjà enregistrées sont conservées telles quelles et lues avec ces règles.
+  const asRar = (r) => (r === 'EX' || r === 'Cartes ex' ? 'Double rare' : r);
+  const HIDE30 = new Set(['Rare', 'Pikachu Rare']);
+  const mapHits = (set, hits) => {
+    const out = {};
+    for (const [r, c] of Object.entries(hits || {})) {
+      let k = r; if (set === '30th') { if (HIDE30.has(r)) continue; if (r === 'Double rare' || r === 'Cartes ex') k = 'EX'; }
+      out[k] = (out[k] || 0) + (Number(c) || 0);
+    }
+    return out;
+  };
+  const isHit = (r) => !['commune', 'peu'].includes(rarityTier(asRar(r)));
   function graph(set) {
     const all = loadBoosters().filter((x) => x.set === set);
     if (!all.length) return h('p', { class: 'lb-help' }, 'Aucune ouverture enregistrée pour cette extension : vos statistiques apparaîtront ici et se cumuleront à chaque nouvelle ouverture.');
     const n = all.reduce((a, x) => a + x.n, 0), tot = {};
-    for (const x of all) for (const [r, c] of Object.entries(x.hits)) if (isHit(r)) tot[r] = (tot[r] || 0) + (Number(c) || 0);
-    const rows = Object.entries(tot).filter(([, c]) => c > 0).sort((a, b) => rarityRank(a[0]) - rarityRank(b[0]));
+    for (const x of all) for (const [r, c] of Object.entries(mapHits(set, x.hits))) if (isHit(r)) tot[r] = (tot[r] || 0) + (Number(c) || 0);
+    const rows = Object.entries(tot).filter(([, c]) => c > 0).sort((a, b) => rarityRank(asRar(a[0])) - rarityRank(asRar(b[0])));
     const maxPct = Math.max(1, ...rows.map(([, c]) => pullPct(c, n)));
     const hitsTotal = rows.reduce((a, [, c]) => a + c, 0);
     return h('div', { class: 'bo-graph' },
@@ -2647,14 +2658,14 @@ function openBoosters(blocks, L) {
       rows.length ? h('div', { class: 'bo-bars', role: 'list' }, rows.map(([r, c]) => {
         const pct = pullPct(c, n);
         return h('div', { class: 'bo-bar', role: 'listitem', 'aria-label': `${r} : ${pct} %` },
-          h('div', { class: 'bo-bl' }, h('span', { class: 'rbi' }, rarityIcon(r, 20)), h('span', { class: 'bo-name' }, r)),
-          h('div', { class: 'bo-track' }, h('i', { class: 'rt-' + rarityTier(r), style: `width:${Math.max(3, (pct / maxPct) * 100).toFixed(1)}%` })),
+          h('div', { class: 'bo-bl' }, h('span', { class: 'rbi' }, rarityIcon(asRar(r), 20)), h('span', { class: 'bo-name' }, r)),
+          h('div', { class: 'bo-track' }, h('i', { class: 'rt-' + rarityTier(asRar(r)), style: `width:${Math.max(3, (pct / maxPct) * 100).toFixed(1)}%` })),
           h('div', { class: 'bo-val' }, h('b', {}, `${pct.toLocaleString('fr-FR')} %`), h('span', {}, ` · ${c}/${n} · 1 tous les ${(n / c).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} boosters`)));
       })) : h('p', { class: 'lb-help' }, 'Aucun hit noté pour le moment.'),
       h('h3', {}, 'Ouvertures enregistrées'),
       h('div', { class: 'orows' }, all.slice().reverse().map((x) => h('div', { class: 'orow' }, h('div', { class: 'orow-l' },
         h('span', { class: 'rn' }, `${new Date(x.t).toLocaleDateString('fr-FR')} · ${plural(x.n, 'booster', 'boosters')}`),
-        h('span', { class: 'rc' }, Object.entries(x.hits).filter(([r, c]) => c > 0 && isHit(r)).map(([r, c]) => `${c} ${r}`).join(', ') || 'aucun hit')),
+        h('span', { class: 'rc' }, Object.entries(mapHits(set, x.hits)).filter(([r, c]) => c > 0 && isHit(r)).map(([r, c]) => `${c} ${r}`).join(', ') || 'aucun hit')),
         h('button', { type: 'button', class: 'orow-go', 'aria-label': 'Supprimer cette ouverture', onclick: () => { saveBoosters(loadBoosters().filter((y) => y.id !== x.id)); render(); } }, '✕')))));
   }
   async function render() {
@@ -2664,7 +2675,8 @@ function openBoosters(blocks, L) {
     const x = groups.find((y) => y.g.id === cur);
     const maps = await Promise.all(x.g.members.map((m) => loadCardInfo(L, m.id)));
     if (sel.value !== cur) return;
-    const rars = [...new Set(maps.flatMap((m) => [...m.values()].map((i) => i.rar).filter(Boolean)))].filter(isHit).sort((a, b) => rarityRank(a) - rarityRank(b) || a.localeCompare(b, 'fr'));
+    const rars = [...new Set(maps.flatMap((m) => [...m.values()].map((i) => i.rar).filter(Boolean)).filter((r) => !(cur === '30th' && HIDE30.has(r))).map((r) => (cur === '30th' && r === 'Double rare' ? 'EX' : r)))]
+      .filter(isHit).sort((a, b) => rarityRank(asRar(a)) - rarityRank(asRar(b)) || a.localeCompare(b, 'fr'));
     const nStep = stepper('Nombre de boosters ouverts', 1, null, { min: 1 });
     const hitSteps = new Map(rars.map((r) => [r, stepper(`Hits : ${r}`, 0)]));
     const save = () => {
@@ -2678,7 +2690,7 @@ function openBoosters(blocks, L) {
         h('h3', {}, 'Nouvelle ouverture'),
         h('div', { class: 'bo-line big' }, h('span', { class: 'bo-name' }, 'Boosters ouverts'), nStep.el),
         rars.length ? h('p', { class: 'lb-help' }, 'Hits obtenus (laissez 0 s’il n’y en a pas) :') : h('p', { class: 'lb-help' }, 'Aucune rareté de hit connue pour cette extension.'),
-        ...rars.map((r) => h('div', { class: 'bo-line' }, h('span', { class: 'rbi' }, rarityIcon(r, 24)), h('span', { class: 'bo-name' }, r), hitSteps.get(r).el)),
+        ...rars.map((r) => h('div', { class: 'bo-line' }, h('span', { class: 'rbi' }, rarityIcon(asRar(r), 24)), h('span', { class: 'bo-name' }, r), hitSteps.get(r).el)),
         h('button', { class: 'btn', type: 'button', onclick: save }, '➕ Ajouter cette ouverture')),
       graph(cur));
   }
@@ -3180,7 +3192,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v108';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v110';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 // Test d'affichage : un cadre coloré collé aux bords de la zone que l'appli reçoit du système, et les mesures. Une capture d'écran montre où s'arrête vraiment la fenêtre.
 function showFrameTest() {
   closeSheet();
