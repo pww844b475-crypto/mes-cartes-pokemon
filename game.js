@@ -7,12 +7,12 @@
 // extensions « Méga-Évolution » pour Règne Delta (Double rare ≈ 1 sur 5, Illustration rare ≈ 1 sur 9, Ultra rare ≈ 1 sur 12, Illustration spéciale ≈ 1 sur 82,
 // Méga Hyper Rare ≈ 1 sur 1 100). Ce sont des ordres de grandeur, pas des chiffres officiels.
 const GAME_SETS = [
-  { id: '30th', name: '30ᵉ Anniversaire', members: ['30th', '30th-c'], logo: 'images/set-logos/30th.webp', cards: 5, extra: ' + énergie', tint: ['#ffcf3a', '#e8731f'], packs: [1, 2, 3, 4].map((i) => `images/boosters/30th-${i}.webp`),
-    desc: '6 cartes, dans cet ordre : 2 communes ; 3ᵉ carte : commune, Illustration rare ou reprint Collection Classique ; 4ᵉ carte : Rare, EX, Illustration spéciale rare, RGB ou Futuristic ; 5ᵉ : Pikachu Rare garanti ; 6ᵉ : énergie.',
+  { id: '30th', name: '30ᵉ Anniversaire', members: ['30th', '30th-c'], logo: 'images/set-logos/30th.webp', cards: 5, hits: ['Pikachu Rare', 'Illustration rare', 'Illustration spéciale rare', 'RGB Rare', 'Futuristic Rare', 'Collection Classique', 'Double rare'], tint: ['#ffcf3a', '#e8731f'], packs: [1, 2, 3, 4].map((i) => `images/boosters/30th-${i}.webp`),
+    desc: '5 cartes, dans cet ordre : 2 communes ; 3ᵉ carte : commune, Illustration rare ou reprint Collection Classique ; 4ᵉ carte : Rare, EX, Illustration spéciale rare, RGB ou Futuristic ; 5ᵉ : Pikachu Rare garanti.',
     rates: [['Illustration rare (3ᵉ carte)', '1 sur 5'], ['Collection Classique (3ᵉ carte)', '1 sur 10'], ['EX (4ᵉ carte)', '1 sur 4'], ['Illustration spéciale rare (4ᵉ carte)', '1 sur 21'], ['Futuristic Rare (4ᵉ carte)', '1 sur 120'], ['RGB Rare, Mew R / G / B (4ᵉ carte)', '1 sur 660']] },
-  { id: 'me06', name: 'Règne Delta', members: ['me06'], logo: 'images/set-logos/me06.webp', cards: 10, extra: ' + énergie', tint: ['#3fd0ff', '#2a56d6'], pairs: [['me06-094', 'me06-095'], ['me06-096', 'me06-097'], ['me06-098', 'me06-099']],      // « Stades » imprimés en deux moitiés : l'une ne vient jamais sans l'autre
+  { id: 'me06', name: 'Règne Delta', members: ['me06'], logo: 'images/set-logos/me06.webp', cards: 10, hits: ['Double rare', 'Ultra Rare', 'Illustration rare', 'Illustration spéciale rare', 'Méga Hyper Rare'], tint: ['#3fd0ff', '#2a56d6'], pairs: [['me06-094', 'me06-095'], ['me06-096', 'me06-097'], ['me06-098', 'me06-099']],      // « Stades » imprimés en deux moitiés : l'une ne vient jamais sans l'autre
     packs: [1, 2, 3, 4].map((i) => `images/boosters/me06-${i}.webp`),
-    desc: '10 cartes + 1 énergie, dans cet ordre : 4 communes, 3 peu communes, 1 reverse, puis une 2ᵉ reverse qui peut être remplacée par une Illustration rare ou une Illustration spéciale rare, puis une carte rare (Rare, Double rare ou Ultra Rare), puis l’énergie.',
+    desc: '10 cartes, dans cet ordre : 4 communes, 3 peu communes, 1 reverse, puis une 2ᵉ reverse qui peut être remplacée par une Illustration rare ou une Illustration spéciale rare, puis une carte rare (Rare, Double rare ou Ultra Rare).',
     rates: [['Illustration rare (à la place de la 2ᵉ reverse)', '1 sur 9'], ['Illustration spéciale rare (idem)', '1 sur 82'], ['Double rare (dernière carte)', '1 sur 5'], ['Ultra Rare (dernière carte)', '1 sur 12'], ['Méga Hyper Rare (dernière carte)', '1 sur 1 100']] },
 ];
 const gameLabel = (def, r) => (def.id === '30th' && r === 'Double rare' ? 'EX' : r);
@@ -36,22 +36,20 @@ async function gamePool(def) {
   return (gamePools[def.id] = { cards, by });
 }
 
-// Tirage d'un booster : liste de { c: carte | null, rar, energy?, reverse? } dans l'ordre de révélation (la meilleure carte en dernier)
+// Tirage d'un booster : liste de { c: carte, rar, reverse?, stade? } dans l'ordre de révélation (la meilleure carte en dernier)
 function drawPack(def, pool) {
   const by = pool.by, out = [], used = new Set(), r = Math.random;
   const halfIds = new Set((def.pairs || []).flat());      // une moitié de Stade n'est jamais tirée seule (ni en reverse)
   const take = (rar, extra) => { const base = by[rar] || [], c = pickOne(extra && extra.reverse ? base.filter((x) => !halfIds.has(x.id)) : base, used); if (!c) return null; used.add(c); out.push({ c, rar, ...extra }); return c; };
-  const energy = () => out.push({ c: null, rar: 'Énergie', energy: true });
   if (def.id === '30th') {
-    // ordre réel : 2 communes, 3ᵉ carte (Illustration rare ou reprint « Collection Classique », sinon commune), 4ᵉ carte (EX, Illustration spéciale rare, RGB, Futuristic, sinon Rare), 5ᵉ Pikachu Rare garanti, 6ᵉ énergie
+    // ordre réel : 2 communes, 3ᵉ carte (Illustration rare ou reprint « Collection Classique », sinon commune), 4ᵉ carte (EX, Illustration spéciale rare, RGB, Futuristic, sinon Rare), 5ᵉ Pikachu Rare garanti
     take('Commune'); take('Commune');
     const x = r(); if (x < 0.10 && by['Collection Classique']) take('Collection Classique'); else if (x < 0.30) take('Illustration rare'); else take('Commune');
     const y = r();
     if (y < 1 / 21) take('Illustration spéciale rare'); else if (y < 1 / 21 + 1 / 120) take('Futuristic Rare'); else if (y < 1 / 21 + 1 / 120 + 1 / 660) take('RGB Rare'); else if (y < 0.28) take('Double rare'); else take('Rare');
     take('Pikachu Rare');
-    energy();
   } else {
-    // ordre réel d'un booster d'extension classique : 4 communes, 3 peu communes, 1re reverse, 2ᵉ reverse (ou Illustration rare / Illustration spéciale rare), carte rare, énergie
+    // ordre réel d'un booster d'extension classique : 4 communes, 3 peu communes, 1re reverse, 2ᵉ reverse (ou Illustration rare / Illustration spéciale rare), carte rare
     const rev = () => { const z = r(); take(z < 0.5 ? 'Commune' : z < 0.85 ? 'Peu Commune' : 'Rare', { reverse: true }); };
     for (let i = 0; i < 4; i++) take('Commune');
     {   // 3 peu communes ; une moitié de Stade (Pyroconduit, Sommet, Fosse Légendaire) arrive toujours avec sa moitié, côte à côte
@@ -71,7 +69,6 @@ function drawPack(def, pool) {
     if (w < 1 / 82) take('Illustration spéciale rare'); else if (w < 1 / 82 + 1 / 9) take('Illustration rare'); else rev();
     const y = r();
     if (y < 1 / 1100) take('Méga Hyper Rare'); else if (y < 1 / 1100 + 1 / 12) take('Ultra Rare'); else if (y < 1 / 1100 + 1 / 12 + 0.2) take('Double rare'); else take('Rare');
-    energy();
   }
   return out;
 }
@@ -105,7 +102,7 @@ function showGame(my) {
       artRow.hidden = false;
     });
     main.replaceChildren(
-      h('p', { class: 'lb-help' }, 'Juste pour le plaisir : rien n’est ajouté à ta collection. Choisis une série, le nombre de boosters, puis touche le booster pour l’ouvrir.'),
+      h('p', { class: 'lb-help' }, 'Juste pour le plaisir : rien n’est ajouté à ta collection. Choisis une série et le nombre de boosters : tu les feras défiler, puis tu déchireras celui de ton choix en traçant un trait sur le haut.'),
       h('div', { class: 'gsets' }, cardsEl),
       artRow,
       h('div', { class: 'bo-line big' }, h('span', { class: 'bo-name' }, 'Combien de boosters ?'),
@@ -122,62 +119,99 @@ function showGame(my) {
       h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
   }
 
-  let packs = [], pi = 0;
-  async function start() {
-    main.replaceChildren(spinner());
-    let pool; try { pool = await gamePool(defSel); } catch (e) { if (alive()) { main.replaceChildren(h('div', { class: 'note bad' }, 'Impossible de charger les cartes : vérifiez votre connexion.'), h('button', { class: 'btn', type: 'button', onclick: setup }, 'Retour')); } return; }
-    if (!alive()) return;
-    packs = Array.from({ length: count }, () => drawPack(defSel, pool)); pi = 0;
-    for (const p of packs) for (const e of p) if (e.c) { const im = new Image(); im.src = imgHigh(e.c); }      // images préchargées pendant l'animation
-    sealed();
-  }
-
-  // booster fermé : un toucher pour le déchirer
+  let packs = [];      // [{ cards: [...], art, opened }]
   const artCache = {};
   const artFor = async (d) => {      // visuels de boosters présents dans images/boosters (ceux qui n'existent pas sont ignorés)
     if (!artCache[d.id]) artCache[d.id] = Promise.all(d.packs.map((u) => new Promise((res) => { const im = new Image(); im.onload = () => res({ u, w: im.naturalWidth, h: im.naturalHeight }); im.onerror = () => res(null); im.src = u; }))).then((a) => a.filter(Boolean));
     return artCache[d.id];
   };
-  async function sealed() {
-    const d = defSel, arts = await artFor(d); if (!alive()) return;
-    const ch = artSel[d.id], art = arts.length ? (ch !== undefined && arts[ch] ? arts[ch] : arts[Math.floor(Math.random() * arts.length)]) : null;
-    const pack = art
-      ? h('button', { type: 'button', class: 'gpack gpi', 'aria-label': 'Ouvrir le booster', style: `--img:url("${art.u}");--ar:${art.w} / ${art.h}` }, h('span', { class: 'gpi-body' }), h('span', { class: 'gpi-top' }), h('span', { class: 'gp-shine' }))
-      : h('button', { type: 'button', class: 'gpack', 'aria-label': 'Ouvrir le booster', style: `--c1:${d.tint[0]};--c2:${d.tint[1]}` },
-        h('span', { class: 'gp-top' }), h('span', { class: 'gp-body' }, h('img', { src: d.logo, alt: '', class: 'gp-logo' }), h('b', {}, 'BOOSTER'), h('small', {}, d.cards + (d.extra || '') + ' cartes')), h('span', { class: 'gp-shine' }));
-    pack.addEventListener('click', () => { if (pack.classList.contains('tear')) return; pack.classList.add('tear'); setTimeout(() => { if (alive()) reveal(); }, 900); });
-    main.replaceChildren(h('p', { class: 'gcount' }, `Booster ${pi + 1} / ${packs.length}`), h('div', { class: 'gstage seal' }, pack), h('p', { class: 'lb-help gtip' }, 'Touche le booster pour l’ouvrir'));
+  async function start() {
+    main.replaceChildren(spinner());
+    let pool, arts; try { pool = await gamePool(defSel); arts = await artFor(defSel); } catch (e) { if (alive()) { main.replaceChildren(h('div', { class: 'note bad' }, 'Impossible de charger les cartes : vérifiez votre connexion.'), h('button', { class: 'btn', type: 'button', onclick: setup }, 'Retour')); } return; }
+    if (!alive()) return;
+    const ch = artSel[defSel.id];
+    packs = Array.from({ length: count }, () => ({ cards: drawPack(defSel, pool), art: arts.length ? (ch !== undefined && arts[ch] ? arts[ch] : arts[Math.floor(Math.random() * arts.length)]) : null, opened: false }));
+    for (const p of packs) for (const e of p.cards) { const im = new Image(); im.src = imgHigh(e.c); }      // images préchargées pendant l'animation
+    packsScreen();
   }
 
-  // cartes retournées une par une
-  function reveal() {
-    const pack = packs[pi], n = pack.length; let k = 0, flipped = false;
+  // carrousel de boosters : on fait défiler, on choisit, puis on trace un trait brillant sur la ligne du haut pour le déchirer
+  function packsScreen(focus) {
+    const d = defSel, n = packs.length;
+    let cur = focus !== undefined ? focus : Math.max(0, packs.findIndex((p) => !p.opened));
+    const info = h('p', { class: 'gcount' }), tip = h('p', { class: 'lb-help gtip' });
+    const items = packs.map((p, i) => {
+      const body = p.art
+        ? [h('span', { class: 'gpi-body' }), h('span', { class: 'gpi-top' })]
+        : [h('span', { class: 'gp-top' }), h('span', { class: 'gp-body' }, h('img', { src: d.logo, alt: '', class: 'gp-logo' }), h('b', {}, 'BOOSTER'), h('small', {}, d.cards + ' cartes'))];
+      const trail = h('i', { class: 'gtl-trail' });
+      const tear = h('div', { class: 'gtear', role: 'slider', 'aria-label': 'Glisse le doigt sur le trait pour déchirer le booster' }, h('i', { class: 'gtl-glint' }), trail);
+      const el = h('div', { class: 'gpack gcar' + (p.art ? ' gpi' : ''), style: p.art ? `--img:url("${p.art.u}");--ar:${p.art.w} / ${p.art.h};--r:${(p.art.h / p.art.w).toFixed(4)}` : `--c1:${d.tint[0]};--c2:${d.tint[1]};--r:1.733` }, ...body, h('span', { class: 'gp-shine' }), tear, h('b', { class: 'gopened' }, '✓ ouvert'));
+      const item = h('div', { class: 'gpc-item', role: 'listitem' }, el);
+      let drag = null;
+      const reset = () => { el.style.setProperty('--p', 0); trail.style.width = '0'; drag = null; };
+      tear.addEventListener('pointerdown', (ev) => { if (i !== cur || p.opened || el.classList.contains('tear')) return; try { tear.setPointerCapture(ev.pointerId); } catch { /* ignoré */ } drag = { last: ev.clientX, dist: 0, w: tear.getBoundingClientRect().width }; ev.preventDefault(); });
+      tear.addEventListener('pointermove', (ev) => {
+        if (!drag) return; drag.dist += Math.abs(ev.clientX - drag.last); drag.last = ev.clientX;
+        const pr = Math.min(1, drag.dist / (drag.w * 0.85)); el.style.setProperty('--p', pr.toFixed(3)); trail.style.width = (pr * 100).toFixed(1) + '%';
+        if (pr >= 1) { drag = null; rip(i); }
+      });
+      const end = () => { if (drag) reset(); };
+      tear.addEventListener('pointerup', end); tear.addEventListener('pointercancel', end);
+      el.addEventListener('click', (ev) => { if (p.opened && !ev.target.closest('.gtear')) browse(p); else if (i !== cur) goTo(i); });
+      return { item, el, p };
+    });
+    const track = h('div', { class: 'gpc-track', role: 'list' }, items.map((x) => x.item));
+    const pitch = () => (items.length > 1 ? items[1].item.offsetLeft - items[0].item.offsetLeft : (items[0].item.offsetWidth || 1));
+    const goTo = (i) => track.scrollTo({ left: i * pitch(), behavior: 'smooth' });
+    const paint = () => {
+      const pos = track.scrollLeft / (pitch() || 1); cur = Math.max(0, Math.min(n - 1, Math.round(pos) || 0));
+      items.forEach((x, i) => { const dd = Math.abs(i - pos), sc = Math.max(0.62, 1 - 0.3 * Math.min(dd, 1.4)); x.item.style.transform = `scale(${sc.toFixed(3)})`; x.item.style.opacity = String(Math.max(0.35, 1 - 0.45 * Math.min(dd, 1.4)).toFixed(2)); x.el.classList.toggle('sel', i === cur); x.el.classList.toggle('opened', x.p.opened); });
+      const op = packs.filter((x) => x.opened).length;
+      info.textContent = `Booster ${cur + 1} / ${n}${packs[cur].opened ? ' · ouvert' : ''}${n > 1 ? ` — ${op} ouvert${op > 1 ? 's' : ''}` : ''}`;
+      tip.textContent = packs[cur].opened ? 'Touche le booster pour revoir ses cartes' : 'Trace un trait brillant sur la ligne du haut pour le déchirer';
+      sumBtn.hidden = !op; openBtn2.hidden = packs[cur].opened;
+    };
+    function rip(i) {
+      const x = items[i]; x.el.classList.add('tear'); try { navigator.vibrate && navigator.vibrate(25); } catch { /* ignoré */ }
+      setTimeout(() => { if (alive()) { x.p.opened = true; reveal(i); } }, 900);
+    }
+    const openBtn2 = h('button', { class: 'btn sec', type: 'button', onclick: () => { if (!packs[cur].opened) rip(cur); } }, 'Ouvrir sans glisser');
+    const sumBtn = h('button', { class: 'btn', type: 'button', hidden: true, onclick: summary }, '📊 Voir le résumé');
+    main.replaceChildren(info, track, tip, h('div', { class: 'gacts' }, sumBtn, openBtn2, h('button', { class: 'btn sec', type: 'button', onclick: setup }, 'Changer de série')));
+    track.addEventListener('scroll', () => requestAnimationFrame(paint), { passive: true });
+    requestAnimationFrame(() => { track.scrollLeft = cur * pitch(); paint(); });
+  }
+
+  // cartes qui sortent, retournées une par une
+  function reveal(pi) {
+    const pk = packs[pi], pack = pk.cards, n = pack.length; let k = 0, flipped = false;
     const counter = h('p', { class: 'gcount' });
     const stage = h('div', { class: 'gstage deck' });
     const strip = h('div', { class: 'gstrip', 'aria-label': 'Cartes déjà révélées' });
-    const nextBtn = h('button', { class: 'btn', type: 'button', hidden: true }, '');
+    const nextBtn = h('button', { class: 'btn', type: 'button', hidden: true }, ''), carBtn = h('button', { class: 'btn sec', type: 'button', hidden: true, onclick: () => browse(pk) }, '🎠 Voir les cartes en carrousel');
     const skipBtn = h('button', { class: 'btn sec', type: 'button', onclick: () => { while (k < n) { addThumb(k); k++; } stage.replaceChildren(); counter.textContent = `Booster ${pi + 1} / ${packs.length} · terminé`; done(); } }, '⏭ Tout révéler');
     const tip = h('p', { class: 'lb-help gtip' }, '');
     function addThumb(i) {
-      const e = pack[i]; if (e.energy) { strip.append(h('div', { class: 'gthumb energy', title: 'Énergie' }, '⚡')); return; }
-      const t = h('button', { type: 'button', class: 'gthumb t-' + rarityTier(e.rar), title: `${e.c.name} · ${gameLabel(defSel, e.rar)}`, onclick: () => zoomCard(e) }, h('img', { src: imgLow(e.c), alt: e.c.name }));
-      strip.append(t);
+      const e = pack[i];
+      strip.append(h('button', { type: 'button', class: 'gthumb t-' + rarityTier(e.rar) + (e.reverse ? ' rv' : ''), title: `${e.c.name} · ${gameLabel(defSel, e.rar)}`, onclick: () => zoomCard(e) }, h('img', { src: imgLow(e.c), alt: e.c.name })));
     }
+    const sparkles = (e) => {      // petits scintillements : reverse (plus nombreux) et simple Rare
+      const reverse = !!e.reverse; if (!reverse && e.rar !== 'Rare') return null;
+      return h('i', { class: 'gspark' + (reverse ? ' rev' : '') }, Array.from({ length: reverse ? 20 : 11 }, () => h('b', { style: `left:${(Math.random() * 92 + 2).toFixed(1)}%;top:${(Math.random() * 92 + 2).toFixed(1)}%;--d:${(Math.random() * 2.6).toFixed(2)}s;--s:${(7 + Math.random() * 10).toFixed(0)}px` })));
+    };
     function showCard() {
       const e = pack[k], tier = rarityTier(e.rar); flipped = false;
       counter.textContent = `Booster ${pi + 1} / ${packs.length} · carte ${k + 1} / ${n}`;
       tip.textContent = 'Touche la carte pour la retourner';
-      const front = e.energy
-        ? h('div', { class: 'gface front genergy' }, h('span', {}, '⚡'), h('b', {}, 'Énergie'), h('small', {}, 'de base'))
-        : h('div', { class: 'gface front' }, h('img', { src: imgHigh(e.c), alt: e.c.name, onerror: (ev) => { ev.target.replaceWith(h('div', { class: 'gph' }, e.c.name)); } }));
-      const flip = h('div', { class: 'gflip t-' + (e.energy ? 'energie' : tier) + (e.reverse ? ' reverse' : '') }, h('div', { class: 'gface back' }, h('img', { src: 'icons/icon-192.png', alt: '' })), front, h('i', { class: 'gglow' }));
-      const btn = h('button', { type: 'button', class: 'gcardbtn', 'aria-label': 'Retourner la carte' }, flip);
+      const front = h('div', { class: 'gface front' }, h('img', { src: imgHigh(e.c), alt: e.c.name, onerror: (ev) => { ev.target.replaceWith(h('div', { class: 'gph' }, e.c.name)); } }), sparkles(e));
+      const flip = h('div', { class: 'gflip t-' + tier + (e.reverse ? ' reverse' : '') }, h('div', { class: 'gface back' }, h('img', { src: 'icons/icon-192.png', alt: '' })), front, h('i', { class: 'gglow' }));
+      const btn = h('button', { type: 'button', class: 'gcardbtn' + (k < n - 1 ? ' pile' : ''), 'aria-label': 'Retourner la carte' }, flip);
       btn.addEventListener('click', () => {
         if (!flipped) {
           flipped = true; flip.classList.add('flipped');
-          const lab = e.energy ? 'Énergie' : `${e.c.name}${e.reverse ? ' (reverse)' : ''} · ${gameLabel(defSel, e.rar)}`;
-          tip.textContent = lab + (k < n - 1 ? ' — touche pour continuer' : '');
-          if (!e.energy && (['ultra', 'secrete', 'promo'].includes(tier) || (tier === 'holo' && e.rar !== 'Pikachu Rare'))) { flip.classList.add('wow'); try { navigator.vibrate && navigator.vibrate(tier === 'secrete' ? [40, 30, 80] : 30); } catch { /* ignoré */ } }
+          tip.textContent = `${e.c.name}${e.reverse ? ' (reverse)' : ''} · ${gameLabel(defSel, e.rar)}` + (k < n - 1 ? ' — touche pour continuer' : '');
+          if (['ultra', 'secrete', 'promo'].includes(tier) || (tier === 'holo' && e.rar !== 'Pikachu Rare')) { flip.classList.add('wow'); try { navigator.vibrate && navigator.vibrate(tier === 'secrete' ? [40, 30, 80] : 30); } catch { /* ignoré */ } }
           if (k === n - 1) setTimeout(done, 600);
         } else if (k < n - 1) { addThumb(k); k++; stage.replaceChildren(); showCard(); }
       });
@@ -185,13 +219,13 @@ function showGame(my) {
     }
     function done() {
       skipBtn.hidden = true;
-      if (!strip.querySelector('.gthumb:last-child') || strip.children.length < n) { for (let i = strip.children.length; i < n; i++) addThumb(i); }
-      const last = pi >= packs.length - 1;
-      nextBtn.textContent = last ? '📊 Voir le résumé' : `🎁 Booster suivant (${pi + 2} / ${packs.length})`;
-      nextBtn.onclick = () => { if (last) summary(); else { pi++; sealed(); } };
-      nextBtn.hidden = false;
+      for (let i = strip.children.length; i < n; i++) addThumb(i);
+      const left = packs.filter((p) => !p.opened).length;
+      nextBtn.textContent = left ? `📦 Retour aux boosters (${left} à ouvrir)` : '📊 Voir le résumé';
+      nextBtn.onclick = () => { if (left) packsScreen(packs.findIndex((p) => !p.opened)); else summary(); };
+      nextBtn.hidden = false; carBtn.hidden = false;
     }
-    main.replaceChildren(counter, stage, tip, strip, h('div', { class: 'gacts' }, nextBtn, skipBtn));
+    main.replaceChildren(counter, stage, tip, strip, h('div', { class: 'gacts' }, nextBtn, carBtn, skipBtn));
     showCard();
   }
 
@@ -200,18 +234,30 @@ function showGame(my) {
     document.body.append(ov);
   }
 
+  // cartes d'un booster ouvert, en carrousel
+  function browse(pk) {
+    const items = pk.cards.map((e) => ({ card: e.c, name: e.c.name, sub: gameLabel(defSel, e.rar) + (e.reverse ? ' · reverse' : ''), price: null }));
+    const ov = h('div', { class: 'overlay gcf', role: 'dialog', 'aria-modal': 'true' },
+      buildCoverflow('Cartes du booster', items, (i) => zoomCard(pk.cards[i])),
+      h('button', { class: 'btn sec gcf-close', type: 'button', onclick: () => ov.remove() }, 'Fermer'));
+    document.body.append(ov);
+  }
+
+  // résumé : seulement les hits de la série
   function summary() {
-    const hits = packs.flat().filter((e) => e.c && !['commune', 'peu', 'aucune'].includes(rarityTier(e.rar)));
+    const hitSet = new Set(defSel.hits), hits = packs.flatMap((p) => p.cards).filter((e) => hitSet.has(e.rar));
     const cnt = {}; for (const e of hits) { const l = gameLabel(defSel, e.rar); cnt[l] = (cnt[l] || 0) + 1; }
-    const best = hits.slice().sort((a, b) => rarityRank(b.rar) - rarityRank(a.rar))[0] || null;
-    const rows = Object.entries(cnt).sort((a, b) => rarityRank(b[0] === 'EX' ? 'Double rare' : b[0]) - rarityRank(a[0] === 'EX' ? 'Double rare' : a[0]));
+    const nonPk = hits.filter((e) => e.rar !== 'Pikachu Rare'), pool = nonPk.length ? nonPk : hits;
+    const best = pool.slice().sort((a, b) => rarityRank(b.rar) - rarityRank(a.rar))[0] || null;
+    const sortKey = (r) => rarityRank(r === 'EX' ? 'Double rare' : r);
+    const rows = Object.entries(cnt).sort((a, b) => sortKey(b[0]) - sortKey(a[0]));
     main.replaceChildren(
       h('h2', { class: 'gh' }, `${plural(packs.length, 'booster ouvert', 'boosters ouverts')} · ${defSel.name}`),
-      best ? h('div', { class: 'gbest' }, h('p', { class: 'lb-help' }, 'Meilleure carte'), h('button', { type: 'button', class: 'gthumb big t-' + rarityTier(best.rar), onclick: () => zoomCard(best) }, h('img', { src: imgHigh(best.c), alt: best.c.name })),
-        h('b', {}, best.c.name), h('span', {}, gameLabel(defSel, best.rar))) : h('p', { class: 'lb-help' }, 'Aucune carte rare cette fois…'),
+      best ? h('div', { class: 'gbest' }, h('p', { class: 'lb-help' }, 'Meilleur hit'), h('button', { type: 'button', class: 'gthumb big t-' + rarityTier(best.rar), onclick: () => zoomCard(best) }, h('img', { src: imgHigh(best.c), alt: best.c.name })),
+        h('b', {}, best.c.name), h('span', {}, gameLabel(defSel, best.rar))) : h('p', { class: 'lb-help' }, 'Aucun hit cette fois…'),
       rows.length ? h('div', { class: 'orows' }, rows.map(([r, c]) => h('div', { class: 'orow' }, h('div', { class: 'orow-l' }, h('span', { class: 'rbi' }, rarityIcon(r === 'EX' ? 'Double rare' : r, 20)), h('span', { class: 'rn' }, r), h('span', { class: 'rc' }, h('b', {}, String(c))))))) : null,
-      hits.length ? h('div', { class: 'gstrip wrap' }, hits.map((e) => h('button', { type: 'button', class: 'gthumb t-' + rarityTier(e.rar), title: e.c.name, onclick: () => zoomCard(e) }, h('img', { src: imgLow(e.c), alt: e.c.name })))) : null,
-      h('div', { class: 'gacts' }, h('button', { class: 'btn', type: 'button', onclick: start }, '🔁 Rouvrir les mêmes'), h('button', { class: 'btn sec', type: 'button', onclick: setup }, 'Changer de série')));
+      hits.length ? h('div', { class: 'gstrip wrap' }, hits.slice().sort((a, b) => rarityRank(b.rar) - rarityRank(a.rar)).map((e) => h('button', { type: 'button', class: 'gthumb t-' + rarityTier(e.rar), title: e.c.name, onclick: () => zoomCard(e) }, h('img', { src: imgLow(e.c), alt: e.c.name })))) : null,
+      h('div', { class: 'gacts' }, h('button', { class: 'btn', type: 'button', onclick: start }, '🔁 Rouvrir les mêmes'), h('button', { class: 'btn sec', type: 'button', onclick: () => packsScreen(0) }, 'Revoir les boosters'), h('button', { class: 'btn sec', type: 'button', onclick: setup }, 'Changer de série')));
   }
 
   setup();

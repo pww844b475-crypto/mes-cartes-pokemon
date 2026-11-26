@@ -292,3 +292,10 @@ Dock → **Amis & Jeu** → **Jeu** (`#jeu`, code dans `game.js`, chargé avant 
 **v114** : les 4 vrais visuels de booster de Règne Delta (fournis par l'utilisateur) sont dans `images/boosters/me06-1.webp` à `-4.webp` : fond retiré, rognés, 1 000 px de haut ; la déchirure se fait au-dessus du logo. Visuels du 30ᵉ Anniversaire : à fournir (`30th-1.webp`…).
 
 **v115** : Jeu, 30ᵉ Anniversaire : ordre réel d'un booster (« 5 cartes supplémentaires » + énergie = 6) : 2 communes, 3ᵉ carte (Illustration rare / Collection Classique, sinon commune), 4ᵉ carte (EX / Illustration spéciale rare / RGB / Futuristic, sinon Rare), 5ᵉ Pikachu Rare garanti, 6ᵉ énergie. Visuel du booster fourni : `images/boosters/30th-1.webp`.
+
+## Jeu v116 : carrousel de boosters, déchirure au doigt, plus d'énergie
+- **Plus d'énergie** dans les boosters : 30ᵉ Anniversaire = 5 cartes, Règne Delta = 10 cartes.
+- **Carrousel de boosters** : avec N boosters, ils défilent comme l'éventail ; on choisit celui à ouvrir. Un trait brillant marque la ligne du haut : on y passe le doigt (aller-retour possible) pour le déchirer, le haut se soulève pendant le geste. Bouton « Ouvrir sans glisser » en secours. Les boosters ouverts sont marqués ✓ et se rouvrent d'un toucher.
+- Les cartes sortent en pile, retournées, puis se révèlent une par une ; après le dernier : « Voir les cartes en carrousel » (éventail des cartes du booster), retour aux boosters, résumé.
+- **Scintillements** : petites étoiles sur les cartes reverse (plus nombreuses, avec un reflet qui balaie la carte) et sur les simples Rare.
+- **Résumé : uniquement les hits** : 30ᵉ = Pikachu Rare, Illustration rare, Illustration spéciale rare, RGB, Futuristic, Collection Classique, EX ; Règne Delta = Double rare, Ultra Rare, Illustration rare, Illustration spéciale rare, Méga Hyper Rare.
