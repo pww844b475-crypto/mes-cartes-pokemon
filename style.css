@@ -868,3 +868,17 @@ main.game { padding-top: 12px; text-align: center; }
 .gz-in { text-align: center; color: #fff; padding: 12px; } .gz-in img { max-width: min(90vw, 420px); max-height: 74vh; border-radius: 14px; box-shadow: 0 14px 40px rgba(0, 0, 0, .6); }
 @media (min-width: 700px) { .gset-logo { height: 70px; } .gthumb { width: 84px; } }
 @media (prefers-reduced-motion: reduce) { .gpack, .gpack.tear, .gp-shine { animation: none; } .gflip { transition: none; } }
+
+/* booster avec la vraie image (images/boosters) : le haut se déchire */
+.gpack.gpi { aspect-ratio: var(--ar, 3 / 5.2); width: min(62vw, 250px); }
+.gpi-body, .gpi-top { position: absolute; inset: 0; background: var(--img) center / 100% 100% no-repeat; }
+.gpi-body { clip-path: polygon(0% 5.0%, 6% 6.4%, 12% 5.0%, 18% 6.4%, 25% 5.0%, 31% 6.4%, 38% 5.0%, 44% 6.4%, 50% 5.0%, 56% 6.4%, 63% 5.0%, 69% 6.4%, 75% 5.0%, 81% 6.4%, 88% 5.0%, 94% 6.4%, 100% 5.0%, 100% 100%, 0 100%); }
+.gpi-top { clip-path: polygon(0 0, 100% 0, 100% 5.0%, 94% 6.4%, 88% 5.0%, 81% 6.4%, 75% 5.0%, 69% 6.4%, 63% 5.0%, 56% 6.4%, 50% 5.0%, 44% 6.4%, 38% 5.0%, 31% 6.4%, 25% 5.0%, 18% 6.4%, 12% 5.0%, 6% 6.4%, 0% 5.0%); transform-origin: left bottom; }
+.gpack.gpi.tear .gpi-top { animation: gp-rip .8s ease-in .25s forwards; }
+.gpack.gpi.tear .gpi-body { animation: gp-fade .5s ease-in .55s forwards; }
+
+.gart { margin: 4px 0 12px; }
+.gart-list { display: flex; gap: 10px; overflow-x: auto; justify-content: center; padding: 4px 2px 8px; scrollbar-width: none; }
+.gart-b { flex: none; width: 74px; min-height: 104px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); padding: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 26px; color: var(--text); }
+.gart-b img { width: 100%; height: 100%; object-fit: contain; display: block; } .gart-b small { font-size: 11px; }
+.gart-b.on { border-color: #ffcf3a; box-shadow: 0 0 0 3px rgba(255, 207, 58, .35); }
