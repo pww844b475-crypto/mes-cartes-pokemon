@@ -170,10 +170,12 @@ function showGame(my) {
   const alive = () => my === tok;
   let defSel = GAME_SETS[0], count = 1; const artSel = {};      // visuel de booster choisi par série (absent = au hasard)
 
+  const maxCount = () => (testMode() ? 500 : 36);      // mode test : jusqu'à 500 boosters d'un coup (à retirer après les essais)
   function setup() {
+    imm(false);
     const cardsEl = GAME_SETS.map((d) => h('button', { type: 'button', class: 'gset' + (d === defSel ? ' on' : ''), 'aria-pressed': String(d === defSel), onclick: () => { defSel = d; setup(); } },
       h('img', { src: d.logo, alt: '', class: 'gset-logo', width: 200, height: 80 }), h('b', {}, d.name)));      // la composition du booster ne s'affiche plus sous la série
-    const inp = h('input', { class: 'qin bo-in', type: 'number', inputmode: 'numeric', min: '1', max: '36', value: String(count), 'aria-label': 'Nombre de boosters à ouvrir' });
+    const inp = h('input', { class: 'qin bo-in', type: 'number', inputmode: 'numeric', min: '1', max: String(maxCount()), value: String(count), 'aria-label': 'Nombre de boosters à ouvrir' });
     syncCardRewards();
     const credits = gameState().credits;
     const tm = testMode(), pend = pendingCardRewards();
@@ -184,7 +186,7 @@ function showGame(my) {
       const kept = testMode() ? count : Math.min(count, credits), free = count - kept;
       openBtn.textContent = `🎁 Ouvrir ${count > 1 ? `les ${count} boosters` : 'le booster'}` + (free ? ` (${free} pour le plaisir)` : '');
     };
-    const setN = (v) => { count = Math.max(1, Math.min(36, Number.isFinite(v) ? v : 1)); inp.value = String(count); label(); };
+    const setN = (v) => { count = Math.max(1, Math.min(maxCount(), Number.isFinite(v) ? v : 1)); inp.value = String(count); label(); };
     label();
     inp.addEventListener('change', () => setN(parseInt(inp.value, 10)));
     const artRow = h('div', { class: 'gart', hidden: true });
@@ -256,7 +258,7 @@ function showGame(my) {
     const ch = artSel[defSel.id];
     const credits = gameState().credits;
     packs = Array.from({ length: count }, (_, i) => ({ keep: testMode() || i < credits, committed: false, cards: drawPack(defSel, pool), art: arts.length ? (ch !== undefined && arts[ch] ? arts[ch] : arts[Math.floor(Math.random() * arts.length)]) : null, opened: false }));
-    for (const p of packs) for (const e of p.cards) { const im = new Image(); im.src = imgHigh(e.c); }      // images préchargées pendant l'animation
+    for (const p of packs.slice(0, 12)) for (const e of p.cards) { const im = new Image(); im.src = imgHigh(e.c); }      // images préchargées pendant l'animation (les 12 premiers boosters)
     packsScreen();
   }
 
@@ -275,57 +277,97 @@ function showGame(my) {
     statsSave(st);
   }
 
-  // carrousel de boosters : on fait défiler, on touche celui qu'on veut (il se fige), puis on trace un trait brillant sur la ligne du haut pour le déchirer
+  // ---------- parcours d'ouverture, comme dans la vidéo : carrousel 3D → booster choisi en grand → trait lumineux → cartes une à une → résumé ----------
+  const imm = (on) => { main.classList.toggle('imm', !!on); main.classList.remove('holding'); };      // décor clair de l'ouverture
+  const raritySpot = (e) => h('div', { class: 'grar' }, h('span', { class: 'grar-ic' }, rarityIcon(e.rar, 30)), h('span', { class: 'grar-t' }, [gameLabel(defSel, e.rar), e.reverse ? 'reverse' : null].filter(Boolean).join(' · ')), e.isNew ? h('b', { class: 'grar-new' }, '✨ nouvelle !') : null);
   function packsScreen(focus) {
-    const d = defSel, n = packs.length;
-    let cur = focus !== undefined ? focus : Math.max(0, packs.findIndex((p) => !p.opened)), held = null;
-    const info = h('p', { class: 'gcount' }), tip = h('p', { class: 'lb-help gtip' });
+    imm(true);
+    const d = defSel, n = packs.length, P = 1300;      // P : distance de perspective
+    const stageW = Math.min(main.clientWidth || window.innerWidth, 560), IW = Math.round(Math.min(stageW * 0.42, 170)), RATIO = (packs[0].art ? packs[0].art.h / packs[0].art.w : 1.733), IH = Math.round(IW * RATIO);
+    const N = Math.max(n, 7), step = 360 / N, R = Math.round((IW / 2 + 16) / Math.tan(Math.PI / N));      // anneau : les boosters sont posés en cercle
+    const wrap = n >= 7;      // moins de 7 boosters : pas de tour complet
+    let cur = focus !== undefined ? focus : Math.max(0, packs.findIndex((p) => !p.opened)), held = null, tween = 0;
+    const call = h('p', { class: 'gcall' }), info = h('p', { class: 'gcount' });
     const items = packs.map((p, i) => {
       const body = p.art
         ? [h('span', { class: 'gpi-body' }), h('span', { class: 'gpi-top' })]
         : [h('span', { class: 'gp-top' }), h('span', { class: 'gp-body' }, h('img', { src: d.logo, alt: '', class: 'gp-logo' }), h('b', {}, 'BOOSTER'), h('small', {}, d.cards + ' cartes'))];
+      const out = h('div', { class: 'gout' }, h('img', { src: imgHigh(p.cards[0].c), alt: '' }));      // la 1re carte qui sort du booster déchiré
       const trail = h('i', { class: 'gtl-trail' });
-      const tear = h('div', { class: 'gtear', role: 'slider', 'aria-label': 'Glisse le doigt sur le trait pour déchirer le booster' }, h('i', { class: 'gtl-glint' }), trail);
-      const el = h('div', { class: 'gpack gcar' + (p.art ? ' gpi' : ''), style: p.art ? `--img:url("${p.art.u}");--ar:${p.art.w} / ${p.art.h};--r:${(p.art.h / p.art.w).toFixed(4)}` : `--c1:${d.tint[0]};--c2:${d.tint[1]};--r:1.733` }, ...body, h('span', { class: 'gp-shine' }), tear, h('b', { class: 'gopened' }, '✓ ouvert'), p.keep ? null : h('i', { class: 'gfree' }, 'pour le plaisir'));
-      const item = h('div', { class: 'gpc-item', role: 'listitem' }, el);
-      let drag = null;
-      const reset = () => { el.style.setProperty('--p', 0); trail.style.width = '0'; drag = null; };
-      tear.addEventListener('pointerdown', (ev) => { if (held !== i || p.opened || el.classList.contains('tear')) return; try { tear.setPointerCapture(ev.pointerId); } catch { /* ignoré */ } drag = { last: ev.clientX, dist: 0, w: tear.getBoundingClientRect().width }; ev.preventDefault(); });
+      const tear = h('div', { class: 'gtear', role: 'slider', 'aria-label': 'Glisse le doigt sur la ligne lumineuse pour déchirer le booster' }, h('i', { class: 'gtl-glint' }), trail);
+      const el = h('div', { class: 'gpack gcar' + (p.art ? ' gpi' : ''), style: p.art ? `--img:url("${p.art.u}");--ar:${p.art.w} / ${p.art.h};--r:${RATIO.toFixed(4)};--iw:${IW}px` : `--c1:${d.tint[0]};--c2:${d.tint[1]};--r:1.733;--iw:${IW}px` }, out, ...body, h('span', { class: 'gp-shine' }), tear, h('b', { class: 'gopened' }, '✓ ouvert'), p.keep ? null : h('i', { class: 'gfree' }, 'pour le plaisir'));
+      const item = h('div', { class: 'gri', role: 'listitem', 'data-i': String(i), style: `width:${IW}px;margin-left:${-IW / 2}px;transform:rotateY(${(i * step).toFixed(3)}deg) translateZ(${R}px)` }, el);
+      // trait de déchirure : un balayage horizontal sur la ligne lumineuse (n'importe quel sens, trait approximatif accepté, la progression se garde entre deux essais)
+      let drag = null, prog = 0;
+      tear.addEventListener('pointerdown', (ev) => { if (held !== i || p.opened || el.classList.contains('tear')) return; try { tear.setPointerCapture(ev.pointerId); } catch { /* ignoré */ } drag = { last: ev.clientX, w: tear.getBoundingClientRect().width }; ev.preventDefault(); ev.stopPropagation(); });
       tear.addEventListener('pointermove', (ev) => {
-        if (!drag) return; drag.dist += Math.abs(ev.clientX - drag.last); drag.last = ev.clientX;
-        const pr = Math.min(1, drag.dist / (drag.w * 0.85)); el.style.setProperty('--p', pr.toFixed(3)); trail.style.width = (pr * 100).toFixed(1) + '%';
+        if (!drag) return; prog += Math.abs(ev.clientX - drag.last) / (drag.w * 0.5); drag.last = ev.clientX;
+        const pr = Math.min(1, prog); el.style.setProperty('--p', pr.toFixed(3)); trail.style.width = (pr * 100).toFixed(1) + '%';
         if (pr >= 1) { drag = null; rip(i); }
       });
-      const end = () => { if (drag) reset(); };
+      const end = () => { drag = null; };
       tear.addEventListener('pointerup', end); tear.addEventListener('pointercancel', end);
-      el.addEventListener('click', (ev) => {
-        if (ev.target.closest('.gtear')) return;
-        if (p.opened) { browse(p); return; }
-        if (held === null) hold(i);
-      });
-      return { item, el, p };
+      return { item, el, p, i };
     });
-    const track = h('div', { class: 'gpc-track', role: 'list' }, items.map((x) => x.item));
-    const pitch = () => (items.length > 1 ? items[1].item.offsetLeft - items[0].item.offsetLeft : (items[0].item.offsetWidth || 1));
-    const goTo = (i, smooth = true) => track.scrollTo({ left: i * pitch(), behavior: smooth ? 'smooth' : 'auto' });
-    function hold(i) {      // le booster choisi se fige au centre, les autres s'effacent : on peut tracer le trait
-      held = i; cur = i; goTo(i); track.classList.add('locked');
-      items.forEach((x, j) => { x.item.classList.toggle('on', j === i); x.el.classList.toggle('held', j === i); });
-      paint(); releaseBtn.hidden = false;
-    }
-    function release() { held = null; track.classList.remove('locked'); items.forEach((x) => { x.item.classList.remove('on'); x.el.classList.remove('held'); x.el.style.setProperty('--p', 0); }); releaseBtn.hidden = true; paint(); }
-    const paint = () => {
-      const pos = track.scrollLeft / (pitch() || 1); if (held === null) cur = Math.max(0, Math.min(n - 1, Math.round(pos) || 0));
-      items.forEach((x, i) => { const dd = Math.abs(i - pos), sc = Math.max(0.62, 1 - 0.3 * Math.min(dd, 1.4)); x.item.style.transform = `scale(${sc.toFixed(3)})`; x.item.style.opacity = String(Math.max(0.35, 1 - 0.45 * Math.min(dd, 1.4)).toFixed(2)); x.el.classList.toggle('sel', i === cur); x.el.classList.toggle('opened', x.p.opened); });
-      const op = packs.filter((x) => x.opened).length, left = n - op;
-      info.textContent = `Booster ${cur + 1} / ${n}${packs[cur].opened ? ' · ouvert' : ''}${n > 1 ? ` — ${op} ouvert${op > 1 ? 's' : ''}` : ''}`;
-      tip.textContent = held !== null ? 'Trace un trait brillant sur la ligne du haut pour le déchirer' : packs[cur].opened ? 'Touche le booster pour revoir ses cartes' : 'Fais défiler, puis touche le booster que tu veux ouvrir';
+    const ring = h('div', { class: 'gring' }, items.map((x) => x.item));
+    const stage = h('div', { class: 'grs', style: `height:${IH + 90}px;--iw:${IW}px;perspective-origin:50% ${45 + IH / 2}px` }, ring);
+    ring.style.top = '45px';
+    const idxOf = (c) => ((Math.round(c) % n) + n) % n;
+    const place = () => {
+      ring.style.transform = `translateZ(${-R}px) rotateY(${(-cur * step).toFixed(3)}deg)`;
+      const f = held === null ? cur : Math.round(cur);
+      items.forEach((x) => {
+        let rel = x.i - f; if (wrap) { rel = ((rel % n) + n) % n; if (rel > n / 2) rel -= n; }
+        const far = Math.abs(rel) * step > 105; x.item.style.visibility = far ? 'hidden' : '';
+        x.item.style.opacity = held !== null ? (x.i === held ? '1' : '0') : String(Math.max(0.35, 1 - 0.13 * Math.abs(rel)).toFixed(2));
+        x.el.classList.toggle('sel', x.i === idxOf(f)); x.el.classList.toggle('opened', x.p.opened);
+      });
+      const op = packs.filter((q) => q.opened).length, left = n - op;
+      call.textContent = held !== null ? 'Fais glisser ton doigt sur la ligne lumineuse' : left ? 'Touchez un Booster à ouvrir !' : 'Tous les boosters sont ouverts';
+      info.textContent = n > 1 ? `Booster ${idxOf(cur) + 1} / ${n}${packs[idxOf(cur)].opened ? ' · ouvert' : ''}` : '';
       sumBtn.hidden = !op; openBtn2.hidden = held === null; allBtn.hidden = left < 2 || held !== null;
-      allBtn.textContent = `⚡ Ouvrir les ${left} boosters d’un coup`;
+      allBtn.textContent = `⏭ Ouvrir les ${left} boosters d’un coup`;
     };
+    function rotateTo(t, ms, done) {      // fait tourner l'anneau jusqu'à t (en nombre de boosters), avec une douce décélération
+      cancelAnimationFrame(tween); const c0 = cur, t0 = performance.now();
+      const tick = (now) => { const u = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - u, 3); cur = c0 + (t - c0) * e; place(); if (u < 1) tween = requestAnimationFrame(tick); else { cur = t; place(); if (done) done(); } };
+      tween = requestAnimationFrame(tick);
+    }
+    const nearest = (i) => { if (!wrap) return i; const base = Math.round(cur / n) * n; let t = base + i; if (t - cur > n / 2) t -= n; if (cur - t > n / 2) t += n; return t; };
+    function hold(i) {      // le booster choisi vient au centre et grossit, les autres s'effacent
+      held = i; ring.classList.remove('drag'); stage.classList.add('locked'); main.classList.add('holding');
+      rotateTo(nearest(i), 380, () => {
+        const k = Math.max(1, Math.min(1.6, (window.innerWidth * 0.8) / IW, (window.innerHeight - 350) / IH)), z = Math.round(P * (1 - 1 / k)), H = Math.round(IH * k + 90);
+        items[i].item.style.transition = 'transform .5s cubic-bezier(.2, 1, .3, 1)';
+        items[i].item.style.transform = `rotateY(${(i * step).toFixed(3)}deg) translateZ(${R + z}px)`;
+        items[i].el.classList.add('held'); stage.style.height = H + 'px'; ring.style.top = Math.round((H - IH) / 2) + 'px'; stage.style.perspectiveOrigin = `50% ${Math.round(H / 2)}px`; place();
+        try { scrollTo({ top: 0, behavior: 'smooth' }); } catch { /* ignoré */ }
+      });
+      releaseBtn.hidden = false; place();
+    }
+    function release() {
+      const i = held; held = null; stage.classList.remove('locked'); main.classList.remove('holding'); stage.style.height = IH + 90 + 'px'; ring.style.top = '45px'; stage.style.perspectiveOrigin = `50% ${45 + IH / 2}px`;
+      if (i !== null) { const it = items[i]; it.el.classList.remove('held'); it.el.style.setProperty('--p', 0); it.item.style.transform = `rotateY(${(i * step).toFixed(3)}deg) translateZ(${R}px)`; }
+      releaseBtn.hidden = true; place();
+    }
+    // glisser pour faire tourner ; un simple toucher choisit le booster touché
+    let gd = null;
+    stage.addEventListener('pointerdown', (ev) => { if (held !== null || ev.target.closest('.gtear')) return; cancelAnimationFrame(tween); gd = { x: ev.clientX, c: cur, t: performance.now(), moved: false, lx: ev.clientX, lt: performance.now(), v: 0, tgt: ev.target.closest('.gri') }; try { stage.setPointerCapture(ev.pointerId); } catch { /* ignoré */ } });
+    stage.addEventListener('pointermove', (ev) => {
+      if (!gd) return; const dx = ev.clientX - gd.x; if (Math.abs(dx) > 8) { gd.moved = true; ring.classList.add('drag'); }
+      if (!gd.moved) return;
+      let c = gd.c - dx / (IW * 0.85); if (!wrap) c = Math.max(-0.3, Math.min(n - 0.7, c)); cur = c;
+      const now = performance.now(); gd.v = (ev.clientX - gd.lx) / Math.max(1, now - gd.lt); gd.lx = ev.clientX; gd.lt = now; place();
+    });
+    const up = () => {
+      if (!gd) return; const g0 = gd; gd = null; ring.classList.remove('drag');
+      if (!g0.moved) { if (g0.tgt) { const i = Number(g0.tgt.dataset.i); if (packs[i].opened) bsum(i); else hold(i); } return; }
+      let t = Math.round(cur - g0.v * 350 / (IW * 0.85)); if (!wrap) t = Math.max(0, Math.min(n - 1, t)); rotateTo(t, 420);
+    };
+    stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
     function rip(i) {
       const x = items[i]; x.el.classList.add('tear'); x.item.append(h('i', { class: 'gpuff' })); try { navigator.vibrate && navigator.vibrate(25); } catch { /* ignoré */ }
-      commitPack(x.p); setTimeout(() => { if (alive()) { x.p.opened = true; reveal(i); } }, 900);
+      commitPack(x.p); setTimeout(() => { if (alive()) { x.p.opened = true; reveal(i); } }, 1750);      // le haut s'envole, la carte sort du booster, puis les cartes s'affichent
     }
     function openAll() {      // tous les boosters d'un coup : les cartes vedettes passent en plein écran l'une après l'autre, puis le résumé
       const specials = []; for (const p of packs) if (!p.opened) { p.opened = true; commitPack(p); for (const e of p.cards) if (SPECIAL.includes(e.rar)) specials.push(e); }
@@ -337,70 +379,85 @@ function showGame(my) {
     const openBtn2 = h('button', { class: 'btn sec', type: 'button', hidden: true, onclick: () => { if (held !== null && !packs[held].opened) rip(held); } }, 'Ouvrir sans glisser');
     const allBtn = h('button', { class: 'btn', type: 'button', onclick: openAll }, '');
     const sumBtn = h('button', { class: 'btn', type: 'button', hidden: true, onclick: summary }, '📊 Voir le résumé');
-    put(nav(), info, track, tip, h('div', { class: 'gacts' }, allBtn, sumBtn, openBtn2, releaseBtn, h('button', { class: 'btn sec', type: 'button', onclick: setup }, 'Changer de série')));
-    track.addEventListener('scroll', () => requestAnimationFrame(paint), { passive: true });
-    requestAnimationFrame(() => { goTo(cur, false); paint(); });
+    put(nav(), call, info, stage, h('div', { class: 'gacts' }, allBtn, sumBtn, openBtn2, releaseBtn));
+    requestAnimationFrame(() => { place(); });
   }
 
-  // cartes qui sortent, retournées une par une
+  // les cartes une à une : face visible, la suivante arrive de la droite par-dessus ; on touche ou on balaie ; « Maintenir » accélère
   function reveal(pi) {
-    const pk = packs[pi], pack = pk.cards, n = pack.length; let k = 0, flipped = false;
+    imm(true);
+    const pk = packs[pi], pack = pk.cards, n = pack.length; let k = 0, busy = false, fast = null;
     const counter = h('p', { class: 'gcount' });
     const stage = h('div', { class: 'gstage deck' });
-    const strip = h('div', { class: 'gstrip', 'aria-label': 'Cartes déjà révélées' });
-    const nextBtn = h('button', { class: 'btn', type: 'button', hidden: true }, ''), carBtn = h('button', { class: 'btn sec', type: 'button', hidden: true, onclick: () => browse(pk) }, '🎠 Voir les cartes en carrousel');
-    const skipBtn = h('button', { class: 'btn sec', type: 'button', onclick: () => { while (k < n) { addThumb(k); k++; } stage.replaceChildren(); counter.textContent = `Booster ${pi + 1} / ${packs.length} · terminé`; done(); } }, '⏭ Tout révéler');
-    const tip = h('p', { class: 'lb-help gtip' }, '');
-    function addThumb(i) {
-      const e = pack[i];
-      strip.append(h('button', { type: 'button', class: 'gthumb t-' + rarityTier(e.rar) + (e.reverse ? ' rv' : ''), title: `${e.c.name} · ${gameLabel(defSel, e.rar)}`, onclick: () => zoomCard(e) }, h('img', { src: imgLow(e.c), alt: e.c.name })));
-    }
+    const rarRow = h('div', { class: 'grar-wrap' });
     const sparkles = (e) => {      // petits scintillements : reverse (plus nombreux) et simple Rare
       const reverse = !!e.reverse; if (!reverse && e.rar !== 'Rare') return null;
       return h('i', { class: 'gspark' + (reverse ? ' rev' : '') }, Array.from({ length: reverse ? 20 : 11 }, () => h('b', { style: `left:${(Math.random() * 92 + 2).toFixed(1)}%;top:${(Math.random() * 92 + 2).toFixed(1)}%;--d:${(Math.random() * 2.6).toFixed(2)}s;--s:${(7 + Math.random() * 10).toFixed(0)}px` })));
     };
-    function showCard() {
-      const e = pack[k], tier = rarityTier(e.rar); flipped = false;
+    function applyFx(btn, face, e) {      // signature de rareté : animation plein écran (niveaux 5 à 7) ou sur la carte (2 à 4)
+      const tier = rarityTier(e.rar);
+      if (SPECIAL.includes(e.rar)) { face.classList.add('wow'); setTimeout(() => { if (alive()) showSpecial(e, null); }, 650); return; }
+      if (FX[e.rar]) {
+        const fx = FX[e.rar], lvl = LEVEL[e.rar] || 2; face.classList.add('wow', 'fx-' + fx.k);
+        const gf = h('i', { class: 'gfx fx-' + fx.k + ' lvl' + lvl }); btn.append(gf, h('b', { class: 'gbanner fx-' + fx.k }, fxLabel(defSel, e.rar)));
+        if (lvl >= 3) confetti(gf, lvl === 3 ? 10 : 28, 'burst');
+        try { navigator.vibrate && navigator.vibrate(fx.buzz); } catch { /* ignoré */ }
+      } else if (['ultra', 'secrete', 'promo'].includes(tier) || (tier === 'holo' && e.rar !== 'Pikachu Rare')) { face.classList.add('wow'); try { navigator.vibrate && navigator.vibrate(30); } catch { /* ignoré */ } }
+    }
+    function cardEl(i) {
+      const e = pack[i], tier = rarityTier(e.rar);
+      const face = h('div', { class: 'gcv t-' + tier + (e.reverse ? ' reverse' : '') }, h('img', { src: imgHigh(e.c), alt: e.c.name, draggable: 'false', onerror: (ev) => { ev.target.replaceWith(h('div', { class: 'gph' }, e.c.name)); } }), sparkles(e));
+      const btn = h('button', { type: 'button', class: 'gcardbtn' + (i < n - 1 ? ' pile' : ''), 'aria-label': 'Carte suivante' }, face);
+      { const left = n - i - 1, sh = []; for (let s = 1; s <= Math.min(left, 9); s++) sh.push(`${s * 2.6}px ${s * 2.6}px 0 ${s % 2 ? '#8da4d4' : '#a9bde6'}`); btn.style.setProperty('--stack', sh.join(',') || 'none'); }
+      return { btn, face, e };
+    }
+    function show(first) {
+      const c = cardEl(k); c.btn.classList.add(first ? 'enter-rise' : 'enter');
       counter.textContent = `Booster ${pi + 1} / ${packs.length} · carte ${k + 1} / ${n}`;
-      tip.textContent = 'Touche la carte pour la retourner';
-      const front = h('div', { class: 'gface front' }, h('img', { src: imgHigh(e.c), alt: e.c.name, onerror: (ev) => { ev.target.replaceWith(h('div', { class: 'gph' }, e.c.name)); } }), sparkles(e));
-      const flip = h('div', { class: 'gflip t-' + tier + (e.reverse ? ' reverse' : '') }, h('div', { class: 'gface back' }, h('img', { src: 'icons/icon-192.png', alt: '' })), front, h('i', { class: 'gglow' }));
-      const btn = h('button', { type: 'button', class: 'gcardbtn' + (k < n - 1 ? ' pile' : ''), 'aria-label': 'Retourner la carte' }, flip);
-      { const left = n - k - 1, sh = []; for (let s = 1; s <= Math.min(left, 9); s++) sh.push(`${s * 2.6}px ${s * 2.6}px 0 ${s % 2 ? '#0f1f52' : '#1c3478'}`); btn.style.setProperty('--stack', sh.join(',') || 'none'); }
-      btn.addEventListener('click', () => {
-        if (!flipped) {
-          flipped = true; flip.classList.add('flipped');
-          tip.textContent = `${e.c.name}${e.reverse ? ' (reverse)' : ''} · ${gameLabel(defSel, e.rar)}` + (e.isNew ? ' · ✨ nouvelle !' : '') + (k < n - 1 ? ' — touche pour continuer' : '');
-          if (SPECIAL.includes(e.rar)) { flip.classList.add('wow'); setTimeout(() => { if (alive()) showSpecial(e, null); }, 750); }
-          else if (FX[e.rar]) {
-            const fx = FX[e.rar], lvl = LEVEL[e.rar] || 2; flip.classList.add('wow', 'fx-' + fx.k);
-            const gf = h('i', { class: 'gfx fx-' + fx.k + ' lvl' + lvl }); btn.append(gf, h('b', { class: 'gbanner fx-' + fx.k }, fxLabel(defSel, e.rar)));
-            if (lvl >= 3) confetti(gf, lvl === 3 ? 10 : 28, 'burst');      // Illustration rare : quelques paillettes ; Ultra Rare : explosion de confettis
-            try { navigator.vibrate && navigator.vibrate(fx.buzz); } catch { /* ignoré */ }
-          } else if (['ultra', 'secrete', 'promo'].includes(tier) || (tier === 'holo' && e.rar !== 'Pikachu Rare')) { flip.classList.add('wow'); try { navigator.vibrate && navigator.vibrate(tier === 'secrete' ? [40, 30, 80] : 30); } catch { /* ignoré */ } }
-          if (k === n - 1) setTimeout(done, 600);
-        } else if (k < n - 1) { addThumb(k); k++; stage.replaceChildren(); showCard(); }
-      });
-      stage.replaceChildren(btn);
+      rarRow.replaceChildren(raritySpot(c.e));
+      stage.append(c.btn);
+      let sx = null, swiped = false;      // un toucher ou un balayage fait passer à la carte suivante
+      c.btn.addEventListener('pointerdown', (ev) => { sx = ev.clientX; swiped = false; });
+      c.btn.addEventListener('pointerup', (ev) => { if (sx !== null && Math.abs(ev.clientX - sx) > 40) { swiped = true; advance(); } sx = null; });
+      c.btn.addEventListener('click', () => { if (swiped) { swiped = false; return; } advance(); });
+      setTimeout(() => { if (alive()) applyFx(c.btn, c.face, c.e); }, first ? 700 : 380);
+      return c;
     }
-    function done() {
-      skipBtn.hidden = true;
-      for (let i = strip.children.length; i < n; i++) addThumb(i);
-      const left = packs.filter((p) => !p.opened).length;
-      nextBtn.textContent = left ? `📦 Retour aux boosters (${left} à ouvrir)` : '📊 Voir le résumé';
-      nextBtn.onclick = () => { if (left) packsScreen(packs.findIndex((p) => !p.opened)); else summary(); };
-      nextBtn.hidden = false; carBtn.hidden = false;
-      if (pk.completed) { tip.textContent = `🏆 Classeur ${defSel.name} complet : ${statsLoad()[defSel.id].done.n} boosters, ${fmtDur(statsLoad()[defSel.id].done.active)} de jeu !`; }
+    function advance() {
+      if (busy) return;
+      if (document.querySelector('.gspecial')) return;
+      const cardNow = stage.lastElementChild;
+      if (k >= n - 1) { stopFast(); bsum(pi); return; }
+      busy = true; if (cardNow) cardNow.classList.add('leave');
+      setTimeout(() => { if (!alive()) return; stage.replaceChildren(); k++; show(false); busy = false; }, 260);
     }
-    put(nav(), counter, stage, tip, strip, h('div', { class: 'gacts' }, nextBtn, carBtn, skipBtn));
-    showCard();
+    function stopFast() { if (fast) { clearInterval(fast); fast = null; } }
+    const holdBtn = h('button', { class: 'gfast', type: 'button', 'aria-label': 'Maintenir pour accélérer' }, h('span', {}, '⏩'), h('small', {}, 'Maintenir'));
+    holdBtn.addEventListener('pointerdown', (ev) => { ev.preventDefault(); stopFast(); fast = setInterval(() => { if (document.querySelector('.gspecial')) return; advance(); }, 480); });
+    for (const t of ['pointerup', 'pointercancel', 'pointerleave']) holdBtn.addEventListener(t, stopFast);
+    put(nav(), counter, stage, rarRow, h('div', { class: 'gacts rv' }, h('button', { class: 'btn sec', type: 'button', onclick: () => { stopFast(); bsum(pi); } }, '⏭ Passer au résumé'), holdBtn));
+    show(true);
+  }
+
+  // résumé de l'ouverture d'un booster : toutes ses cartes en grille avec le nombre d'exemplaires possédés dans le classeur virtuel
+  function bsum(pi) {
+    imm(true);
+    const pk = packs[pi], b = binderLoad(), left = packs.filter((p) => !p.opened).length;
+    const total = (id) => { const en = b[id] || [0, 0]; return en[0] + en[1]; };
+    const nextBtn = h('button', { class: 'btn', type: 'button', onclick: () => { if (left) packsScreen(packs.findIndex((p) => !p.opened)); else summary(); } }, left ? `Suivant (${left} booster${left > 1 ? 's' : ''} à ouvrir)` : 'Suivant · résumé des hits');
+    put(nav(),
+      h('h2', { class: 'gh' }, 'Résumé ouverture'),
+      pk.completed ? h('p', { class: 'gcomplete' }, `🏆 Classeur ${defSel.name} complet : ${statsLoad()[defSel.id].done.n} boosters, ${fmtDur(statsLoad()[defSel.id].done.active)} de jeu !`) : null,
+      h('div', { class: 'gsumgrid' }, pk.cards.map((e) => h('button', { type: 'button', class: 'gsc t-' + rarityTier(e.rar) + (e.reverse ? ' rv' : ''), title: `${e.c.name} · ${gameLabel(defSel, e.rar)}`, onclick: () => zoomCard(e) },
+        h('img', { src: imgLow(e.c), alt: e.c.name }), pk.keep ? h('b', { class: 'gsc-n' }, String(total(e.c.id))) : null, e.isNew ? h('i', { class: 'gsc-new' }, 'NEW') : null))),
+      h('div', { class: 'gacts' }, nextBtn, h('button', { class: 'btn sec', type: 'button', onclick: () => browse(pk) }, '🎠 Voir les cartes en carrousel'), h('button', { class: 'btn sec', type: 'button', onclick: binder }, '📖 Mon classeur virtuel')));
   }
 
   // classeur virtuel : toutes les cartes de la série, normales puis reverse, avec le nombre d'exemplaires
   const statsBox = (d) => { const r = statsLoad()[d.id]; if (!r) return null;
     return h('p', { class: 'lb-help gstat' }, `${plural(r.n, 'booster ouvert', 'boosters ouverts')} · ${fmtDur(r.active)} de jeu` + (r.done ? ` · 🏆 classeur complet en ${r.done.n} boosters (${fmtDur(r.done.active)})` : '')); };
   async function binder() {
-    put(spinner());
+    imm(false); put(spinner());
     let tab = 'n', def = defSel;
     const draw = async () => {
       const pool = await gamePool(def); if (!alive()) return;
@@ -440,6 +497,7 @@ function showGame(my) {
 
   // résumé : seulement les hits de la série
   function summary() {
+    imm(false);
     const hitSet = new Set(defSel.hits), hits = packs.flatMap((p) => p.cards).filter((e) => hitSet.has(e.rar));
     const cnt = {}; for (const e of hits) { const l = gameLabel(defSel, e.rar); cnt[l] = (cnt[l] || 0) + 1; }
     const nonPk = hits.filter((e) => e.rar !== 'Pikachu Rare'), pool = nonPk.length ? nonPk : hits;
