@@ -328,3 +328,10 @@ En plus des animations plein écran (Illustration spéciale rare, Méga Hyper Ra
 
 **v126** : l'animation grossit avec la rareté. Niveaux : 1 Rare (scintillements) · 2 reprint, EX/Double rare · 3 Illustration rare (+ paillettes) · 4 Ultra Rare (+ confettis, ondes) · 5 Illustration spéciale rare (plein écran) · 6 Futuristic (plein écran, rayons rapides cyan, double éclair, tremblement, confettis) · 7 RGB et Méga Hyper Rare (jackpot : fond doré, pluie de confettis, bordure arc-en-ciel, vibration longue).
 **v127** : classeur virtuel : les cartes sont rangées dans le vrai ordre de la collection (`data/order.json`, celui de PokéCardex), comme dans l'écran des extensions : au 30ᵉ, les reprints (Collection Classique) commencent par Pikachu (n° 014) puis Dracaufeu (n° 001)…
+
+## Jeu v128 : ouverture comme dans la vidéo
+- **Anneau de boosters en 3D** (même avec 20 ou 500 boosters en mode test) : on le fait tourner au doigt, un toucher choisit le booster touché, qui vient devant et grossit ; les autres s'effacent. Reflet au sol.
+- **Trait de déchirure facile** : une zone large (≈ 200 px) autour de la ligne lumineuse, balayage dans n'importe quel sens, trait approximatif accepté, la progression se garde entre deux essais ; bouton « Ouvrir sans glisser » en secours.
+- Le haut s'envole, **la 1re carte sort du booster**, puis les cartes s'affichent **face visible**, une à une : un toucher ou un balayage passe à la suivante (qui arrive de la droite) ; icône de rareté sous la carte ; bouton rond **« Maintenir »** pour accélérer ; les animations de rareté se déclenchent à l'apparition de la carte.
+- **Résumé de l'ouverture** de chaque booster : grille des cartes avec le nombre d'exemplaires du classeur virtuel et « NEW ».
+- **Mode test** : jusqu'à 500 boosters d'un coup (limite de 36 hors mode test) ; à retirer après les essais.
