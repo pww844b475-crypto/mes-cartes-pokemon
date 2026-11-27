@@ -335,3 +335,5 @@ En plus des animations plein écran (Illustration spéciale rare, Méga Hyper Ra
 - Le haut s'envole, **la 1re carte sort du booster**, puis les cartes s'affichent **face visible**, une à une : un toucher ou un balayage passe à la suivante (qui arrive de la droite) ; icône de rareté sous la carte ; bouton rond **« Maintenir »** pour accélérer ; les animations de rareté se déclenchent à l'apparition de la carte.
 - **Résumé de l'ouverture** de chaque booster : grille des cartes avec le nombre d'exemplaires du classeur virtuel et « NEW ».
 - **Mode test** : jusqu'à 500 boosters d'un coup (limite de 36 hors mode test) ; à retirer après les essais.
+
+**v129** : Jeu : l'anneau de boosters ne dépasse plus de l'écran (débordement horizontal de 12 px supprimé, cadre qui rogne la 3D), s'adapte à la largeur **et** à la hauteur de la fenêtre (écran extérieur, déplié en portrait, déplié en paysage) et reste fluide avec 100 boosters : arc de cercle de 30° par booster, seuls les ~13 boosters proches du centre sont dessinés, reflet et ombre seulement sur les 3 plus proches. Vérifié en simulation à 382×580, 669×867 et 951×585.
