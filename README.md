@@ -319,3 +319,12 @@ Dock → **Amis & Jeu** → **Jeu** (`#jeu`, code dans `game.js`, chargé avant 
 ## Jeu v122 : mode test illimité, plafond, statistiques de remplissage
 - **Plafond** du solde de boosters à ouvrir : 50 (`CAP_STOCK` dans `game.js`). Connexion du jour, scans et cartes ajoutées ne le dépassent pas ; les cartes de la collection qui n'ont pas encore reçu leur booster attendent et sont créditées au fur et à mesure (« N cartes attendent leur booster »).
 - **Mode test** (Jeu → « 🧪 Mode test et remise à zéro ») : ouvertures **illimitées**, aucun booster à gagner, tout va dans le classeur. Statistiques par série : boosters ouverts, temps de jeu (pauses de plus de 5 min ignorées), et « 🏆 complet en N boosters, X h Y min » quand toutes les cartes (et les reverse qui existent) sont dans le classeur ; visibles dans la feuille du mode test et en haut du classeur. La remise à zéro vide aussi les statistiques si on choisit « tout réinitialiser ».
+**v123** : Jeu : la description de la composition du booster n'est plus affichée sous les séries (elle reste dans « Taux de tirage utilisés »).
+
+**v124** : Réglages : retrait des outils de diagnostic de la bande vide (test d'affichage plein écran, pages d'essai, ligne de mesures sous la version) et suppression du dossier `essai/`. La version reste affichée.
+
+## Jeu v125 : une animation par rareté
+En plus des animations plein écran (Illustration spéciale rare, Méga Hyper Rare, Futuristic, RGB), les cartes intermédiaires ont leur signature à la révélation, avec un bandeau : **EX / Double rare** = éclat argenté + balayage métallique ; **Illustration rare** = lueur dorée + étincelles qui montent ; **Ultra Rare** = ondes de choc violettes + léger tremblement ; **reprint** (Collection Classique) = voile sépia rétro + halo bronze. Vibration différente pour chacune (si l'appareil le permet).
+
+**v126** : l'animation grossit avec la rareté. Niveaux : 1 Rare (scintillements) · 2 reprint, EX/Double rare · 3 Illustration rare (+ paillettes) · 4 Ultra Rare (+ confettis, ondes) · 5 Illustration spéciale rare (plein écran) · 6 Futuristic (plein écran, rayons rapides cyan, double éclair, tremblement, confettis) · 7 RGB et Méga Hyper Rare (jackpot : fond doré, pluie de confettis, bordure arc-en-ciel, vibration longue).
+**v127** : classeur virtuel : les cartes sont rangées dans le vrai ordre de la collection (`data/order.json`, celui de PokéCardex), comme dans l'écran des extensions : au 30ᵉ, les reprints (Collection Classique) commencent par Pikachu (n° 014) puis Dracaufeu (n° 001)…
