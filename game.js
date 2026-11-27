@@ -139,7 +139,7 @@ function showGame(my) {
 
   function setup() {
     const cardsEl = GAME_SETS.map((d) => h('button', { type: 'button', class: 'gset' + (d === defSel ? ' on' : ''), 'aria-pressed': String(d === defSel), onclick: () => { defSel = d; setup(); } },
-      h('img', { src: d.logo, alt: '', class: 'gset-logo', width: 200, height: 80 }), h('b', {}, d.name), h('span', {}, d.desc)));
+      h('img', { src: d.logo, alt: '', class: 'gset-logo', width: 200, height: 80 }), h('b', {}, d.name)));      // la composition du booster ne s'affiche plus sous la série
     const inp = h('input', { class: 'qin bo-in', type: 'number', inputmode: 'numeric', min: '1', max: '36', value: String(count), 'aria-label': 'Nombre de boosters à ouvrir' });
     syncCardRewards();
     const credits = gameState().credits;
