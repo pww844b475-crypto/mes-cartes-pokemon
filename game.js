@@ -283,9 +283,10 @@ function showGame(my) {
   function packsScreen(focus) {
     imm(true);
     const d = defSel, n = packs.length, P = 1300;      // P : distance de perspective
-    const stageW = Math.min(main.clientWidth || window.innerWidth, 560), IW = Math.round(Math.min(stageW * 0.42, 170)), RATIO = (packs[0].art ? packs[0].art.h / packs[0].art.w : 1.733), IH = Math.round(IW * RATIO);
-    const N = Math.max(n, 7), step = 360 / N, R = Math.round((IW / 2 + 16) / Math.tan(Math.PI / N));      // anneau : les boosters sont posés en cercle
-    const wrap = n >= 7;      // moins de 7 boosters : pas de tour complet
+    const stageW = Math.min(main.clientWidth || window.innerWidth, 560), RATIO = (packs[0].art ? packs[0].art.h / packs[0].art.w : 1.733);
+    const IW = Math.round(Math.min(stageW * 0.42, 170, (window.innerHeight * 0.44) / RATIO)), IH = Math.round(IW * RATIO);      // le booster s'adapte à la largeur ET à la hauteur de l'écran (petit écran, écran déplié, paysage)
+    const step = 30, R = Math.round((IW / 2 + 14) / Math.tan(step * Math.PI / 360)), wrap = false, BOT = Math.round(IH * 0.42);      // éventail en arc de cercle : seuls les boosters proches du centre sont dessinés
+    let heldZ = 0;
     let cur = focus !== undefined ? focus : Math.max(0, packs.findIndex((p) => !p.opened)), held = null, tween = 0;
     const call = h('p', { class: 'gcall' }), info = h('p', { class: 'gcount' });
     const items = packs.map((p, i) => {
@@ -310,18 +311,21 @@ function showGame(my) {
       return { item, el, p, i };
     });
     const ring = h('div', { class: 'gring' }, items.map((x) => x.item));
-    const stage = h('div', { class: 'grs', style: `height:${IH + 90}px;--iw:${IW}px;perspective-origin:50% ${45 + IH / 2}px` }, ring);
+    const stage = h('div', { class: 'grs', style: `height:${IH + 45 + BOT}px;--iw:${IW}px;perspective-origin:50% ${45 + IH / 2}px` }, ring);
     ring.style.top = '45px';
-    const idxOf = (c) => ((Math.round(c) % n) + n) % n;
+    const idxOf = (c) => Math.max(0, Math.min(n - 1, Math.round(c)));
+    let shown = new Set(items.map((x) => x.i));      // au premier affichage, tout ce qui est hors de la fenêtre visible est masqué
     const place = () => {
-      ring.style.transform = `translateZ(${-R}px) rotateY(${(-cur * step).toFixed(3)}deg)`;
-      const f = held === null ? cur : Math.round(cur);
-      items.forEach((x) => {
-        let rel = x.i - f; if (wrap) { rel = ((rel % n) + n) % n; if (rel > n / 2) rel -= n; }
-        const far = Math.abs(rel) * step > 105; x.item.style.visibility = far ? 'hidden' : '';
-        x.item.style.opacity = held !== null ? (x.i === held ? '1' : '0') : String(Math.max(0.35, 1 - 0.13 * Math.abs(rel)).toFixed(2));
-        x.el.classList.toggle('sel', x.i === idxOf(f)); x.el.classList.toggle('opened', x.p.opened);
-      });
+      ring.style.transform = `translateZ(${-R}px)`;
+      const f = held === null ? cur : Math.round(cur), lo = Math.max(0, Math.floor(f) - 6), hi = Math.min(n - 1, Math.ceil(f) + 6), now = new Set();
+      for (let i = lo; i <= hi; i++) {
+        const x = items[i], rel = i - f, a = Math.abs(rel); now.add(i);
+        x.item.style.visibility = ''; x.item.style.transform = `rotateY(${(rel * step).toFixed(2)}deg) translateZ(${R + (held === i ? heldZ : 0)}px)`;
+        x.item.style.opacity = held !== null ? (i === held ? '1' : '0') : String(Math.max(0.3, 1 - 0.2 * a).toFixed(2));
+        x.el.classList.toggle('near', a <= 1.2); x.el.classList.toggle('sel', i === idxOf(f)); x.el.classList.toggle('opened', x.p.opened);
+      }
+      for (const i of shown) if (!now.has(i)) items[i].item.style.visibility = 'hidden';
+      shown = now;
       const op = packs.filter((q) => q.opened).length, left = n - op;
       call.textContent = held !== null ? 'Fais glisser ton doigt sur la ligne lumineuse' : left ? 'Touchez un Booster à ouvrir !' : 'Tous les boosters sont ouverts';
       info.textContent = n > 1 ? `Booster ${idxOf(cur) + 1} / ${n}${packs[idxOf(cur)].opened ? ' · ouvert' : ''}` : '';
@@ -333,21 +337,20 @@ function showGame(my) {
       const tick = (now) => { const u = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - u, 3); cur = c0 + (t - c0) * e; place(); if (u < 1) tween = requestAnimationFrame(tick); else { cur = t; place(); if (done) done(); } };
       tween = requestAnimationFrame(tick);
     }
-    const nearest = (i) => { if (!wrap) return i; const base = Math.round(cur / n) * n; let t = base + i; if (t - cur > n / 2) t -= n; if (cur - t > n / 2) t += n; return t; };
+    const nearest = (i) => i;
     function hold(i) {      // le booster choisi vient au centre et grossit, les autres s'effacent
       held = i; ring.classList.remove('drag'); stage.classList.add('locked'); main.classList.add('holding');
-      rotateTo(nearest(i), 380, () => {
-        const k = Math.max(1, Math.min(1.6, (window.innerWidth * 0.8) / IW, (window.innerHeight - 350) / IH)), z = Math.round(P * (1 - 1 / k)), H = Math.round(IH * k + 90);
-        items[i].item.style.transition = 'transform .5s cubic-bezier(.2, 1, .3, 1)';
-        items[i].item.style.transform = `rotateY(${(i * step).toFixed(3)}deg) translateZ(${R + z}px)`;
+      rotateTo(i, 380, () => {
+        const k = Math.max(1, Math.min(1.6, (window.innerWidth * 0.8) / IW, (window.innerHeight - 350) / IH)), H = Math.round(IH * k + 90);
+        heldZ = Math.round(P * (1 - 1 / k)); items[i].item.style.transition = 'transform .5s cubic-bezier(.2, 1, .3, 1)';
         items[i].el.classList.add('held'); stage.style.height = H + 'px'; ring.style.top = Math.round((H - IH) / 2) + 'px'; stage.style.perspectiveOrigin = `50% ${Math.round(H / 2)}px`; place();
         try { scrollTo({ top: 0, behavior: 'smooth' }); } catch { /* ignoré */ }
       });
       releaseBtn.hidden = false; place();
     }
     function release() {
-      const i = held; held = null; stage.classList.remove('locked'); main.classList.remove('holding'); stage.style.height = IH + 90 + 'px'; ring.style.top = '45px'; stage.style.perspectiveOrigin = `50% ${45 + IH / 2}px`;
-      if (i !== null) { const it = items[i]; it.el.classList.remove('held'); it.el.style.setProperty('--p', 0); it.item.style.transform = `rotateY(${(i * step).toFixed(3)}deg) translateZ(${R}px)`; }
+      const i = held; held = null; heldZ = 0; stage.classList.remove('locked'); main.classList.remove('holding'); stage.style.height = IH + 45 + BOT + 'px'; ring.style.top = '45px'; stage.style.perspectiveOrigin = `50% ${45 + IH / 2}px`;
+      if (i !== null) { items[i].el.classList.remove('held'); items[i].el.style.setProperty('--p', 0); items[i].item.style.transition = ''; }
       releaseBtn.hidden = true; place();
     }
     // glisser pour faire tourner ; un simple toucher choisit le booster touché
@@ -396,7 +399,7 @@ function showGame(my) {
     };
     function applyFx(btn, face, e) {      // signature de rareté : animation plein écran (niveaux 5 à 7) ou sur la carte (2 à 4)
       const tier = rarityTier(e.rar);
-      if (SPECIAL.includes(e.rar)) { face.classList.add('wow'); setTimeout(() => { if (alive()) showSpecial(e, null); }, 650); return; }
+      if (SPECIAL.includes(e.rar)) { face.classList.add('wow'); busy = true; setTimeout(() => { if (alive() && stage.isConnected) showSpecial(e, () => { busy = false; }); else busy = false; }, 500); return; }      // une carte vedette ne peut pas être sautée : on attend la fin de son animation
       if (FX[e.rar]) {
         const fx = FX[e.rar], lvl = LEVEL[e.rar] || 2; face.classList.add('wow', 'fx-' + fx.k);
         const gf = h('i', { class: 'gfx fx-' + fx.k + ' lvl' + lvl }); btn.append(gf, h('b', { class: 'gbanner fx-' + fx.k }, fxLabel(defSel, e.rar)));
