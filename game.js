@@ -19,6 +19,12 @@ const gameLabel = (def, r) => (def.id === '30th' && r === 'Double rare' ? 'EX' :
 const SPECIAL = ['Illustration spéciale rare', 'Méga Hyper Rare', 'Futuristic Rare', 'RGB Rare'];      // animation plein écran automatique
 // une carte existe en reverse si c'est une Commune, Peu Commune ou Rare d'une extension classique, sauf les moitiés de Stade
 const hasReverse = (def, c) => !!def.reverse && ['Commune', 'Peu Commune', 'Rare'].includes(c.rar) && !(def.pairs || []).flat().includes(c.id);
+// animations intermédiaires sur la carte (sous les animations plein écran des cartes vedettes) : une signature par rareté
+const FX = {
+  'Double rare': { k: 'ex', buzz: 30 }, 'Illustration rare': { k: 'ir', buzz: [25, 25, 25] },
+  'Ultra Rare': { k: 'ur', buzz: [40, 30, 40] }, 'Collection Classique': { k: 'cc', buzz: 20 },
+};
+const fxLabel = (def, r) => (r === 'Double rare' ? (def.id === '30th' ? 'EX' : 'DOUBLE RARE') : r === 'Illustration rare' ? 'ILLUSTRATION RARE' : r === 'Ultra Rare' ? 'ULTRA RARE' : r === 'Collection Classique' ? 'REPRINT' : '');
 const pickOne = (a, not) => { const b = not && not.size ? a.filter((x) => !not.has(x)) : a; const l = b.length ? b : a; return l[Math.floor(Math.random() * l.length)]; };
 
 // ---------- boosters à ouvrir (gagnés), récompenses et classeur virtuel (séparé de la vraie collection) ----------
@@ -349,7 +355,11 @@ function showGame(my) {
           flipped = true; flip.classList.add('flipped');
           tip.textContent = `${e.c.name}${e.reverse ? ' (reverse)' : ''} · ${gameLabel(defSel, e.rar)}` + (e.isNew ? ' · ✨ nouvelle !' : '') + (k < n - 1 ? ' — touche pour continuer' : '');
           if (SPECIAL.includes(e.rar)) { flip.classList.add('wow'); setTimeout(() => { if (alive()) showSpecial(e, null); }, 750); }
-          else if (['ultra', 'secrete', 'promo'].includes(tier) || (tier === 'holo' && e.rar !== 'Pikachu Rare')) { flip.classList.add('wow'); try { navigator.vibrate && navigator.vibrate(tier === 'secrete' ? [40, 30, 80] : 30); } catch { /* ignoré */ } }
+          else if (FX[e.rar]) {
+            const fx = FX[e.rar]; flip.classList.add('wow', 'fx-' + fx.k);
+            btn.append(h('i', { class: 'gfx fx-' + fx.k }), h('b', { class: 'gbanner fx-' + fx.k }, fxLabel(defSel, e.rar)));
+            try { navigator.vibrate && navigator.vibrate(fx.buzz); } catch { /* ignoré */ }
+          } else if (['ultra', 'secrete', 'promo'].includes(tier) || (tier === 'holo' && e.rar !== 'Pikachu Rare')) { flip.classList.add('wow'); try { navigator.vibrate && navigator.vibrate(tier === 'secrete' ? [40, 30, 80] : 30); } catch { /* ignoré */ } }
           if (k === n - 1) setTimeout(done, 600);
         } else if (k < n - 1) { addThumb(k); k++; stage.replaceChildren(); showCard(); }
       });

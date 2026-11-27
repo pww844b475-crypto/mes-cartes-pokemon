@@ -322,3 +322,6 @@ Dock → **Amis & Jeu** → **Jeu** (`#jeu`, code dans `game.js`, chargé avant 
 **v123** : Jeu : la description de la composition du booster n'est plus affichée sous les séries (elle reste dans « Taux de tirage utilisés »).
 
 **v124** : Réglages : retrait des outils de diagnostic de la bande vide (test d'affichage plein écran, pages d'essai, ligne de mesures sous la version) et suppression du dossier `essai/`. La version reste affichée.
+
+## Jeu v125 : une animation par rareté
+En plus des animations plein écran (Illustration spéciale rare, Méga Hyper Rare, Futuristic, RGB), les cartes intermédiaires ont leur signature à la révélation, avec un bandeau : **EX / Double rare** = éclat argenté + balayage métallique ; **Illustration rare** = lueur dorée + étincelles qui montent ; **Ultra Rare** = ondes de choc violettes + léger tremblement ; **reprint** (Collection Classique) = voile sépia rétro + halo bronze. Vibration différente pour chacune (si l'appareil le permet).
