@@ -325,3 +325,5 @@ Dock → **Amis & Jeu** → **Jeu** (`#jeu`, code dans `game.js`, chargé avant 
 
 ## Jeu v125 : une animation par rareté
 En plus des animations plein écran (Illustration spéciale rare, Méga Hyper Rare, Futuristic, RGB), les cartes intermédiaires ont leur signature à la révélation, avec un bandeau : **EX / Double rare** = éclat argenté + balayage métallique ; **Illustration rare** = lueur dorée + étincelles qui montent ; **Ultra Rare** = ondes de choc violettes + léger tremblement ; **reprint** (Collection Classique) = voile sépia rétro + halo bronze. Vibration différente pour chacune (si l'appareil le permet).
+
+**v126** : l'animation grossit avec la rareté. Niveaux : 1 Rare (scintillements) · 2 reprint, EX/Double rare · 3 Illustration rare (+ paillettes) · 4 Ultra Rare (+ confettis, ondes) · 5 Illustration spéciale rare (plein écran) · 6 Futuristic (plein écran, rayons rapides cyan, double éclair, tremblement, confettis) · 7 RGB et Méga Hyper Rare (jackpot : fond doré, pluie de confettis, bordure arc-en-ciel, vibration longue).

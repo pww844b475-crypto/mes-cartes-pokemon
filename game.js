@@ -25,6 +25,32 @@ const FX = {
   'Ultra Rare': { k: 'ur', buzz: [40, 30, 40] }, 'Collection Classique': { k: 'cc', buzz: 20 },
 };
 const fxLabel = (def, r) => (r === 'Double rare' ? (def.id === '30th' ? 'EX' : 'DOUBLE RARE') : r === 'Illustration rare' ? 'ILLUSTRATION RARE' : r === 'Ultra Rare' ? 'ULTRA RARE' : r === 'Collection Classique' ? 'REPRINT' : '');
+
+// ---------- plus la rareté est grosse, plus l'animation est spectaculaire ----------
+// niveaux : 1 Rare · 2 reprint, EX/Double rare · 3 Illustration rare · 4 Ultra Rare · 5 Illustration spéciale rare · 6 Futuristic · 7 RGB et Méga Hyper Rare (jackpot)
+const LEVEL = { 'Rare': 1, 'Collection Classique': 2, 'Double rare': 2, 'Illustration rare': 3, 'Ultra Rare': 4, 'Illustration spéciale rare': 5, 'Futuristic Rare': 6, 'RGB Rare': 7, 'Méga Hyper Rare': 7 };
+const CONF = ['#ffd24a', '#ff6b78', '#6bd0ff', '#9d7bff', '#5be38f', '#fff'];
+function confetti(parent, n, mode) {      // mode 'burst' : jaillit autour de la carte ; 'rain' : tombe de haut en bas
+  const els = Array.from({ length: n }, () => {
+    const a = Math.random() * Math.PI * 2, d = 90 + Math.random() * 170;
+    const st = mode === 'rain' ? `left:${(Math.random() * 100).toFixed(1)}%;--dx:${(Math.random() * 80 - 40).toFixed(0)}px;--r:${(Math.random() * 720 - 360).toFixed(0)}deg;--c:${CONF[Math.floor(Math.random() * CONF.length)]};--d:${(Math.random() * 2.4).toFixed(2)}s;--t:${(2.2 + Math.random() * 1.8).toFixed(2)}s`
+      : `--dx:${(Math.cos(a) * d).toFixed(0)}px;--dy:${(Math.sin(a) * d).toFixed(0)}px;--r:${(Math.random() * 720 - 360).toFixed(0)}deg;--c:${CONF[Math.floor(Math.random() * CONF.length)]};--d:${(Math.random() * 0.25).toFixed(2)}s`;
+    return h('i', { class: 'gconf ' + mode, style: st });
+  });
+  parent.append(...els); return els;
+}
+function showSpecial(e, next) {      // animation plein écran des cartes vedettes (niveaux 5 à 7)
+  const lv = LEVEL[e.rar] || 5;
+  const label = e.rar === 'Méga Hyper Rare' ? 'MÉGA HYPER RARE' : e.rar === 'Illustration spéciale rare' ? 'ILLUSTRATION SPÉCIALE' : e.rar === 'Futuristic Rare' ? 'FUTURISTIC RARE' : 'RGB RARE';
+  const nSparks = [0, 0, 0, 0, 0, 34, 60, 95][lv];
+  const ov = h('div', { class: 'overlay gspecial lv' + lv, role: 'dialog', 'aria-modal': 'true', onclick: () => { ov.remove(); if (next) next(); } },
+    h('i', { class: 'gsp-rays' }), h('i', { class: 'gsp-flash' }), lv >= 6 ? h('i', { class: 'gsp-flash two' }) : null, lv >= 7 ? h('i', { class: 'gsp-vignette' }) : null,
+    h('div', { class: 'gsp-in' }, lv >= 7 ? h('p', { class: 'gsp-jack' }, '✦ JACKPOT ✦') : null, h('p', { class: 'gsp-lab' }, label), h('div', { class: 'gsp-card' }, h('img', { src: imgHigh(e.c), alt: e.c.name }), h('i', { class: 'gsp-sheen' })), h('b', {}, e.c.name), h('small', {}, 'Touche pour continuer')),
+    h('div', { class: 'gsp-sparks' }, Array.from({ length: nSparks }, () => h('b', { style: `left:${(Math.random() * 100).toFixed(1)}%;top:${(Math.random() * 100).toFixed(1)}%;--d:${(Math.random() * 2.4).toFixed(2)}s;--s:${(8 + Math.random() * 14).toFixed(0)}px` }))));
+  document.body.append(ov);
+  if (lv >= 6) confetti(ov, lv >= 7 ? 90 : 36, lv >= 7 ? 'rain' : 'burst');
+  try { navigator.vibrate && navigator.vibrate(lv >= 7 ? [80, 40, 80, 40, 80, 40, 220] : lv === 6 ? [70, 40, 70, 40, 160] : [60, 40, 120]); } catch { /* ignoré */ }
+}
 const pickOne = (a, not) => { const b = not && not.size ? a.filter((x) => !not.has(x)) : a; const l = b.length ? b : a; return l[Math.floor(Math.random() * l.length)]; };
 
 // ---------- boosters à ouvrir (gagnés), récompenses et classeur virtuel (séparé de la vraie collection) ----------
@@ -315,16 +341,6 @@ function showGame(my) {
     requestAnimationFrame(() => { goTo(cur, false); paint(); });
   }
 
-  // animation plein écran pour les cartes vedettes (Illustration spéciale rare, Méga Hyper Rare, Futuristic, RGB)
-  function showSpecial(e, next) {
-    const label = e.rar === 'Méga Hyper Rare' ? 'MÉGA HYPER RARE' : e.rar === 'Illustration spéciale rare' ? 'ILLUSTRATION SPÉCIALE' : e.rar === 'Futuristic Rare' ? 'FUTURISTIC RARE' : 'RGB RARE';
-    const ov = h('div', { class: 'overlay gspecial', role: 'dialog', 'aria-modal': 'true', onclick: () => { ov.remove(); if (next) next(); } },
-      h('i', { class: 'gsp-rays' }), h('i', { class: 'gsp-flash' }),
-      h('div', { class: 'gsp-in' }, h('p', { class: 'gsp-lab' }, label), h('div', { class: 'gsp-card' }, h('img', { src: imgHigh(e.c), alt: e.c.name }), h('i', { class: 'gsp-sheen' })), h('b', {}, e.c.name), h('small', {}, 'Touche pour continuer')),
-      h('div', { class: 'gsp-sparks' }, Array.from({ length: 34 }, () => h('b', { style: `left:${(Math.random() * 100).toFixed(1)}%;top:${(Math.random() * 100).toFixed(1)}%;--d:${(Math.random() * 2.4).toFixed(2)}s;--s:${(8 + Math.random() * 14).toFixed(0)}px` }))));
-    document.body.append(ov); try { navigator.vibrate && navigator.vibrate([60, 40, 120]); } catch { /* ignoré */ }
-  }
-
   // cartes qui sortent, retournées une par une
   function reveal(pi) {
     const pk = packs[pi], pack = pk.cards, n = pack.length; let k = 0, flipped = false;
@@ -356,8 +372,9 @@ function showGame(my) {
           tip.textContent = `${e.c.name}${e.reverse ? ' (reverse)' : ''} · ${gameLabel(defSel, e.rar)}` + (e.isNew ? ' · ✨ nouvelle !' : '') + (k < n - 1 ? ' — touche pour continuer' : '');
           if (SPECIAL.includes(e.rar)) { flip.classList.add('wow'); setTimeout(() => { if (alive()) showSpecial(e, null); }, 750); }
           else if (FX[e.rar]) {
-            const fx = FX[e.rar]; flip.classList.add('wow', 'fx-' + fx.k);
-            btn.append(h('i', { class: 'gfx fx-' + fx.k }), h('b', { class: 'gbanner fx-' + fx.k }, fxLabel(defSel, e.rar)));
+            const fx = FX[e.rar], lvl = LEVEL[e.rar] || 2; flip.classList.add('wow', 'fx-' + fx.k);
+            const gf = h('i', { class: 'gfx fx-' + fx.k + ' lvl' + lvl }); btn.append(gf, h('b', { class: 'gbanner fx-' + fx.k }, fxLabel(defSel, e.rar)));
+            if (lvl >= 3) confetti(gf, lvl === 3 ? 10 : 28, 'burst');      // Illustration rare : quelques paillettes ; Ultra Rare : explosion de confettis
             try { navigator.vibrate && navigator.vibrate(fx.buzz); } catch { /* ignoré */ }
           } else if (['ultra', 'secrete', 'promo'].includes(tier) || (tier === 'holo' && e.rar !== 'Pikachu Rare')) { flip.classList.add('wow'); try { navigator.vibrate && navigator.vibrate(tier === 'secrete' ? [40, 30, 80] : 30); } catch { /* ignoré */ } }
           if (k === n - 1) setTimeout(done, 600);
