@@ -3199,56 +3199,10 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v123';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
-// Test d'affichage : un cadre coloré collé aux bords de la zone que l'appli reçoit du système, et les mesures. Une capture d'écran montre où s'arrête vraiment la fenêtre.
-function showFrameTest() {
-  closeSheet();
-  const info = h('div', { class: 'ftinfo' });
-  const upd = () => {
-    const vv = window.visualViewport, pr = document.createElement('div');
-    pr.style.cssText = 'position:fixed;visibility:hidden;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)'; document.body.append(pr);
-    const cs = getComputedStyle(pr), ins = [cs.paddingTop, cs.paddingRight, cs.paddingBottom, cs.paddingLeft].map((x) => Math.round(parseFloat(x) || 0)); pr.remove();
-    const de = document.documentElement;
-    info.replaceChildren(...[
-      `Version ${APP_VERSION}`, `fenêtre (innerWidth × innerHeight) : ${innerWidth} × ${innerHeight}`, `largeur de la page (clientWidth) : ${de.clientWidth} × ${de.clientHeight}`,
-      vv ? `viewport visuel : ${Math.round(vv.width)} × ${Math.round(vv.height)} (décalage ${Math.round(vv.offsetLeft)}, ${Math.round(vv.offsetTop)} · échelle ${vv.scale})` : 'viewport visuel : non disponible',
-      `écran (screen) : ${screen.width} × ${screen.height} · disponible ${screen.availWidth} × ${screen.availHeight} · ratio ${devicePixelRatio}`,
-      `marges système haut/droite/bas/gauche : ${ins.join(' / ')}`, `orientation : ${(screen.orientation && screen.orientation.type) || (innerWidth > innerHeight ? 'paysage' : 'portrait')} · ${isStandalone ? 'application installée' : 'dans Safari'}`,
-      'Touchez l’écran pour fermer.'].map((t) => h('p', {}, t)));
-  };
-  const ov = h('div', { class: 'frametest', role: 'dialog', 'aria-label': 'Test d’affichage', onclick: () => { ov.remove(); window.removeEventListener('resize', upd); } }, h('i', { class: 'ft-l' }), h('i', { class: 'ft-r' }), info);
-  document.body.append(ov); upd(); window.addEventListener('resize', upd);
-}
-// Guide pas à pas : copier l'adresse d'une page d'essai (à coller dans Safari, puis « Sur l'écran d'accueil »)
-function openEssais() {
-  const base = new URL('essai/', location.href).href;
-  const rows = [[1, 'comme l’application (témoin)'], [2, 'barre d’état « default »'], [3, 'sans viewport-fit'], [4, 'manifeste « fullscreen »']].map(([n, d]) => {
-    const url = base + n + '.html';
-    const input = h('input', { type: 'text', readonly: true, value: url, class: 'field', 'aria-label': `Adresse de l’essai ${n}`, onfocus: (e) => e.target.select() });
-    const btn = h('button', { class: 'btn sec', type: 'button', onclick: async () => {
-      try { await navigator.clipboard.writeText(url); toast(`Adresse de l’essai ${n} copiée.`); } catch { input.focus(); input.select(); toast('Maintenez le doigt sur l’adresse, puis « Copier ».'); }
-    } }, `📋 Copier l’essai ${n}`);
-    return h('div', { class: 'essai-row' }, h('p', {}, h('b', {}, `Essai ${n}`), ` : ${d}`), input, btn);
-  });
-  openSheet(
-    h('h2', {}, 'Pages d’essai'),
-    h('ol', { class: 'essai-steps' },
-      h('li', {}, 'Touchez « Copier l’essai 1 » ci-dessous.'),
-      h('li', {}, 'Ouvrez l’application Safari (la boussole bleue), touchez la barre d’adresse, collez, puis « OK » / Aller.'),
-      h('li', {}, 'Une page avec des cadres colorés s’affiche. Touchez le bouton Partager (carré avec une flèche vers le haut), puis « Sur l’écran d’accueil », puis « Ajouter ».'),
-      h('li', {}, 'Revenez à l’écran d’accueil de l’iPhone, ouvrez la nouvelle icône « Essai 1 » et faites une capture d’écran.'),
-      h('li', {}, 'Recommencez avec les essais 2, 3 et 4, puis envoyez-moi les captures. Ensuite supprimez ces icônes (elles ne contiennent pas vos cartes).')),
-    ...rows,
-    h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
-}
+const APP_VERSION = 'v124';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;
-  try {        // dimensions réelles de la fenêtre et marges système (pour comprendre une éventuelle bande vide sur les côtés)
-    const pr = document.createElement('div'); pr.style.cssText = 'position:fixed;visibility:hidden;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
-    document.body.append(pr); const cs = getComputedStyle(pr), ins = [cs.paddingTop, cs.paddingRight, cs.paddingBottom, cs.paddingLeft].map((x) => Math.round(parseFloat(x) || 0)); pr.remove();
-    verEl.textContent += ` · fenêtre ${innerWidth}×${innerHeight} · écran ${screen.width}×${screen.height} · marges système (haut/droite/bas/gauche) ${ins.join('/')}${isStandalone ? ' · application installée' : ''}`;
-  } catch { /* ignoré */ }
   if (window.caches) caches.keys().then((ks) => { const v = ks.find((k) => /^shell-v\d+$/.test(k)); if (v && v !== 'shell-' + APP_VERSION) verEl.textContent += ' — mise à jour du cache en attente (' + v.replace('shell-', '') + ') : fermez complètement l’application et rouvrez-la.'; }).catch(() => {});
   const sw = h('input', { type: 'checkbox', role: 'switch', 'aria-label': 'Afficher l’écran d’ouverture au lancement' });
   sw.checked = splashOn();
@@ -3263,8 +3217,6 @@ function openSettings() {
       h('span', {}, h('span', { class: 'st' }, 'Écran d’ouverture'), h('span', { class: 'sd' }, 'Affiche le logo et « Touchez pour entrer » à chaque lancement de l’application.')), sw),
     h('button', { class: 'btn sec', type: 'button', onclick: () => { closeSheet(); document.documentElement.classList.remove('no-splash'); showSplash(); } }, '▶︎ Revoir l’écran d’ouverture'),
     verEl,
-    h('button', { class: 'btn sec', type: 'button', onclick: () => showFrameTest() }, '📐 Test d’affichage plein écran (pour diagnostiquer la bande vide)'),
-    h('button', { class: 'btn sec', type: 'button', onclick: () => openEssais() }, '🧪 Pages d’essai pour la bande vide (guide pas à pas)'),
     h('p', { class: 'copyright' }, '© 2026 Pijako — Pijakollection. Tous droits réservés : le code, le graphisme et les icônes de cette application ne peuvent être copiés, modifiés ni réutilisés sans autorisation écrite de leur auteur.'),
     h('p', { class: 'copyright' }, 'Pokémon et les noms, images et illustrations de cartes sont des marques et des œuvres de The Pokémon Company, Nintendo, Creatures et GAME FREAK ; ils n’appartiennent pas à l’auteur de l’application. Données des cartes : TCGdex. Prix : Cardmarket et TCGplayer.'),
     h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
