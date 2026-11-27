@@ -399,7 +399,7 @@ function showGame(my) {
     };
     function applyFx(btn, face, e) {      // signature de rareté : animation plein écran (niveaux 5 à 7) ou sur la carte (2 à 4)
       const tier = rarityTier(e.rar);
-      if (SPECIAL.includes(e.rar)) { face.classList.add('wow'); setTimeout(() => { if (alive()) showSpecial(e, null); }, 650); return; }
+      if (SPECIAL.includes(e.rar)) { face.classList.add('wow'); busy = true; setTimeout(() => { if (alive() && stage.isConnected) showSpecial(e, () => { busy = false; }); else busy = false; }, 500); return; }      // une carte vedette ne peut pas être sautée : on attend la fin de son animation
       if (FX[e.rar]) {
         const fx = FX[e.rar], lvl = LEVEL[e.rar] || 2; face.classList.add('wow', 'fx-' + fx.k);
         const gf = h('i', { class: 'gfx fx-' + fx.k + ' lvl' + lvl }); btn.append(gf, h('b', { class: 'gbanner fx-' + fx.k }, fxLabel(defSel, e.rar)));

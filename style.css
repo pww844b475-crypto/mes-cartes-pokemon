@@ -1087,3 +1087,7 @@ main.game { overflow-x: hidden; }
 .grs .gpack.gcar.near { -webkit-box-reflect: below 6px linear-gradient(to bottom, transparent 64%, rgba(255, 255, 255, .34)); filter: drop-shadow(0 10px 12px rgba(30, 50, 100, .28)); }
 .grs .gpack.gcar:not(.sel) .gp-shine { animation: none; opacity: 0; }
 .gri { will-change: transform; }
+
+/* v130 : jamais de défilement horizontal (sur iPhone, un débordement fait dézoomer toute la page : le panneau devient minuscule) */
+html, body { overflow-x: hidden; max-width: 100%; }
+.overlay, .gspecial, .gzoom, .gcf { max-width: 100vw; overflow-x: hidden; }
