@@ -104,15 +104,16 @@ const binderSave = (o) => store.set(BINDER_KEY, JSON.stringify(o));
 let gamePools = {};
 async function gamePool(def) {
   if (gamePools[def.id]) return gamePools[def.id];
-  await Promise.all([metaReady, scansReady]);
+  await Promise.all([metaReady, scansReady, orderReady]);
   const names = await fetch('data/names.json').then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
   const cards = [];
   for (const sid of def.members) {
-    const info = await loadCardInfo('fr', sid);
+    const info = await loadCardInfo('fr', sid), part = [];
     for (const row of names[sid] || []) {
       const odd = typeof row[2] === 'string', lidRaw = odd ? row[1] : row[0], nm = odd ? row[2] : row[1], id = odd ? row[0] : sid + '-' + lidRaw, noImg = odd ? row[3] === 0 : row[2] === 0;
-      cards.push({ id, localId: lidRaw, name: nm, image: tcgImage('fr', sid, lidRaw, noImg), rar: (info.get(id) || {}).rar || null });
+      part.push({ id, localId: lidRaw, name: nm, image: tcgImage('fr', sid, lidRaw, noImg), rar: (info.get(id) || {}).rar || null });
     }
+    cards.push(...sortCards('fr', sid, part));      // vrai ordre de la collection (PokéCardex), comme dans l'écran des extensions
   }
   applyScans(cards);
   const by = {}; for (const c of cards) if (c.rar) (by[c.rar] = by[c.rar] || []).push(c);
