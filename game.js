@@ -501,7 +501,8 @@ function showGame(my) {
   // résumé : seulement les hits de la série
   function summary() {
     imm(false);
-    const hitSet = new Set(defSel.hits), hits = packs.flatMap((p) => p.cards).filter((e) => hitSet.has(e.rar));
+    const openedPacks = packs.filter((p) => p.opened);      // seuls les boosters déjà ouverts comptent : le résumé ne doit rien révéler des autres
+    const hitSet = new Set(defSel.hits), hits = openedPacks.flatMap((p) => p.cards).filter((e) => hitSet.has(e.rar));
     const cnt = {}; for (const e of hits) { const l = gameLabel(defSel, e.rar); cnt[l] = (cnt[l] || 0) + 1; }
     const nonPk = hits.filter((e) => e.rar !== 'Pikachu Rare'), pool = nonPk.length ? nonPk : hits;
     const best = pool.slice().sort((a, b) => rarityRank(b.rar) - rarityRank(a.rar))[0] || null;
@@ -510,7 +511,7 @@ function showGame(my) {
     const sorted = hits.slice().sort((a, b) => rarityRank(b.rar) - rarityRank(a.rar));
     put(
       nav(),
-      h('h2', { class: 'gh' }, `${plural(packs.length, 'booster ouvert', 'boosters ouverts')} · ${defSel.name}`),
+      h('h2', { class: 'gh' }, `${plural(openedPacks.length, 'booster ouvert', 'boosters ouverts')}${openedPacks.length < packs.length ? ` sur ${packs.length}` : ''} · ${defSel.name}`),
       best ? h('div', { class: 'gbest' }, h('p', { class: 'lb-help' }, 'Meilleur hit'), h('button', { type: 'button', class: 'gthumb big t-' + rarityTier(best.rar), onclick: () => zoomCard(best) }, h('img', { src: imgHigh(best.c), alt: best.c.name })),
         h('b', {}, best.c.name), h('span', {}, gameLabel(defSel, best.rar))) : h('p', { class: 'lb-help' }, 'Aucun hit cette fois…'),
       rows.length ? h('div', { class: 'orows' }, rows.map(([r, c]) => h('div', { class: 'orow' }, h('div', { class: 'orow-l' }, h('span', { class: 'rbi' }, rarityIcon(r === 'EX' ? 'Double rare' : r, 20)), h('span', { class: 'rn' }, r), h('span', { class: 'rc' }, h('b', {}, String(c))))))) : null,
