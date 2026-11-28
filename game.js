@@ -244,7 +244,14 @@ function showGame(my) {
       h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
   }
 
-  const nav = () => h('div', { class: 'gnav' }, h('button', { type: 'button', class: 'tbtn', onclick: setup }, '↩ Choix des boosters'), h('button', { type: 'button', class: 'tbtn', onclick: binder }, '📖 Mon classeur'));
+  const nav = (at) => {      // barre de petits boutons ronds en haut de chaque écran du jeu
+    const ic = (e, label, fn, on) => h('button', { type: 'button', class: 'gib' + (on ? ' on' : ''), 'aria-label': label, 'aria-current': on ? 'page' : null, onclick: fn }, h('span', {}, e), h('small', {}, label));
+    return h('div', { class: 'gnav icons' },
+      ic('🎁', 'Boosters', () => (packs.length ? packsScreen() : setup()), at === 'b'),
+      ic('📖', 'Classeur', binder, at === 'c'),
+      packs.some((p) => p.opened) ? ic('📊', 'Résumé', summary, at === 's') : null,
+      ic('🎴', 'Séries', setup));
+  };
   let packs = [];      // [{ cards: [...], art, opened }]
   const artCache = {};
   const artFor = async (d) => {      // visuels de boosters présents dans images/boosters (ceux qui n'existent pas sont ignorés)
@@ -285,7 +292,7 @@ function showGame(my) {
     const d = defSel, n = packs.length, P = 1300;      // P : distance de perspective
     const stageW = Math.min(main.clientWidth || window.innerWidth, 560), RATIO = (packs[0].art ? packs[0].art.h / packs[0].art.w : 1.733);
     const IW = Math.round(Math.min(stageW * 0.42, 170, (window.innerHeight * 0.44) / RATIO)), IH = Math.round(IW * RATIO);      // le booster s'adapte à la largeur ET à la hauteur de l'écran (petit écran, écran déplié, paysage)
-    const step = 30, R = Math.round((IW / 2 + 14) / Math.tan(step * Math.PI / 360)), wrap = false, BOT = Math.round(IH * 0.42);      // éventail en arc de cercle : seuls les boosters proches du centre sont dessinés
+    const step = 30, R = Math.round((IW / 2 + 14) / Math.tan(step * Math.PI / 360)), wrap = true, BOT = Math.round(IH * 0.42);      // éventail en arc de cercle : seuls les boosters proches du centre sont dessinés
     let heldZ = 0;
     let cur = focus !== undefined ? focus : Math.max(0, packs.findIndex((p) => !p.opened)), held = null, tween = 0;
     const call = h('p', { class: 'gcall' }), info = h('p', { class: 'gcount' });
@@ -313,16 +320,17 @@ function showGame(my) {
     const ring = h('div', { class: 'gring' }, items.map((x) => x.item));
     const stage = h('div', { class: 'grs', style: `height:${IH + 45 + BOT}px;--iw:${IW}px;perspective-origin:50% ${45 + IH / 2}px` }, ring);
     ring.style.top = '45px';
-    const idxOf = (c) => Math.max(0, Math.min(n - 1, Math.round(c)));
+    const mod = (a) => ((a % n) + n) % n, wrapRel = (d) => d - n * Math.round(d / n);      // l'anneau tourne sans fin : après le dernier booster on retrouve le premier
+    const idxOf = (c) => mod(Math.round(c));
     let shown = new Set(items.map((x) => x.i));      // au premier affichage, tout ce qui est hors de la fenêtre visible est masqué
     const place = () => {
       ring.style.transform = `translateZ(${-R}px)`;
-      const f = held === null ? cur : Math.round(cur), lo = Math.max(0, Math.floor(f) - 6), hi = Math.min(n - 1, Math.ceil(f) + 6), now = new Set();
-      for (let i = lo; i <= hi; i++) {
-        const x = items[i], rel = i - f, a = Math.abs(rel); now.add(i);
+      const f = held === null ? cur : Math.round(cur), now = new Set(), sel = idxOf(f);
+      for (let i = 0; i < n; i++) {
+        const rel = wrapRel(i - f), a = Math.abs(rel); if (a > 6.5) continue; const x = items[i]; now.add(i);
         x.item.style.visibility = ''; x.item.style.transform = `rotateY(${(rel * step).toFixed(2)}deg) translateZ(${R + (held === i ? heldZ : 0)}px)`;
         x.item.style.opacity = held !== null ? (i === held ? '1' : '0') : String(Math.max(0.3, 1 - 0.2 * a).toFixed(2));
-        x.el.classList.toggle('near', a <= 1.2); x.el.classList.toggle('sel', i === idxOf(f)); x.el.classList.toggle('opened', x.p.opened);
+        x.el.classList.toggle('near', a <= 1.2); x.el.classList.toggle('sel', i === sel); x.el.classList.toggle('opened', x.p.opened);
       }
       for (const i of shown) if (!now.has(i)) items[i].item.style.visibility = 'hidden';
       shown = now;
@@ -337,10 +345,9 @@ function showGame(my) {
       const tick = (now) => { const u = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - u, 3); cur = c0 + (t - c0) * e; place(); if (u < 1) tween = requestAnimationFrame(tick); else { cur = t; place(); if (done) done(); } };
       tween = requestAnimationFrame(tick);
     }
-    const nearest = (i) => i;
-    function hold(i) {      // le booster choisi vient au centre et grossit, les autres s'effacent
+        function hold(i) {      // le booster choisi vient au centre et grossit, les autres s'effacent
       held = i; ring.classList.remove('drag'); stage.classList.add('locked'); main.classList.add('holding');
-      rotateTo(i, 380, () => {
+      rotateTo(cur + wrapRel(i - cur), 380, () => {
         const k = Math.max(1, Math.min(1.6, (window.innerWidth * 0.8) / IW, (window.innerHeight - 350) / IH)), H = Math.round(IH * k + 90);
         heldZ = Math.round(P * (1 - 1 / k)); items[i].item.style.transition = 'transform .5s cubic-bezier(.2, 1, .3, 1)';
         items[i].el.classList.add('held'); stage.style.height = H + 'px'; ring.style.top = Math.round((H - IH) / 2) + 'px'; stage.style.perspectiveOrigin = `50% ${Math.round(H / 2)}px`; place();
@@ -359,13 +366,13 @@ function showGame(my) {
     stage.addEventListener('pointermove', (ev) => {
       if (!gd) return; const dx = ev.clientX - gd.x; if (Math.abs(dx) > 8) { gd.moved = true; ring.classList.add('drag'); }
       if (!gd.moved) return;
-      let c = gd.c - dx / (IW * 0.85); if (!wrap) c = Math.max(-0.3, Math.min(n - 0.7, c)); cur = c;
+      cur = gd.c - dx / (IW * 0.85);
       const now = performance.now(); gd.v = (ev.clientX - gd.lx) / Math.max(1, now - gd.lt); gd.lx = ev.clientX; gd.lt = now; place();
     });
     const up = () => {
       if (!gd) return; const g0 = gd; gd = null; ring.classList.remove('drag');
       if (!g0.moved) { if (g0.tgt) { const i = Number(g0.tgt.dataset.i); if (packs[i].opened) bsum(i); else hold(i); } return; }
-      let t = Math.round(cur - g0.v * 350 / (IW * 0.85)); if (!wrap) t = Math.max(0, Math.min(n - 1, t)); rotateTo(t, 420);
+      rotateTo(Math.round(cur - g0.v * 350 / (IW * 0.85)), 420);
     };
     stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
     function rip(i) {
@@ -382,7 +389,7 @@ function showGame(my) {
     const openBtn2 = h('button', { class: 'btn sec', type: 'button', hidden: true, onclick: () => { if (held !== null && !packs[held].opened) rip(held); } }, 'Ouvrir sans glisser');
     const allBtn = h('button', { class: 'btn', type: 'button', onclick: openAll }, '');
     const sumBtn = h('button', { class: 'btn', type: 'button', hidden: true, onclick: summary }, '📊 Voir le résumé');
-    put(nav(), call, info, stage, h('div', { class: 'gacts' }, allBtn, sumBtn, openBtn2, releaseBtn));
+    put(nav('b'), call, info, stage, h('div', { class: 'gacts' }, allBtn, sumBtn, openBtn2, releaseBtn));
     requestAnimationFrame(() => { place(); });
   }
 
@@ -471,6 +478,7 @@ function showGame(my) {
       const tabs = [['n', 'Normales'], ['r', 'Reverse']].filter(([t]) => t === 'n' || def.reverse).map(([t, l]) => h('button', { type: 'button', 'aria-pressed': String(tab === t), onclick: () => { tab = t; draw(); } }, l));
       if (tab === 'r' && !def.reverse) tab = 'n';
       put(
+        nav('c'),
         h('h2', { class: 'gh' }, '📖 Mon classeur virtuel'),
         h('div', { class: 'gsets small' }, setBtns),
         h('div', { class: 'gtabs', role: 'group' }, tabs),
@@ -479,7 +487,7 @@ function showGame(my) {
         h('div', { class: 'gbinder' }, list.map((c) => { const n = (b[c.id] || [0, 0])[k] || 0;
           return h('button', { type: 'button', class: 'gbc' + (n ? '' : ' none') + (tab === 'r' ? ' rv' : ''), title: `${c.name} · #${lidShow(c.localId)}${n ? ' · ×' + n : ' · manquante'}`, onclick: () => zoomCard({ c, rar: c.rar }) },
             h('img', { src: imgLow(c), alt: c.name, loading: 'lazy', decoding: 'async' }), n > 1 ? h('b', { class: 'gx' }, '×' + n) : null, n ? null : h('span', { class: 'gq' }, '?')); })),
-        h('div', { class: 'gacts' }, h('button', { class: 'btn', type: 'button', onclick: setup }, '🎁 Ouvrir des boosters')));
+        null);
     };
     await draw();
   }
