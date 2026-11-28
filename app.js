@@ -348,7 +348,7 @@ const isDigital = (l, sid) => !!(digital[l] && digital[l].has(sid));
 const io = 'IntersectionObserver' in window
   ? new IntersectionObserver((entries) => {
     for (const en of entries) if (en.isIntersecting) { io.unobserve(en.target); en.target.src = en.target.dataset.src; }
-  }, { rootMargin: '400px' })
+  }, { rootMargin: '250px' })
   : null;
 
 // Logos absents de TCGdex (nouvelles sorties, promos) : copies locales (source : pokecardex.com), réduites en WebP
@@ -1112,8 +1112,9 @@ async function showListInner(my) {
   }
   const goto = (hash) => () => { listScroll = scrollY; location.hash = hash; };
   const openAmisJeu = () => openSheet(h('h2', {}, 'Amis & Jeu'),
-    h('button', { class: 'btn', type: 'button', onclick: () => { closeSheet(); goto('#amis')(); } }, '👥 Amis · partager et comparer'),
-    h('button', { class: 'btn', type: 'button', onclick: () => { closeSheet(); goto('#jeu')(); } }, '🎮 Jeu · ouverture virtuelle de boosters'),
+    h('div', { class: 'amj' },
+      h('button', { type: 'button', class: 'gib', 'aria-label': 'Amis : partager et comparer', onclick: () => { closeSheet(); goto('#amis')(); } }, h('span', {}, '👥'), h('small', {}, 'Amis')),
+      h('button', { type: 'button', class: 'gib', 'aria-label': 'Jeu : ouverture virtuelle de boosters', onclick: () => { closeSheet(); goto('#jeu')(); } }, h('span', {}, '🎮'), h('small', {}, 'Jeu'))),
     h('button', { class: 'btn sec', type: 'button', onclick: closeSheet }, 'Fermer'));
   const mtile = (icon, label, aria, onclick) => h('button', { type: 'button', class: 'mtile', 'aria-label': aria, onclick }, h('span', { class: 'mi' }, menuIcon(icon)), h('span', { class: 'ml' }, label));
   const homeScanIn = h('input', { type: 'file', accept: 'image/*', capture: 'environment', hidden: true, 'aria-label': 'Photo de la carte à scanner' });
@@ -3199,7 +3200,7 @@ function splashSetup() {
 }
 
 /* ---------- Réglages ---------- */
-const APP_VERSION = 'v131';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
+const APP_VERSION = 'v132';      // même numéro que le cache de sw.js (« shell-v82 ») : à augmenter ensemble à chaque publication
 function openSettings() {
   const verEl = h('p', { class: 'lb-help' }, 'Version de l’application : …');
   verEl.textContent = 'Version de l’application : ' + APP_VERSION;
